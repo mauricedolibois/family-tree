@@ -1,3 +1,6 @@
+// src/components/FamilyTree.tsx
+'use client'
+
 import { Person } from '@/components/Person'
 import { IMember } from '@/types/IMember'
 import { useFamilyTree } from './FamilyTreeProvider'
@@ -9,9 +12,13 @@ interface SubFamilyTreeProps {
 
 const SubFamilyTree = ({ rootMember, level = 0 }: SubFamilyTreeProps) => {
   const renderCouple = () => (
-    <div className="border-solid border-gray-300 border p-2 rounded-md inline-block">
+    <div className="border border-gray-300 p-2 rounded-md inline-block">
       <Person member={rootMember} />
-      <Person member={rootMember?.spouse} isDescendant={level === 0 && true} />
+      {/* spouse darf null sein – Person kann das ab */}
+      <Person
+        member={rootMember?.spouse ?? null}
+        isDescendant={level === 0 && true}
+      />
     </div>
   )
 
@@ -42,7 +49,11 @@ const FamilyTree = () => {
   const { root } = useFamilyTree()
 
   return (
-    <div className="tree whitespace-nowrap" data-testid="family-tree-root">
+    <div
+      className="tree whitespace-nowrap"
+      data-testid="family-tree-root"
+      role="tree"
+    >
       <ul className="relative flex flex-row items-baseline justify-center">
         <SubFamilyTree rootMember={root} />
       </ul>

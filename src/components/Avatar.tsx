@@ -1,45 +1,40 @@
-import clsx from 'clsx'
-
+// src/components/Avatar.tsx
 interface AvatarProps {
   color?: string
-  title?: string
+  imageUrl?: string
   onClick?: () => void
-  size?: number
+  title?: string
   isDescendant?: boolean
 }
 
-const Avatar = ({
-  color,
-  title,
+export default function Avatar({
+  color = 'bg-gray-200',
+  imageUrl,
   onClick,
+  title,
   isDescendant = true,
-}: AvatarProps) => {
+}: AvatarProps) {
+  // ersten Buchstaben aus dem Titel oder Fallback "?"
+  const initial = title?.trim()?.charAt(0).toUpperCase() ?? '?'
+
   return (
-    <span
-      role="img"
-      aria-label={title ?? 'Avatar'}
-      title={title ?? 'Avatar'}
+    <div
       onClick={onClick}
-      className={clsx(
-        !color && 'bg-gray-500',
-        `${color} inline-block relative h-10 w-10 cursor-pointer overflow-hidden rounded-full  border-[0.5px] border-solid border-gray-500`,
-        isDescendant && 'ring-4 ring-slate-300',
-      )}
+      title={title}
+      className={`w-12 h-12 rounded-full flex items-center justify-center cursor-pointer overflow-hidden ${
+        imageUrl ? '' : color
+      } ${isDescendant ? 'ring-2 ring-gray-300' : ''}`}
     >
-      <svg
-        className="absolute w-12 h-12 text-white -left-1"
-        fill="currentColor"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          fillRule="evenodd"
-          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-          clipRule="evenodd"
-        ></path>
-      </svg>
-    </span>
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <span className="text-white font-bold text-sm">{initial}</span>
+      )}
+    </div>
   )
 }
-
-export default Avatar

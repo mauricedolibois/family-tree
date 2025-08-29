@@ -1,14 +1,19 @@
-import '@/styles/globals.css'
 import type { AppProps } from 'next/app'
-import { ThemeProvider } from '@zendeskgarden/react-theming'
-import { FamilyTreeProvider } from '@/components/FamilyTreeProvider'
+import '../styles/globals.css'
+import { Poppins } from 'next/font/google'
+import { FamilyTreeProvider } from '../components/FamilyTreeProvider'
+import { SelectedMemberProvider } from '../components/SelectedMemberProvider'
 
-export default function App({ Component, pageProps }: AppProps) {
+const poppins = Poppins({ subsets: ['latin'], weight: '300' })
+
+export default function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider>
+    <div className={poppins.className}>
       <FamilyTreeProvider>
-        <Component {...pageProps} />
+        <SelectedMemberProvider>
+          <Component {...pageProps} />
+        </SelectedMemberProvider>
       </FamilyTreeProvider>
-    </ThemeProvider>
+    </div>
   )
 }

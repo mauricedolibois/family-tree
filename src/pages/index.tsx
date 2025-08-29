@@ -3,6 +3,7 @@ import FamilyTree from '@/components/FamilyTree'
 import MotherOfGirls from '@/components/MotherOfGirls'
 import SearchMember from '@/components/SearchMember'
 import SearchRelationship from '@/components/SearchRelationship'
+import MemberDetailsModal from '@/components/MemberDetailsModal'
 import { Button } from '@zendeskgarden/react-buttons'
 import { Poppins } from 'next/font/google'
 import { useState } from 'react'
@@ -21,11 +22,10 @@ export default function Home() {
     >
       <h1 className="text-4xl font-medium mb-10 text-slate-700">Family Tree</h1>
       <div className="max-w-2xl mx-auto mb-8 ">
-        <h3 className="text-lg font-semibold text-gray-900 ">
-          Welcome to the Shan family tree
-        </h3>
+        <h3 className="text-lg font-semibold text-gray-900 "></h3>
         <p className="my-4 text-gray-500">
-          Click on any one of the family members to add a child or a spouse.
+          Click on any one of the family members to see details or add a child
+          or spouse.
         </p>
       </div>
       <Button
@@ -39,6 +39,7 @@ export default function Home() {
       </Button>
 
       <FamilyTree />
+      <MemberDetailsModal />
       <Drawer isOpen={isOpen} onClose={closeDrawer}>
         <div className="flex flex-col gap-8">
           <SearchRelationship />

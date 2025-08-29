@@ -1,8 +1,8 @@
+// src/components/Person.tsx
 import { IMember } from '@/types/IMember'
 import { Gender } from '@/types/Gender'
-import { useState } from 'react'
-import AddMember from '@/components/AddMember'
 import Avatar from '@/components/Avatar'
+import { useSelectedMember } from '@/components/SelectedMemberProvider'
 
 interface IPersonProps {
   member: IMember | null
@@ -10,37 +10,27 @@ interface IPersonProps {
 }
 
 export const Person = ({ member, isDescendant = true }: IPersonProps) => {
-  const [isModalVisible, setIsModalVisible] = useState(false)
-  const [sourceMember, setSourceMember] = useState<IMember | null>(member)
+  const { openDetails } = useSelectedMember()
 
-  if (member === null) {
-    return null
-  }
+  if (!member) return null
+  const { name, gender, profile } = member
 
-  const { name, gender } = member
-  const handleOnClick = () => {
-    setSourceMember(member)
-    setIsModalVisible(true)
-  }
+  // falls Titelbild vorhanden, Avatar damit rendern
+  const titleImage = profile?.titleImageUrl ?? null
 
   return (
     <div
-      className="!border-none py-1 px-2 inline-block"
+      className="!border-none py-1 px-2 inline-block text-center"
       data-testid="person-container"
     >
-      {isModalVisible && (
-        <AddMember
-          member={sourceMember as IMember}
-          onSubmit={() => setIsModalVisible(false)}
-        />
-      )}
       <Avatar
         color={gender === Gender.MALE ? 'bg-male' : 'bg-female'}
-        onClick={handleOnClick}
-        title={`Avatar for ${name}`}
+        imageUrl={titleImage || undefined}
+        onClick={() => openDetails(name)}
+        title={name}
         isDescendant={isDescendant}
       />
-      <p className="m-0 text-gray-500">{member.name}</p>
+      <p className="m-0 text-gray-500 text-xs">{name}</p>
     </div>
   )
 }
