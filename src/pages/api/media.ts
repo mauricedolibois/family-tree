@@ -1,58 +1,34 @@
+// src/pages/api/media.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { getFamilyIdFromReq, familyUploadDir } from '@/lib/accounts'
 import formidable from 'formidable'
 import path from 'path'
-import { promises as fs } from 'fs'
+import fs from 'fs'
 
 export const config = { api: { bodyParser: false } }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST'])
-    return res.status(405).end('Method Not Allowed')
-  }
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const fid = getFamilyIdFromReq(req)
+  if (!fid) return res.status(401).json({ error: 'unauthorized' })
+  if (req.method !== 'POST') return res.status(405).end()
 
-  try {
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    await fs.mkdir(uploadDir, { recursive: true })
+  const uploadDir = familyUploadDir(fid)
+  const form = formidable({ multiples: true, uploadDir, keepExtensions: true })
 
-    const form = formidable({
-      multiples: true,
-      uploadDir,
-      keepExtensions: true,
-      filename: (_name, _ext, part) => {
-        const safe = (part.originalFilename || 'file').replace(
-          /[^\w.\-]+/g,
-          '_',
-        )
-        return `${Date.now()}_${safe}`
-      },
-    })
-
-    const { files } = await new Promise<{
-      fields: formidable.Fields
-      files: formidable.Files
-    }>((resolve, reject) => {
-      form.parse(req, (err, fields, files) =>
-        err ? reject(err) : resolve({ fields, files }),
-      )
-    })
-
-    // 🔥 alle Felder einsammeln, egal wie sie heißen
-    const entries = Object.values(files)
-      .flatMap((f: any) => (Array.isArray(f) ? f : [f]))
-      .filter(Boolean)
-
-    const urls = entries.map((f: any) => {
-      const filename = path.basename(f.filepath || f.path)
-      return `/uploads/${filename}`
-    })
-
-    return res.status(200).json({ urls })
-  } catch (e) {
-    console.error('media upload failed:', e)
-    return res.status(500).json({ error: 'Upload failed' })
-  }
+  form.parse(req, async (err, fields, files) => {
+    if (err) return res.status(500).json({ error: 'upload failed' })
+    const list = Array.isArray(files.file) ? files.file : [files.file].filter(Boolean)
+    const urls: string[] = []
+    for (const f of list) {
+      const file = f as formidable.File
+      const ext = path.extname(file.originalFilename || file.newFilename || '')
+      const finalName = file.newFilename // already unique
+      const finalPath = path.join(uploadDir, finalName)
+      if (file.filepath && file.filepath !== finalPath) {
+        try { fs.renameSync(file.filepath, finalPath) } catch { /* already moved */ }
+      }
+      urls.push(`/uploads/${fid}/${finalName}`)
+    }
+    res.status(200).json({ urls })
+  })
 }

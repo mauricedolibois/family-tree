@@ -1,7 +1,6 @@
-// src/components/FamilyTreeProvider.tsx
 'use client'
 
-import {
+import React, {
   ReactNode,
   createContext,
   useContext,
@@ -9,21 +8,22 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { FamilyTree } from '../models/FamilyTree'
-import { IMember } from '../types/IMember'
-import { buildTreeFromStored } from '../storage/rebuild'
-import { StoredTree, serializeFromRoot, migrateToV2 } from '../storage/schema'
-import { setupShanFamilyTree } from '../utils'
+import { FamilyTree } from '@/models/FamilyTree'
+import { IMember } from '@/types/IMember'
+import { buildTreeFromStored } from '@/storage/rebuild'
+import { StoredTree, serializeFromRoot } from '@/storage/schema'
+import { setupShanFamilyTree } from '@/utils'
 
 interface Ctx {
   root: IMember
   familyTree: FamilyTree
   setFamilyTree: (tree: FamilyTree) => void
-  applyStored: (stored: StoredTree) => void
-  storedSnapshot: StoredTree | null // ⬅️ NEU
   memberNames?: string[]
   isLoaded: boolean
   error?: string | null
+  isAuthed: boolean
+  applyStored: (stored: StoredTree) => void
+  storedSnapshot?: StoredTree
 }
 
 const FamilyTreeContext = createContext({} as Ctx)
@@ -33,24 +33,34 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   const [storedSnapshot, setStoredSnapshot] = useState<StoredTree | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAuthed, setIsAuthed] = useState<boolean>(true)
 
   useEffect(() => {
     let mounted = true
     ;(async () => {
       try {
         const res = await fetch('/api/family', { cache: 'no-store' })
+        if (res.status === 401) {
+          if (mounted) {
+            setIsAuthed(false)
+            setError('UNAUTHORIZED')
+            setIsLoaded(true)
+          }
+          return
+        }
         if (!res.ok) throw new Error(`GET /api/family ${res.status}`)
-        const raw = await res.json()
-        const data = migrateToV2(raw)
+        const data = (await res.json()) as StoredTree
+        const ft = buildTreeFromStored(data)
         if (!mounted) return
+        setIsAuthed(true)
+        setFamilyTree(ft)
         setStoredSnapshot(data)
-        setFamilyTree(buildTreeFromStored(data))
         setIsLoaded(true)
-      } catch (e) {
-        console.error('Family load failed, fallback to seed:', e)
+      } catch {
+        // Dev-Fallback, optional
         const seed = setupShanFamilyTree()
         setFamilyTree(seed)
-        setStoredSnapshot(null)
+        setStoredSnapshot(serializeFromRoot(seed.root))
         setIsLoaded(true)
         setError('Server storage unavailable; using in-memory seed.')
       }
@@ -60,47 +70,45 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  // Persist, wenn sich der Baum ändert
   useEffect(() => {
-    if (!familyTree || error) return
-    const payload = serializeFromRoot(
-      familyTree.root,
-      storedSnapshot ?? undefined,
-    )
-    setStoredSnapshot(payload)
+    if (!familyTree || error === 'UNAUTHORIZED') return
+    const payload = serializeFromRoot(familyTree.root, storedSnapshot ?? undefined)
     const t = setTimeout(() => {
       fetch('/api/family', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch((e) => console.error('Persist failed:', e))
-    }, 50)
+      }).catch(() => {})
+      setStoredSnapshot(payload)
+    }, 100)
     return () => clearTimeout(t)
-    // storedSnapshot absichtlich nicht als dep, sonst Persist-Schleife
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [familyTree, error])
+  }, [familyTree]) // error-dep hier nicht nötig
 
   const applyStored = (stored: StoredTree) => {
+    const ft = buildTreeFromStored(stored)
+    setFamilyTree(ft)
     setStoredSnapshot(stored)
-    setFamilyTree(buildTreeFromStored(stored))
   }
 
   const value = useMemo(
     () => ({
       familyTree: familyTree!,
-      setFamilyTree: (t: FamilyTree) => setFamilyTree(t),
-      applyStored,
-      storedSnapshot, // ⬅️ NEU
+      setFamilyTree,
       root: familyTree?.root as IMember,
       memberNames: familyTree?.getMemberNames?.(),
       isLoaded,
       error,
+      isAuthed,
+      applyStored,
+      storedSnapshot: storedSnapshot ?? undefined,
     }),
-    [familyTree, storedSnapshot, isLoaded, error],
+    [familyTree, isLoaded, error, isAuthed, storedSnapshot],
   )
 
-  if (!isLoaded || !familyTree)
-    return <div className="p-4 text-sm opacity-70">Loading…</div>
+  // nur ein neutrales Loading anzeigen, aber KEIN Auth-UI hier
+  if (!isLoaded) return <div>Loading…</div>
+  if (!familyTree && isAuthed) return <div>Kein Stammbaum geladen.</div>
+
   return (
     <FamilyTreeContext.Provider value={value}>
       {children}

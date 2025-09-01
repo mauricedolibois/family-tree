@@ -1,49 +1,36 @@
+// src/pages/api/family.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { readJson, writeJsonAtomic, FAMILY_FILE } from '@/storage/serverFile'
-import {
-  type StoredTree,
-  type StoredTreeV1,
-  migrateToV2,
-  serializeFromRoot,
-} from '@/storage/schema'
+import { familyDataPath, getFamilyIdFromReq } from '@/lib/accounts'
+import { readJSON, writeJSON } from '@/lib/fs'
 import { setupShanFamilyTree } from '@/utils'
+import { serializeFromRoot } from '@/storage/schema'
+import { buildTreeFromStored } from '@/storage/rebuild'
+import fs from 'fs'
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  try {
-    if (req.method === 'GET') {
-      // Datei lesen (kann null sein, wenn sie noch nicht existiert)
-      const raw = await readJson<StoredTree | StoredTreeV1>(FAMILY_FILE)
-      if (!raw) {
-        // Seed erzeugen und direkt als v2 speichern
-        const seed = setupShanFamilyTree()
-        const data = serializeFromRoot(seed.root) // => version:2
-        await writeJsonAtomic(FAMILY_FILE, data)
-        return res.status(200).json(data)
-      }
-      // v1 -> v2 migrieren, falls nötig
-      const data = migrateToV2(raw)
-      if ((raw as any).version !== 2) {
-        await writeJsonAtomic(FAMILY_FILE, data)
-      }
-      return res.status(200).json(data)
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const fid = getFamilyIdFromReq(req)
+  if (!fid) return res.status(401).json({ error: 'unauthorized' })
+
+  const file = familyDataPath(fid)
+
+  if (req.method === 'GET') {
+    if (!fs.existsSync(file)) {
+      // Seed mit Shan-Tree
+      const seed = setupShanFamilyTree()
+      const stored = serializeFromRoot(seed.root)
+      await writeJSON(file, stored)
+      return res.status(200).json(stored)
     }
-
-    if (req.method === 'PUT') {
-      const body = req.body as StoredTree
-      if (!body || body.version !== 2 || !body.rootName || !body.members) {
-        return res.status(400).json({ error: 'Invalid payload' })
-      }
-      await writeJsonAtomic(FAMILY_FILE, body)
-      return res.status(200).json({ ok: true })
-    }
-
-    res.setHeader('Allow', ['GET', 'PUT'])
-    return res.status(405).end('Method Not Allowed')
-  } catch (e) {
-    console.error('API /api/family error:', e)
-    return res.status(500).json({ error: 'Server error' })
+    const data = await readJSON(file, null as any)
+    return res.status(200).json(data)
   }
+
+  if (req.method === 'PUT') {
+    const body = req.body
+    // Optional: Validierung
+    await writeJSON(file, body)
+    return res.status(200).json({ ok: true })
+  }
+
+  return res.status(405).end()
 }
