@@ -1,52 +1,123 @@
 // src/lib/accounts.ts
-import { abs, ensureDir, readJSON, writeJSON } from './fs'
-import bcrypt from 'bcryptjs'
-import { randomBytes } from 'crypto'
-import { serialize, parse } from 'cookie' // <-- WICHTIG: named imports!
-import path from 'path'
-import fs from 'fs'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import bcrypt from 'bcryptjs'
+import { serialize, parse } from 'cookie'
+import { supaAdmin } from '@/lib/supabaseServer'
 
-type Account = { id: string; name: string; passwordHash: string; createdAt: string }
-type AccountsFile = { accounts: Record<string, Account> } // key: lowercased name
-
-const ACC_FILE = abs('data', 'accounts.json')
-
-export async function loadAccounts(): Promise<AccountsFile> {
-  await ensureDir(path.dirname(ACC_FILE))
-  return readJSON<AccountsFile>(ACC_FILE, { accounts: {} })
+/**
+ * DB-Schema (Supabase):
+ *  families(id uuid pk, name text unique, pass_hash text, created_at timestamptz)
+ */
+export type Account = {
+  id: string
+  name: string
+  pass_hash: string
+  created_at: string
 }
 
-export async function saveAccounts(db: AccountsFile) {
-  await writeJSON(ACC_FILE, db)
+/** Rückwärtskompatibilität zum alten FS-Format (wird intern aus Supabase gebaut). */
+type AccountsFile = {
+  accounts: Record<string, { id: string; name: string; passwordHash: string; createdAt: string }>
 }
 
 function toKey(name: string) {
   return name.trim().toLowerCase()
 }
 
+/* ================================
+ *   Supabase-basierte Funktionen
+ * ================================ */
+
+/**
+ * Lade alle Accounts (nur für Dev/Kompatibilität).
+ * Baut ein Objekt im alten FS-Format auf.
+ */
+export async function loadAccounts(): Promise<AccountsFile> {
+  const { data, error } = await supaAdmin
+    .from('families')
+    .select('id,name,pass_hash,created_at')
+  if (error) throw error
+
+  const out: AccountsFile = { accounts: {} }
+  for (const row of (data ?? []) as Account[]) {
+    out.accounts[toKey(row.name)] = {
+      id: row.id,
+      name: row.name,
+      passwordHash: row.pass_hash,
+      createdAt: row.created_at,
+    }
+  }
+  return out
+}
+
+/**
+ * Platzhalter für alte FS-API. In der Supabase-Variante nicht benötigt.
+ * Wird absichtlich leer gelassen, um Kompatibilität der Imports zu erhalten.
+ */
+export async function saveAccounts(_db: AccountsFile) {
+  // no-op
+}
+
+/**
+ * Familie registrieren (Familienname + Passwort).
+ * Wirft Fehler, wenn der Name bereits belegt ist.
+ */
 export async function registerFamily(name: string, password: string) {
-  const db = await loadAccounts()
-  const key = toKey(name)
-  if (db.accounts[key]) throw new Error('Name bereits vergeben')
-  const id = randomBytes(8).toString('hex')
-  const passwordHash = await bcrypt.hash(password, 10)
-  const acc: Account = { id, name: name.trim(), passwordHash, createdAt: new Date().toISOString() }
-  db.accounts[key] = acc
-  await saveAccounts(db)
-  return acc
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('Name erforderlich')
+  if (!password) throw new Error('Passwort erforderlich')
+
+  // Existenz prüfen
+  const { data: exists, error: exErr } = await supaAdmin
+    .from('families')
+    .select('id')
+    .eq('name', trimmed)
+    .maybeSingle()
+  if (exErr) throw exErr
+  if (exists) throw new Error('Name bereits vergeben')
+
+  const pass_hash = await bcrypt.hash(password, 10)
+  const { data, error } = await supaAdmin
+    .from('families')
+    .insert({ name: trimmed, pass_hash })
+    .select('id,name,pass_hash,created_at')
+    .single()
+  if (error) throw error
+
+  // Rückgabe im alten Account-Shape (passwordHash statt pass_hash)
+  return {
+    id: data.id,
+    name: data.name,
+    passwordHash: data.pass_hash,
+    createdAt: data.created_at,
+  }
 }
 
+/**
+ * Familie einloggen (Familienname + Passwort).
+ * Liefert Account im alten Shape zurück (passwordHash statt pass_hash).
+ */
 export async function loginFamily(name: string, password: string) {
-  const db = await loadAccounts()
-  const key = toKey(name)
-  const acc = db.accounts[key]
-  if (!acc) throw new Error('Unbekannter Name')
-  const ok = await bcrypt.compare(password, acc.passwordHash)
+  const trimmed = name.trim()
+  const { data, error } = await supaAdmin
+    .from('families')
+    .select('id,name,pass_hash,created_at')
+    .eq('name', trimmed)
+    .single()
+
+  if (error || !data) throw new Error('Unbekannter Name')
+  const ok = await bcrypt.compare(password, (data as Account).pass_hash)
   if (!ok) throw new Error('Falsches Passwort')
-  return acc
+
+  return {
+    id: data.id,
+    name: data.name,
+    passwordHash: data.pass_hash,
+    createdAt: data.created_at,
+  }
 }
 
+/** Login-Cookie setzen (fid = family id) */
 export function setFamilyCookie(res: NextApiResponse, id: string) {
   const cookieStr = serialize('fid', id, {
     httpOnly: true,
@@ -64,6 +135,7 @@ export function setFamilyCookie(res: NextApiResponse, id: string) {
   res.setHeader('Set-Cookie', cookies)
 }
 
+/** Login-Cookie löschen */
 export function clearFamilyCookie(res: NextApiResponse) {
   const cookieStr = serialize('fid', '', {
     httpOnly: true,
@@ -81,27 +153,33 @@ export function clearFamilyCookie(res: NextApiResponse) {
   res.setHeader('Set-Cookie', cookies)
 }
 
+/** Family-ID aus Request-Cookie lesen */
 export function getFamilyIdFromReq(req: NextApiRequest): string | null {
   const header = req.headers.cookie
   if (!header) return null
   const c = parse(header)
-  return c.fid ?? null
+  return (c as any).fid ?? null
 }
 
+/**
+ * Kompatible Platzhalter-Funktionen (Dateipfade) für legacy Code.
+ * In der Supabase-Variante gibt es keine echten Files – wir liefern
+ * nur symbolische Pfade zurück, damit Logging o.ä. nicht crasht.
+ */
 export function familyDataPath(fid: string) {
-  return abs('data', 'families', `${fid}.json`)
+  return `/supabase/families/${fid}.json`
 }
-
 export function familyUploadDir(fid: string) {
-  const dir = abs('public', 'uploads', fid)
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  return dir
+  return `/supabase/uploads/${fid}`
 }
 
-// src/lib/accounts.ts
+/** Familiennamen per ID laden (z. B. für Titelanzeige) */
 export async function getFamilyNameById(fid: string): Promise<string | null> {
-  const db = await loadAccounts()
-  const acc = Object.values(db.accounts).find((a) => a.id === fid)
-  return acc ? acc.name : null
+  const { data, error } = await supaAdmin
+    .from('families')
+    .select('name')
+    .eq('id', fid)
+    .single()
+  if (error) return null
+  return data?.name ?? null
 }
-

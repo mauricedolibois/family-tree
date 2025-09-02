@@ -1,87 +1,111 @@
 import { useState } from 'react'
-import { useRouter } from 'next/router'
-import { Button } from '@zendeskgarden/react-buttons'
-import type { GetServerSideProps } from 'next'
-import * as cookie from 'cookie'
-import { parse } from 'cookie'
-
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const parsed = parse(req.headers.cookie || '')
-  if (parsed.fid) {
-    return { redirect: { destination: '/', permanent: false } }
-  }
-  return { props: {} }
-}
 
 export default function AuthPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [name, setName] = useState('')
+  const [mode, setMode] = useState<'login' | 'register'>('login') // <- standardmäßig Login zuerst (anders herum)
+  const [familyName, setFamilyName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
-  const submit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    const url = mode === 'login' ? '/api/auth/login' : '/api/auth/register'
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, password }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-    setError(data?.error || 'Fehler bei der Anmeldung')
-    return
+
+    if (!familyName.trim() || !password) {
+      setError('Bitte Familienname und Passwort angeben.')
+      return
     }
-    // Wichtig: harter Reload, damit Cookie garantiert aktiv ist
-    window.location.href = '/'
+
+    setLoading(true)
+    try {
+      const url = mode === 'register' ? '/api/auth/register' : '/api/auth/login'
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          familyName: familyName.trim(),
+          password,
+        }),
+        // keine credentials nötig; Set-Cookie kommt vom Server und Browser speichert es
+      })
+
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j?.error || `Fehler: ${res.status}`)
+      }
+
+      // WICHTIG: harter Redirect, damit das httpOnly-Cookie garantiert aktiv ist
+      window.location.href = '/'
+    } catch (err: any) {
+      setError(err.message || 'Unbekannter Fehler')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-sm border rounded-xl p-6 shadow bg-white">
-        <h1 className="text-2xl font-semibold mb-6 text-center text-slate-700">
-          Family Service
-        </h1>
-        <div className="flex gap-2 mb-6 justify-center">
-          <Button isBasic={mode !== 'login'} onClick={() => setMode('login')}>
-            Login
-          </Button>
-          <Button
-            isBasic={mode !== 'register'}
-            onClick={() => setMode('register')}
-          >
-            Registrieren
-          </Button>
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-md">
+        <div className="bg-white shadow-md rounded-2xl overflow-hidden">
+          {/* Tabs */}
+          <div className="flex">
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className={`flex-1 py-3 text-center text-sm font-medium ${
+                mode === 'login' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Anmelden
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('register')}
+              className={`flex-1 py-3 text-center text-sm font-medium ${
+                mode === 'register' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Registrieren
+            </button>
+          </div>
+
+          <form onSubmit={onSubmit} className="p-6 space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm text-gray-700">Familienname</label>
+              <input
+                className="w-full border rounded-lg p-2 outline-none focus:ring-2 focus:ring-gray-900/20"
+                value={familyName}
+                onChange={(e) => setFamilyName(e.target.value)}
+                placeholder="z. B. Familie Müller"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-gray-700">Passwort</label>
+              <input
+                type="password"
+                className="w-full border rounded-lg p-2 outline-none focus:ring-2 focus:ring-gray-900/20"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gray-900 text-white rounded-lg py-2 hover:bg-black transition disabled:opacity-60"
+            >
+              {loading ? 'Bitte warten…' : mode === 'register' ? 'Registrieren' : 'Anmelden'}
+            </button>
+          </form>
         </div>
-        <form className="flex flex-col gap-4" onSubmit={submit}>
-          <label className="text-sm text-left">
-            Familienname
-            <input
-              className="border rounded w-full p-2 mt-1"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="z. B. Müller"
-            />
-          </label>
-          <label className="text-sm text-left">
-            Passwort
-            <input
-              type="password"
-              className="border rounded w-full p-2 mt-1"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••"
-            />
-          </label>
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
-          )}
-          <Button isPrimary type="submit">
-            {mode === 'login' ? 'Login' : 'Registrieren'}
-          </Button>
-        </form>
+
+        <p className="text-xs text-gray-500 mt-4 text-center">
+          Tipp: Du kannst jederzeit zwischen „Anmelden“ und „Registrieren“ oben wechseln.
+        </p>
       </div>
     </main>
   )

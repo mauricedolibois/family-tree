@@ -78,36 +78,52 @@ export default function MemberDetailsModal() {
     applyStored(stored)
   }
 
-  // Profil speichern (inkl. Medien)
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!member) return
-    //const stored = serializeFromRoot(root, storedSnapshot ?? undefined)
-    const stored = serializeTagged('Details-Save', root, storedSnapshot)
+ const handleSaveProfile = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!member) return
+
+  try {
+    const stored = serializeFromRoot(root, storedSnapshot ?? undefined)
     const rec = stored.members[member.name]
 
-    const keptExisting = (rec.profile?.media ?? []).filter(
-      (m) => !removedIds.has(m.id)
-    )
+    const existing = rec.profile?.media ?? []
+    const keptExisting = existing.filter((m) => !removedIds.has(m.id))
+    const deletedExisting = existing.filter((m) => removedIds.has(m.id))
 
+    // 1) Storage-Delete aufrufen (nur für bereits bestehende Medien)
+    if (deletedExisting.length) {
+      await fetch('/api/media/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: deletedExisting.map((m) => m.url) }),
+      }).catch(() => {}) // Fehler nicht hart brechen lassen
+    }
+
+    // 2) Profil mit finaler Medienliste bauen
     rec.profile = {
       ...(rec.profile ?? {}),
-      ...form,
       birthDate: form.birthDate || null,
       deathDate: form.deathDate || null,
       country: form.country || null,
       city: form.city || null,
       comments: form.comments || null,
       titleImageUrl: (pendingTitleUrl ?? form.titleImageUrl) || null,
-      media: [...keptExisting, ...pendingMedia],
+      media: [...keptExisting, ...pendingMedia], // nur behalten + neue
     }
 
+    // 3) Persist wie gehabt
     await putStored(stored)
+
+    // UI-Buffer resetten
     setPendingMedia([])
     setPendingTitleUrl(null)
     setRemovedIds(new Set())
     setMode('details')
-  }
+  } catch (err) {
+    console.error(err)
+    alert('Speichern fehlgeschlagen.')
+  } 
+}
 
   // Person löschen
   const handleDelete = async () => {

@@ -17,6 +17,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.56.1",
     "@types/react-dom": "18.2.7",
     "@zendeskgarden/react-buttons": "^8.69.5",
     "@zendeskgarden/react-dropdowns.next": "^8.69.5",
