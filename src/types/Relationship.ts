@@ -9,6 +9,7 @@ export type Relationship =
   | 'SISTER-IN-LAW'
   | 'BROTHER-IN-LAW'
   | 'COUSIN'
+  | 'PARENT'
   | 'FATHER'
   | 'MOTHER'
   | 'CHILD'
@@ -38,4 +39,4 @@ export type SearchableRelationship =
 /**
  * Type declaration for specific relationship allowed to be added
  */
-export type AllowedRelationship = Extract<Relationship, 'CHILD' | 'SPOUSE'>
+export type AllowedRelationship = Extract<Relationship, 'CHILD' | 'SPOUSE' | 'PARENT'>

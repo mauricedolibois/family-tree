@@ -1,120 +1,120 @@
 // src/storage/rebuild.ts
 import { FamilyTree } from '@/models/FamilyTree'
+import { Member } from '@/models/Member'
 import { Gender } from '@/types/Gender'
 import type { IMember } from '@/types/IMember'
 import type { StoredTree } from './schema'
 
+/** Kind kanonisch anhängen:
+ *  - gemischtgeschlechtlich → Mutter hängt an
+ *  - sonst → gewählter Parent hängt an
+ */
+function attachChildCanonically(parent: Member, child: Member) {
+  const spouse = parent.spouse
+  if (spouse && spouse.gender !== parent.gender) {
+    const mother = parent.gender === Gender.FEMALE ? parent : spouse
+    mother.addChild(child)
+  } else {
+    parent.addChild(child)
+  }
+}
+
+/** Spouses einmalig verknüpfen (alphabetische Ordnung vermeidet Doppelheirat) */
+function linkSpousesOnce(a: Member, b: Member) {
+  if (!a.spouse && !b.spouse) a.addSpouse(b) // gleichgeschlechtlich erlaubt
+}
+
 /**
- * Baue einen FamilyTree aus StoredTree-Daten.
- * - legt zuerst Root + ggf. Root-Spouse an
- * - fügt dann Ehen hinzu
- * - fügt Kinder hinzu (Mutter-Heuristik wie gehabt)
- * - WICHTIG: hängt am Ende die Profile aus StoredTree an die Member-Instanzen
+ * Robuster Wiederaufbau aus StoredTree (v2):
+ * - Single-Root ok
+ * - gleichgeschlechtliche Ehen ok
+ * - Kinder ohne Ehe ok
+ * - Profile/Medien werden nachträglich gemappt
  */
 export function buildTreeFromStored(data: StoredTree): FamilyTree {
-  // 1) Root + evtl. Root-Spouse
-  const rootStored = data.members[data.rootName]
-  const rootSpouseName = rootStored?.spouseName ?? ''
-  const ft = new FamilyTree(data.rootName, rootSpouseName)
+  const { rootName, members: store } = data
 
-  const present = new Set<string>([data.rootName])
-  if (rootSpouseName) present.add(rootSpouseName)
+  // 1) Alle Personeninstanzen erzeugen
+  const inst = new Map<string, Member>()
+  for (const rec of Object.values(store)) {
+    inst.set(rec.name, new Member(rec.name, rec.gender))
+  }
 
-  const q: string[] = [data.rootName]
-  if (rootSpouseName) q.push(rootSpouseName)
-  const processedChildren = new Set<string>()
+  // 2) Ehen verknüpfen (nur einmal)
+  for (const rec of Object.values(store)) {
+    if (!rec.spouseName) continue
+    const a = inst.get(rec.name)
+    const b = inst.get(rec.spouseName)
+    if (!a || !b) continue
+    if (rec.name < rec.spouseName) linkSpousesOnce(a, b)
+  }
 
-  // 2) Ehen + Kinder iterativ hinzufügen
-  while (q.length) {
-    const name = q.shift()!
-    const stored = data.members[name]
-    if (!stored) continue
+  // 3) Kinder anhängen (je Paar/Single genau eine Seite zuständig)
+  const attachedChildren = new Set<string>() // verhindert Doppelanhängen
+  for (const rec of Object.values(store)) {
+    if (!rec.childrenNames || rec.childrenNames.length === 0) continue
 
-    // 2a) Ehen (nur einmal)
-    const sName = stored.spouseName ?? ''
-    if (sName && !present.has(sName)) {
-      const spouseStored = data.members[sName]
-      if (spouseStored) {
-        ft.addMember(name, spouseStored.name, spouseStored.gender, 'SPOUSE')
-        present.add(sName)
-        q.push(sName)
+    const parent = inst.get(rec.name)
+    if (!parent) continue
+
+    const spouseName = rec.spouseName ?? null
+    const spouseRec = spouseName ? store[spouseName] ?? null : null
+    const spouseInst = spouseName ? inst.get(spouseName!) ?? null : null
+
+    // Entscheiden, ob DIESER parent die Kinder anhängt
+    let thisParentAdds = true
+    if (spouseRec) {
+      if (rec.gender !== spouseRec.gender) {
+        // gemischtgeschlechtlich → nur die Mutter hängt an
+        thisParentAdds = rec.gender === Gender.FEMALE
+      } else {
+        // gleichgeschlechtlich → alphabetische Stabilisierung
+        thisParentAdds = rec.name < spouseRec.name
       }
-    }
+    } // Single: bleibt true
 
-    // 2b) Kinder (nur einmal je Paar)
-    if (!processedChildren.has(name) && stored.childrenNames?.length) {
-      const spouse = sName ? data.members[sName] ?? null : null
-      const hasFemaleParent =
-        stored.gender === Gender.FEMALE ||
-        (spouse && spouse.gender === Gender.FEMALE)
+    if (!thisParentAdds) continue
 
-      // Wenn es eine Mutter im Paar gibt, nur die Mutter fügt Kinder hinzu.
-      // Sonst als Tiebreaker Alphabet (stabil).
-      let thisParentAdds = true
-      if (hasFemaleParent) {
-        thisParentAdds = stored.gender === Gender.FEMALE
-      } else if (spouse) {
-        thisParentAdds = stored.name < spouse.name
-      }
+    // Kanonischer "Parent", an den wirklich angehängt wird
+    const canonicalParent =
+      spouseRec && rec.gender !== spouseRec.gender && rec.gender !== Gender.FEMALE
+        ? (spouseInst ?? parent) // Spouse ist die Mutter
+        : parent
 
-      if (thisParentAdds) {
-        const motherName =
-          stored.gender === Gender.FEMALE
-            ? stored.name
-            : spouse?.gender === Gender.FEMALE
-            ? spouse.name
-            : stored.name
-
-        for (const childName of stored.childrenNames) {
-          const child = data.members[childName]
-          if (!child) continue
-          ft.addMember(motherName, child.name, child.gender, 'CHILD')
-          if (!present.has(child.name)) {
-            present.add(child.name)
-            q.push(child.name)
-          }
-        }
-
-        processedChildren.add(name)
-        if (spouse?.name) processedChildren.add(spouse.name)
-      }
+    for (const childName of rec.childrenNames) {
+      if (attachedChildren.has(childName)) continue
+      const childInst = inst.get(childName)
+      if (!childInst) continue
+      attachChildCanonically(canonicalParent, childInst)
+      attachedChildren.add(childName)
     }
   }
 
-  // 3) Profile an die Member-Knoten mappen
+  // 4) FamilyTree-Instanz erstellen und Root korrekt setzen
+  //    Dummy-Instanz & dann Root explizit setzen → Single-Root wird akzeptiert.
+  const ft = new FamilyTree('tmp-a', 'tmp-b')
+  const rootInst = inst.get(rootName) ?? Array.from(inst.values())[0]
+  if (rootInst) ft.root = rootInst
+
+  // 5) Profile/Medien nachträglich an Member knüpfen
   attachProfiles(ft, data)
 
   return ft
 }
 
-/** Hänge die Profile aus StoredTree an die IMember-Instanzen im FamilyTree. */
+/** Profile & Medien aus StoredTree auf IMember-Instanzen mappen */
 function attachProfiles(ft: FamilyTree, data: StoredTree) {
-  // Falls dein FamilyTree eine schnelle Suche hat, gerne verwenden:
-  const maybeFind = (ft as any).findMember as
-    | ((name: string) => IMember | null)
-    | undefined
-  if (typeof maybeFind === 'function') {
-    for (const [name, rec] of Object.entries(data.members)) {
-      const m = maybeFind.call(ft, name)
-      if (m) {
-        ;(m as IMember).profile = rec.profile ?? undefined
-      }
-    }
-    return
-  }
-
-  // Fallback: DFS über den Baum und Map nach Namen aufbauen
-  const map = new Map<string, IMember>()
+  const byName = new Map<string, IMember>()
   const visit = (node: IMember | null) => {
     if (!node) return
-    map.set(node.name, node)
-    if (node.spouse) map.set(node.spouse.name, node.spouse)
+    byName.set(node.name, node)
+    if (node.spouse) byName.set(node.spouse.name, node.spouse)
     for (const c of node.children ?? []) visit(c)
   }
   visit(ft.root as IMember)
 
   for (const [name, rec] of Object.entries(data.members)) {
-    const m = map.get(name)
+    const m = byName.get(name)
     if (m) {
       ;(m as IMember).profile = rec.profile ?? undefined
     }

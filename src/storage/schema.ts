@@ -80,6 +80,7 @@ export function serializeFromRoot(
   root: IMember,
   existing?: StoredTree | null,
 ): StoredTree {
+
   const prev = existing && existing.version === 2 ? existing : null
   const members: Record<string, StoredMember> = {}
   const seen = new Set<string>()
@@ -91,25 +92,42 @@ export function serializeFromRoot(
     seen.add(m.name)
 
     const prevProfile = prev?.members[m.name]?.profile
+
+    // Kinder und Spouse reinholen
+    const children = Array.isArray(m.children) ? m.children : []
+    const spouseName = m.spouse?.name ?? null
+
     members[m.name] = {
       name: m.name,
       gender: m.gender,
-      spouseName: m.spouse?.name ?? null,
-      childrenNames: (m.children ?? []).map((c) => c.name),
-      profile: prevProfile ?? {
-        birthDate: null,
-        deathDate: null,
-        country: null,
-        city: null,
-        comments: null,
-        titleImageUrl: null,
-        media: [],
-      },
+      spouseName,
+      childrenNames: children.map((c) => c.name),
+      // Profile zusammenführen/erhalten
+      profile: prevProfile
+        ? {
+            birthDate: prevProfile.birthDate ?? null,
+            deathDate: prevProfile.deathDate ?? null,
+            country: prevProfile.country ?? null,
+            city: prevProfile.city ?? null,
+            comments: prevProfile.comments ?? null,
+            titleImageUrl: prevProfile.titleImageUrl ?? null,
+            media: Array.isArray(prevProfile.media) ? prevProfile.media : [],
+          }
+        : {
+            birthDate: null,
+            deathDate: null,
+            country: null,
+            city: null,
+            comments: null,
+            titleImageUrl: null,
+            media: [],
+          },
     }
 
     if (m.spouse) stack.push(m.spouse)
-    if (m.children?.length) stack.push(...m.children)
+    if (children.length) stack.push(...children)
   }
 
-  return { version: 2, rootName: root.name, members }
+  const result: StoredTree = { version: 2, rootName: root.name, members }
+  return result
 }

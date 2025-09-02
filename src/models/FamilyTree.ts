@@ -1,5 +1,5 @@
 import { Member } from '@/models/Member'
-import { isMale, isFemale, getSpouse, isMemberOrSpouse, getName } from '@/utils'
+import { isMale, isFemale, getSpouse, isMemberOrSpouse } from '@/utils'
 import { Gender } from '@/types/Gender'
 import {
   AllowedRelationship,
@@ -18,37 +18,101 @@ export class FamilyTree {
     father.addSpouse(mother)
   }
 
-  public addMember(
-    sourceName: string,
-    targetName: string,
-    targetGender: Gender,
-    relationship: AllowedRelationship,
-  ): Member {
-    let source: Member | null = null
+public addMember(
+  sourceName: string,
+  targetName: string,
+  targetGender: Gender,
+  relationship: AllowedRelationship,
+): Member {
+  const source = this.find(sourceName)
+  if (!source) throw new Error('Source person not found')
 
-    // check if the source member exists
-    source = this.find(sourceName)
-    if (!source) throw new Error('Source person not found')
+  const member = new Member(targetName, targetGender)
 
-    // check if the target member already exists
-    if (this.hasMember(targetName))
-      throw new Error(`${targetName} already exists in the family tree.`)
 
-    const member = new Member(targetName, targetGender)
+  switch (relationship) {
+    case 'CHILD':
+      // Wenn du Kinder ohne Ehe *nicht* erlauben willst, lass deine alte addChild drin.
+      this.addChild(source, member)
+      break
+    case 'SPOUSE':
+      this.addSpouse(source, member)
+      break
+    case 'PARENT':
+      this.addParent(source, member) // <-- NEU
+      break
+    default:
+      throw new Error('Relationship not supported')
+  }
 
-    switch (relationship) {
-      case 'CHILD':
-        this.addChild(source, member)
-        break
-      case 'SPOUSE':
-        this.addSpouse(source, member)
-        break
-      default:
-        throw new Error('Relationship not supported')
+ 
+
+  return member
+}
+
+private addParent(child: Member, newParent: Member): void {
+  const hadParentBefore = !!this.parent(child.name)
+  const wasRootOrRootSpouse = (this.root === child) || (this.root.spouse === child)
+
+
+  if (!newParent.children.some(c => c.name === child.name)) {
+    newParent.addChild(child)
+  }
+
+  if (!hadParentBefore || wasRootOrRootSpouse) {
+    this.root = newParent
+    return
+  }
+
+  const existingParent = this.parent(child.name)
+  if (existingParent && existingParent !== newParent) {
+    if (!existingParent.spouse) {
+      existingParent.addSpouse(newParent)
+
+    } else if (existingParent.spouse !== newParent) {
+
+      throw new Error('This person already has two parents.')
+    }
+  }
+
+}
+
+
+  /** Kind an Elternteil anhängen – auch ohne Ehe; nur an EINE Seite (kanonisch) */
+  private addChild(parent: Member, child: Member): void {
+    this.attachChildCanonically(parent, child)
+  }
+
+  /**
+   * Kanonisches Anhängen eines Kindes:
+   * - Bei gemischtgeschlechtlicher Ehe: immer an die Mutter hängen (kompatibel zur bestehenden Rebuild/Render-Logik)
+   * - Bei gleichgeschlechtlicher Ehe oder Single-Parent: an den ausgewählten Elternteil hängen
+   */
+  private attachChildCanonically(parent: Member, child: Member): void {
+    const spouse = parent.spouse
+
+    if (spouse && spouse.gender !== parent.gender) {
+      // gemischtgeschlechtlich → Mutter als kanonischer Parent
+      const mother = parent.gender === Gender.FEMALE ? parent : spouse
+      mother.addChild(child)
+      return
     }
 
-    return member
+    // gleichgeschlechtlich oder Single → an den ausgewählten Parent hängen
+    parent.addChild(child)
   }
+
+  /** Ehepartner hinzufügen – gleichgeschlechtlich erlaubt */
+  private addSpouse(member: Member, spouse: Member): void {
+    if (member.isMarried()) {
+      throw new Error(
+        `${member.name} is already married to ${member.spouse?.name}.`,
+      )
+    }
+    member.addSpouse(spouse)
+  }
+
+  /* -------------------- GET-Funktionen -------------------- */
 
   public get(
     name: string,
@@ -259,7 +323,7 @@ export class FamilyTree {
   }
 
   public getMemberNames(): string[] {
-    let memberNames: string[] = []
+    const memberNames: string[] = []
 
     this.traverse((currentMember: Member) => {
       memberNames.push(currentMember.name)
@@ -284,30 +348,6 @@ export class FamilyTree {
     }
   }
 
-  private addChild(parent: Member, child: Member): void {
-    if (!parent.isMarried()) {
-      throw new Error(
-        `${parent.name} is not married. Only a married person can have a child.`,
-      )
-    }
-    parent.addChild(child)
-  }
-
-  private addSpouse(member: Member, spouse: Member): void {
-    if (member.isMarried()) {
-      throw new Error(
-        `${member.name} is already married to ${member.spouse?.name}.`,
-      )
-    }
-
-    if (member.gender === spouse.gender) {
-      throw new Error(
-        `${member.name} and ${spouse.name} both are of same gender. Only opposite sex marriage is allowed.`,
-      )
-    }
-    member.addSpouse(spouse)
-  }
-
   private parent(name: string): Member | null {
     let parent: Member | null = null
 
@@ -319,7 +359,7 @@ export class FamilyTree {
 
       if (foundChild) {
         parent = currentMember
-        return // Parent node (father) found, exit the loop
+        return // Parent node found, exit the loop
       }
     })
 
@@ -369,7 +409,7 @@ export class FamilyTree {
         siblings = currentMember.children.filter(
           (child) => child.name !== foundChild.name,
         )
-        return // Siblings poulated, exit the loop
+        return // Siblings populated, exit the loop
       }
     })
 

@@ -16,45 +16,12 @@ export const isMemberOrSpouse =
 
 export const setupShanFamilyTree = (): FamilyTree => {
   //1st generation
-  const family = new FamilyTree('king shan', 'queen anga')
+  const family = new FamilyTree('Vater', 'Mutter')
 
   // 2nd generation
-  family.addMember('queen anga', 'ish', Gender.MALE, 'CHILD')
-  family.addMember('queen anga', 'chit', Gender.MALE, 'CHILD')
-  family.addMember('queen anga', 'vich', Gender.MALE, 'CHILD')
-  family.addMember('queen anga', 'satya', Gender.FEMALE, 'CHILD')
-
-  family.addMember('chit', 'ambi', Gender.FEMALE, 'SPOUSE')
-  family.addMember('vich', 'lika', Gender.FEMALE, 'SPOUSE')
-  family.addMember('satya', 'vyan', Gender.MALE, 'SPOUSE')
-
-  // 3rd generation
-  family.addMember('ambi', 'drita', Gender.MALE, 'CHILD')
-  family.addMember('ambi', 'vrita', Gender.MALE, 'CHILD')
-
-  family.addMember('lika', 'vila', Gender.MALE, 'CHILD')
-  family.addMember('lika', 'chika', Gender.FEMALE, 'CHILD')
-
-  family.addMember('satya', 'satvy', Gender.FEMALE, 'CHILD')
-  family.addMember('satya', 'savya', Gender.MALE, 'CHILD')
-  family.addMember('satya', 'saayan', Gender.MALE, 'CHILD')
-
-  family.addMember('drita', 'jaya', Gender.FEMALE, 'SPOUSE')
-  family.addMember('vila', 'jnki', Gender.FEMALE, 'SPOUSE')
-  family.addMember('chika', 'kpila', Gender.MALE, 'SPOUSE')
-  family.addMember('satvy', 'asva', Gender.MALE, 'SPOUSE')
-  family.addMember('savya', 'krpi', Gender.FEMALE, 'SPOUSE')
-  family.addMember('saayan', 'mina', Gender.FEMALE, 'SPOUSE')
-
-  /// 4th generation
-  family.addMember('jaya', 'jata', Gender.MALE, 'CHILD')
-  family.addMember('jaya', 'driya', Gender.FEMALE, 'CHILD')
-  family.addMember('jnki', 'lavnya', Gender.FEMALE, 'CHILD')
-  family.addMember('krpi', 'kriya', Gender.MALE, 'CHILD')
-  family.addMember('mina', 'misa', Gender.MALE, 'CHILD')
-
-  family.addMember('driya', 'mnu', Gender.MALE, 'SPOUSE')
-  family.addMember('lavnya', 'gru', Gender.MALE, 'SPOUSE')
+  family.addMember('Mutter', 'Kind1', Gender.MALE, 'CHILD')
+  family.addMember('Mutter', 'Kind2', Gender.FEMALE, 'CHILD')
+  family.addMember('Mutter', 'Kind3', Gender.MALE, 'CHILD')
 
   return family
 }

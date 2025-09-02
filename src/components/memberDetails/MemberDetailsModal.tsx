@@ -5,23 +5,28 @@ import Modal from '@/components/Modal'
 import { useFamilyTree } from '@/components/FamilyTreeProvider'
 import { useSelectedMember } from '@/components/SelectedMemberProvider'
 import AddMember from '@/components/AddMember'
-import { StoredMedia } from '@/storage/schema'
-import { IMember } from '@/types/IMember'
 import {
   serializeFromRoot,
   type StoredTree,
+  type StoredMedia,
 } from '@/storage/schema'
+import { IMember } from '@/types/IMember'
 import { canDeleteStored, deleteLeafInStored, findByName } from './helpers'
 import DetailsView from './DetailsView'
 import EditView from './EditView'
+import { serializeTagged } from '@/debug/serializeTagged'
 
 export default function MemberDetailsModal() {
   const { root, applyStored, storedSnapshot } = useFamilyTree()
   const { selectedName, isDetailsOpen, closeDetails } = useSelectedMember()
 
-  const member = useMemo(() => findByName(root, selectedName), [root, selectedName])
+  const member = useMemo<IMember | null>(
+    () => findByName(root, selectedName),
+    [root, selectedName]
+  )
   const [mode, setMode] = useState<'details' | 'add' | 'edit'>('details')
 
+  // Profil-Formstate
   const [form, setForm] = useState({
     birthDate: '',
     deathDate: '',
@@ -35,6 +40,7 @@ export default function MemberDetailsModal() {
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set())
   const [uploading, setUploading] = useState(false)
 
+  // Beim Personenwechsel Formular & Puffer zurücksetzen
   useEffect(() => {
     setMode('details')
     setForm({
@@ -50,8 +56,10 @@ export default function MemberDetailsModal() {
     setRemovedIds(new Set())
   }, [member])
 
+  // Darf gelöscht werden?
   const deletable = useMemo(() => {
-    const snap = storedSnapshot ?? serializeFromRoot(root, storedSnapshot ?? undefined)
+    //const snap = storedSnapshot ?? serializeFromRoot(root, storedSnapshot ?? undefined)
+    const snap = storedSnapshot ?? serializeTagged('Details-Save/Delete', root, storedSnapshot)
     return member ? canDeleteStored(snap, member.name) : false
   }, [member, root, storedSnapshot])
 
@@ -60,6 +68,7 @@ export default function MemberDetailsModal() {
     closeDetails()
   }
 
+  // Persist + in State anwenden
   const putStored = async (stored: StoredTree) => {
     await fetch('/api/family', {
       method: 'PUT',
@@ -69,12 +78,18 @@ export default function MemberDetailsModal() {
     applyStored(stored)
   }
 
+  // Profil speichern (inkl. Medien)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!member) return
-    const stored = serializeFromRoot(root, storedSnapshot ?? undefined)
+    //const stored = serializeFromRoot(root, storedSnapshot ?? undefined)
+    const stored = serializeTagged('Details-Save', root, storedSnapshot)
     const rec = stored.members[member.name]
-    const keptExisting = (rec.profile?.media ?? []).filter((m) => !removedIds.has(m.id))
+
+    const keptExisting = (rec.profile?.media ?? []).filter(
+      (m) => !removedIds.has(m.id)
+    )
+
     rec.profile = {
       ...(rec.profile ?? {}),
       ...form,
@@ -86,6 +101,7 @@ export default function MemberDetailsModal() {
       titleImageUrl: (pendingTitleUrl ?? form.titleImageUrl) || null,
       media: [...keptExisting, ...pendingMedia],
     }
+
     await putStored(stored)
     setPendingMedia([])
     setPendingTitleUrl(null)
@@ -93,10 +109,13 @@ export default function MemberDetailsModal() {
     setMode('details')
   }
 
+  // Person löschen
   const handleDelete = async () => {
     if (!member || !deletable) return
     if (!window.confirm(`„${member.name}“ löschen?`)) return
-    const stored = serializeFromRoot(root, storedSnapshot ?? undefined)
+
+    //const stored = serializeFromRoot(root, storedSnapshot ?? undefined)
+    const stored = serializeTagged('Details-Delete', root, storedSnapshot)
     if (!deleteLeafInStored(stored, member.name)) {
       alert('Konnte Person nicht entfernen.')
       return
@@ -105,20 +124,21 @@ export default function MemberDetailsModal() {
     handleClose()
   }
 
+
   return (
     <Modal isOpen={isDetailsOpen} onClose={handleClose} title={member ? member.name : 'Details'}>
       {!member ? (
         <div>Mitglied nicht gefunden.</div>
-      ) : mode === 'add' ? (
-        <AddMember
-          member={member}
-          onSubmit={async () => {
-            const fresh = serializeFromRoot(root, storedSnapshot ?? undefined)
-            await putStored(fresh)
-            setMode('details')
-          }}
-        />
-      ) : mode === 'edit' ? (
+      ) :mode === 'add' ? (
+  <AddMember
+    member={member}
+    onSubmit={() => {
+      // WICHTIG: KEIN serializeFromRoot / putStored hier!
+      setMode('details')
+      closeDetails()
+    }}
+  />
+) :  mode === 'edit' ? (
         <EditView
           member={member}
           form={form}
