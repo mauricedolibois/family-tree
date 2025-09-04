@@ -1,5 +1,6 @@
 import type { AppProps } from 'next/app'
 import '../styles/globals.css'
+import '../styles/colors.css'
 import { Poppins } from 'next/font/google'
 import { FamilyTreeProvider } from '../components/FamilyTreeProvider'
 import { SelectedMemberProvider } from '../components/SelectedMemberProvider'

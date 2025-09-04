@@ -1,59 +1,61 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.react-transform-wrapper,
+.react-transform-component {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+  touch-action: none;
+  background: transparent;
+}
 
-/**
- * CSS for the connector lines
- * Connector lines are added using the ::before and ::after pseudo-elements
- * Used css files instead of tailwind because of the complexity of the selectors
- */
+/* Sicherstellen, dass die UL Bezug für ::before/::after ist */
+.tree,
+.tree ul {
+  position: relative;
+}
 
+.list-none { list-style-type: none; }
+
+/* Buttons global ohne Rand (wie gewünscht) */
+button {
+  border: none !important;
+  outline: none;
+}
+
+/* Connector-Linien sichtbar (nutzt deine Farbvariable) */
 .tree li::before,
 .tree li::after {
   content: '';
   position: absolute;
   top: 0;
   right: 50%;
-  border-top: 1px solid #d1d5db;
   width: 50%;
   height: 56px;
+  border-top: 2px solid var(--color-primary-50);
 }
 
-/* Add vertical connector from parent to children  */
 .tree li::after {
   right: auto;
   left: 50%;
-  border-left: 1px solid #d1d5db;
+  border-left: 2px solid var(--color-primary-50);
 }
 
-/*Remove left-right connectors from members without any siblings*/
 .tree li:only-child::after,
 .tree li:only-child::before {
   display: none;
 }
 
-/*Remove space from the top of single children*/
-.tree li:only-child {
-  padding-top: 0;
-}
+.tree li:only-child { padding-top: 0; }
 
-/*Remove left connector from first child and right connector from last child*/
 .tree li:first-child::before,
-.tree li:last-child::after {
-  border: 0 none;
-}
+.tree li:last-child::after { border: 0 none; }
 
-/*Adding back the vertical connector to the last child member*/
 .tree li:last-child::before {
-  border-right: 1px solid #d1d5db;
+  border-right: 2px solid var(--color-primary-50);
   border-radius: 0 5px 0 0;
 }
 
-.tree li:first-child::after {
-  border-radius: 5px 0 0 0;
-}
+.tree li:first-child::after { border-radius: 5px 0 0 0; }
 
-/*Add vertical connector from root parent to it's children*/
 .tree ul ul::before {
   content: '';
   position: absolute;
@@ -61,5 +63,5 @@
   left: 50%;
   width: 0;
   height: 56px;
-  border-left: 1px solid #d1d5db;
+  border-left: 2px solid var(--color-primary-50);
 }

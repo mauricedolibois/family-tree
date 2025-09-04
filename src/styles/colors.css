@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS HEX */
+:root {
+    /* Semantic palette */
+    --color-primary: hsl(228, 58%, 45%);
+    --color-primary-50: hsl(228, 58%, 51%);
+    --color-primary-100: hsl(228, 58%, 57%);
+    --color-primary-700: hsl(228, 58%, 39%);
+    --color-primary-800: hsl(228, 58%, 33%);
+
+    --color-secondary: hsl(243, 25%, 50%);
+    --color-secondary-50: hsl(243, 25%, 56%);
+    --color-secondary-100: hsl(243, 25%, 62%);
+    --color-secondary-700: hsl(243, 25%, 44%);
+    --color-secondary-800: hsl(243, 25%, 38%);
+
+    --color-accent: hsl(204, 91%, 43%);
+    --color-accent-50: hsl(204, 91%, 49%);
+    --color-accent-100: hsl(204, 91%, 55%);
+    --color-accent-700: hsl(204, 91%, 37%);
+    --color-accent-800: hsl(204, 91%, 31%);
+
+    --color-tertiary: hsl(297, 24%, 64%);
+    --color-tertiary-50: hsl(297, 24%, 70%);
+    --color-tertiary-100: hsl(297, 24%, 76%);   
+    --color-tertiary-700: hsl(297, 24%, 58%);
+    --color-tertiary-800: hsl(297, 24%, 52%);
+
+    --color-surface: hsl(305, 61%, 84%);
+    --color-surface-50: hsl(305, 61%, 90%);
+    --color-surface-100: hsl(305, 61%, 96%);
+    --color-surface-700: hsl(305, 61%, 78%);
+    --color-surface-800: hsl(305, 61%, 72%);
+}

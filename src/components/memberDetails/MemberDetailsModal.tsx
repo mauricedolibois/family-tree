@@ -142,19 +142,23 @@ export default function MemberDetailsModal() {
 
 
   return (
-    <Modal isOpen={isDetailsOpen} onClose={handleClose} title={member ? member.name : 'Details'}>
+  <Modal
+    isOpen={isDetailsOpen}
+    onClose={handleClose}
+    title={member ? member.name : 'Details'}
+  >
+    <div className="w-full h-full px-2 sm:px-4">  {/* 👈 Padding-Wrapper */}
       {!member ? (
         <div>Mitglied nicht gefunden.</div>
-      ) :mode === 'add' ? (
-  <AddMember
-    member={member}
-    onSubmit={() => {
-      // WICHTIG: KEIN serializeFromRoot / putStored hier!
-      setMode('details')
-      closeDetails()
-    }}
-  />
-) :  mode === 'edit' ? (
+      ) : mode === 'add' ? (
+        <AddMember
+          member={member}
+          onSubmit={() => {
+            setMode('details')
+            closeDetails()
+          }}
+        />
+      ) : mode === 'edit' ? (
         <EditView
           member={member}
           form={form}
@@ -179,6 +183,7 @@ export default function MemberDetailsModal() {
           onDelete={handleDelete}
         />
       )}
-    </Modal>
-  )
+    </div>
+  </Modal>
+)
 }

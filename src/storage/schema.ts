@@ -30,6 +30,7 @@ export type StoredProfile = {
   birthDate?: string | null // ISO YYYY-MM-DD
   deathDate?: string | null // ISO YYYY-MM-DD
   country?: string | null
+  job?:string | null
   city?: string | null
   comments?: string | null
   titleImageUrl?: string | null // Hauptbild-URL
@@ -65,6 +66,7 @@ export function migrateToV2(data: StoredTreeV1 | StoredTree): StoredTree {
         birthDate: null,
         deathDate: null,
         country: null,
+        job: null,
         city: null,
         comments: null,
         titleImageUrl: null,
@@ -108,6 +110,7 @@ export function serializeFromRoot(
             birthDate: prevProfile.birthDate ?? null,
             deathDate: prevProfile.deathDate ?? null,
             country: prevProfile.country ?? null,
+            job: prevProfile.job ?? null,
             city: prevProfile.city ?? null,
             comments: prevProfile.comments ?? null,
             titleImageUrl: prevProfile.titleImageUrl ?? null,
@@ -118,6 +121,7 @@ export function serializeFromRoot(
             deathDate: null,
             country: null,
             city: null,
+            job: null,
             comments: null,
             titleImageUrl: null,
             media: [],

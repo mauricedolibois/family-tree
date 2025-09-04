@@ -51,6 +51,8 @@ export default function EditView({
   const titleInputRef = useRef<HTMLInputElement>(null)
   const mediaInputRef = useRef<HTMLInputElement>(null)
 
+  const [dragOver, setDragOver] = useState(false)
+
   const openTitlePicker = (e?: React.MouseEvent) => {
     e?.preventDefault()
     e?.stopPropagation()
@@ -73,7 +75,6 @@ export default function EditView({
     e.currentTarget.value = ''
   }
 
-  const [dragOver, setDragOver] = useState(false)
   const onDrop: React.DragEventHandler<HTMLDivElement> = (ev) => {
     ev.preventDefault()
     setDragOver(false)
@@ -84,7 +85,8 @@ export default function EditView({
     ev.preventDefault()
     setDragOver(true)
   }
-  const onDragLeave: React.DragEventHandler<HTMLDivElement> = () => setDragOver(false)
+  const onDragLeave: React.DragEventHandler<HTMLDivElement> = () =>
+    setDragOver(false)
 
   const onFilesChosen = async (files: File[], setAsTitle = false) => {
     if (!files.length) return
@@ -126,14 +128,27 @@ export default function EditView({
   ]
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={onSave}>
+    <form
+      className="
+        flex flex-col gap-5
+        w-full
+        max-w-3xl        /* nicht breiter als ~768px */
+        mx-auto          /* zentriert */
+        px-2 sm:px-4     /* Padding für mobile/desktop */
+      "
+      onSubmit={onSave}
+    >
       {/* REIHE: Titelbild + Felder */}
       <div className="grid grid-cols-[auto,1fr] gap-4 items-start">
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden w-32">
+        <div className="rounded-xl border bg-white shadow-sm overflow-hidden w-28 sm:w-32">
           <div className="relative aspect-[3/4] bg-gray-100">
             {previewTitle ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewTitle} alt="Titelbild" className="w-full h-full object-cover" />
+              <img
+                src={previewTitle}
+                alt="Titelbild"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
                 Titelbild wählen
@@ -150,43 +165,53 @@ export default function EditView({
             Geburtsdatum
             <input
               type="date"
-              className="border rounded-lg p-2 w-full"
+              className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
               value={form.birthDate}
-              onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, birthDate: e.target.value }))
+              }
             />
           </label>
           <label className="text-sm">
             Todesdatum
             <input
               type="date"
-              className="border rounded-lg p-2 w-full"
+              className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
               value={form.deathDate}
-              onChange={(e) => setForm((f) => ({ ...f, deathDate: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, deathDate: e.target.value }))
+              }
             />
           </label>
           <label className="text-sm">
             Land
             <input
-              className="border rounded-lg p-2 w-full"
+              className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
               value={form.country}
-              onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, country: e.target.value }))
+              }
             />
           </label>
           <label className="text-sm">
             Wohnort
             <input
-              className="border rounded-lg p-2 w-full"
+              className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
               value={form.city}
-              onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, city: e.target.value }))
+              }
             />
           </label>
           <label className="text-sm sm:col-span-2">
             Kommentare
             <textarea
-              className="border rounded-lg p-2 w-full"
+              className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
               rows={3}
               value={form.comments}
-              onChange={(e) => setForm((f) => ({ ...f, comments: e.target.value }))}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, comments: e.target.value }))
+              }
             />
           </label>
         </div>
@@ -198,7 +223,7 @@ export default function EditView({
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         className={`rounded-xl border-2 border-dashed p-5 text-center transition ${
-          dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 bg-white'
+          dragOver ? 'border-[color:var(--color-accent-100)] bg-[color:var(--color-surface-50)]' : 'border-gray-300 bg-white'
         }`}
       >
         <p className="text-sm text-gray-600">
@@ -207,7 +232,9 @@ export default function EditView({
             auswählen
           </button>
         </p>
-        {uploading && <p className="text-xs text-gray-500 mt-2">Upload läuft…</p>}
+        {uploading && (
+          <p className="text-xs text-gray-500 mt-2">Upload läuft…</p>
+        )}
       </div>
 
       {/* Hidden Inputs */}
@@ -237,17 +264,20 @@ export default function EditView({
               unstagePending(id)
             } else {
               setRemovedIds((prev) => {
-                const arr = Array.from(prev)
-                arr.push(id)
-                return new Set(arr)
+                const next = new Set(prev)
+                next.add(id)
+                return next
               })
             }
           }}
         />
       </div>
 
+      {/* Aktionen */}
       <div className="flex gap-2 pt-1">
-        <Button isPrimary type="submit">Speichern</Button>
+        <Button isPrimary type="submit">
+          Speichern
+        </Button>
         <Button onClick={onCancel}>Abbrechen</Button>
       </div>
     </form>
