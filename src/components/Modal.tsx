@@ -1,7 +1,7 @@
 // src/components/Modal.tsx
 'use client'
 
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Poppins } from 'next/font/google'
 
@@ -17,14 +17,13 @@ type ModalProps = {
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [hasXOverflow, setHasXOverflow] = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
-    // Body-Scroll verhindern, solange Modal offen ist
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
@@ -33,9 +32,35 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     }
   }, [isOpen, onClose])
 
-  // Klicks im Dialog nicht zum Backdrop „durchfallen“ lassen
-  const stop = (e: React.MouseEvent) => e.stopPropagation()
+  useEffect(() => {
+    if (!isOpen) return
+    const dialog = dialogRef.current
+    const content = contentRef.current
+    if (!dialog || !content) return
 
+    const check = () => {
+      const dw = dialog.clientWidth
+      const cw = content.scrollWidth
+      const overflow = cw > dw + 1
+      setHasXOverflow(overflow)
+      if (overflow) {
+        // eslint-disable-next-line no-console
+        console.warn('[Modal] Horizontaler Overflow:', { dialogClientWidth: dw, contentScrollWidth: cw })
+      }
+    }
+
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(dialog)
+    ro.observe(content)
+    window.addEventListener('resize', check)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', check)
+    }
+  }, [isOpen])
+
+  const stop = (e: React.MouseEvent) => e.stopPropagation()
   if (!isOpen) return null
 
   return createPortal(
@@ -56,20 +81,20 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
       <div
         ref={dialogRef}
         onClick={stop}
-        className="
+        className={`
           relative z-10
-          w-[min(100vw-1rem,56rem)]      /* max Breite mit Rand auf Mobile */
-          max-w-[56rem]
-          max-h-[calc(100svh-1rem)]      /* überschreitet nicht die Höhe, svh = mobile safe viewport */
+          w-full max-w-[56rem] mx-2  /* volle Breite, aber hart begrenzt; seitlicher Rand auf Mobile */
+          max-h-[calc(100svh-1rem)]
           h-auto
-          flex flex-col
+          flex flex-col box-border   /* Box-Sizing fix */
           rounded-2xl
           bg-[color:var(--color-surface-100)]
           shadow-xl
           ring-1 ring-[color:var(--color-primary-50)]
           overflow-hidden
+          ${hasXOverflow ? 'outline outline-1 outline-[color:var(--color-accent-100)]' : ''}
           animate-in fade-in zoom-in-95 duration-150
-        "
+        `}
       >
         {/* Header */}
         <div
@@ -98,27 +123,29 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
           </button>
         </div>
 
-        {/* Content */}
-        <div
-          className="
-            flex-1 overflow-y-auto overscroll-contain
-            px-4 sm:px-5 py-4
-            text-[color:var(--color-primary-800)]
-          "
-        >
-          {children}
+       {/* Content */}
+<div
+  ref={contentRef}
+  className="
+    flex-1 overflow-y-auto overscroll-contain
+    px-4 sm:px-5 py-4
+    text-[color:var(--color-primary-800)]
+    overflow-x-hidden
+  "
+>
+  {/* ⬇️ SCOPED Fix: neutralisiere .w-full nur innerhalb des Modals */}
+  <div
+    className="
+      min-w-0 max-w-full break-words
+      [&_.w-full]:w-auto
+      [&_.w-full]:max-w-full
+      [&_*]:min-w-0
+      [&_img]:max-w-full [&_video]:max-w-full
+    "
+  >
+    {children}
+  </div>
         </div>
-
-        {/* Optionaler Footer (wenn du Buttons brauchst)
-        <div className="sticky bottom-0 bg-[color:var(--color-surface-50)] border-t border-[color:var(--color-primary-50)] px-4 sm:px-5 py-3 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-3 py-2 rounded-lg bg-[color:var(--color-secondary)] text-white hover:bg-[color:var(--color-secondary-700)] transition"
-          >
-            Schließen
-          </button>
-        </div>
-        */}
       </div>
     </div>,
     document.body

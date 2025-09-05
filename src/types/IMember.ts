@@ -21,10 +21,12 @@ export interface IProfile {
 }
 
 export interface IMember {
+  /** Eindeutige ID – ersetzt den Namen als Primärschlüssel */
+  id: string
   name: string
   gender: Gender
   spouse: IMember | null
   children: IMember[]
-  /** NEU: optionale Profildaten */
+  /** optionale Profildaten */
   profile?: IProfile
 }

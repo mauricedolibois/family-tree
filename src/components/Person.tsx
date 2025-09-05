@@ -15,7 +15,7 @@ export const Person = ({ member, isDescendant = true, className }: IPersonProps)
   const { openDetails } = useSelectedMember()
   if (!member) return null
 
-  const { name, gender, profile } = member
+  const { id, name, gender, profile } = member
   const titleImage = profile?.titleImageUrl ?? null
 
   return (
@@ -24,12 +24,11 @@ export const Person = ({ member, isDescendant = true, className }: IPersonProps)
         'inline-flex flex-col items-center select-none',
         'transition-transform duration-150 ease-out hover:scale-105',
         'rounded-lg border-2 border-[color:var(--color-primary-800)] p-2',
-        'bg-[color:var(--color-secondary-100)]',
         className
       )}
       data-testid="person-container"
     >
-      <div className="cursor-pointer" onClick={() => openDetails(name)} title={name}>
+      <div className="cursor-pointer" onClick={() => openDetails(id)} title={name}>
         <Avatar
           color={gender === Gender.MALE ? 'bg-male' : 'bg-female'}
           imageUrl={titleImage || undefined}
@@ -38,7 +37,7 @@ export const Person = ({ member, isDescendant = true, className }: IPersonProps)
         />
       </div>
       {/* Namen weiß */}
-      <p className="m-0 mt-1 text-xs text-white">{name}</p>
+      <p className="m-0 mt-1 text-xs text-[color:var(--color-primary-800)]">{name}</p>
     </div>
   )
 }

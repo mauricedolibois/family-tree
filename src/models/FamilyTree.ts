@@ -1,11 +1,9 @@
 import { Member } from '@/models/Member'
-import { isMale, isFemale, getSpouse, isMemberOrSpouse } from '@/utils'
 import { Gender } from '@/types/Gender'
-import {
-  AllowedRelationship,
-  SearchableRelationship,
-  Relationship,
-} from '@/types/Relationship'
+import { AllowedRelationship, Relationship, SearchableRelationship } from '@/types/Relationship'
+import { addChild, addParent, addSpouse } from './family/mutations'
+import { find, findById } from './family/traverse'
+import { getByRelationship, getRelationship as computeRelationship } from './family/queries'
 
 export class FamilyTree {
   public root: Member
@@ -13,578 +11,102 @@ export class FamilyTree {
   constructor(fatherName: string, motherName: string) {
     const father: Member = new Member(fatherName, Gender.MALE)
     const mother: Member = new Member(motherName, Gender.FEMALE)
-
     this.root = father
     father.addSpouse(mother)
   }
 
-public addMember(
-  sourceName: string,
-  targetName: string,
-  targetGender: Gender,
-  relationship: AllowedRelationship,
-): Member {
-  const source = this.find(sourceName)
-  if (!source) throw new Error('Source person not found')
+  /** Empfohlen: ID-basiert (eindeutig) */
+  public addMemberById(
+    sourceId: string,
+    targetName: string,
+    targetGender: Gender,
+    relationship: AllowedRelationship,
+  ): Member {
+    const source = this.findById(sourceId)
+    if (!source) throw new Error('Source person not found')
 
-  const member = new Member(targetName, targetGender)
+    const member = new Member(targetName, targetGender)
 
-
-  switch (relationship) {
-    case 'CHILD':
-      // Wenn du Kinder ohne Ehe *nicht* erlauben willst, lass deine alte addChild drin.
-      this.addChild(source, member)
-      break
-    case 'SPOUSE':
-      this.addSpouse(source, member)
-      break
-    case 'PARENT':
-      this.addParent(source, member) // <-- NEU
-      break
-    default:
-      throw new Error('Relationship not supported')
-  }
-
- 
-
-  return member
-}
-
-private addParent(child: Member, newParent: Member): void {
-  const hadParentBefore = !!this.parent(child.name)
-  const wasRootOrRootSpouse = (this.root === child) || (this.root.spouse === child)
-
-
-  if (!newParent.children.some(c => c.name === child.name)) {
-    newParent.addChild(child)
-  }
-
-  if (!hadParentBefore || wasRootOrRootSpouse) {
-    this.root = newParent
-    return
-  }
-
-  const existingParent = this.parent(child.name)
-  if (existingParent && existingParent !== newParent) {
-    if (!existingParent.spouse) {
-      existingParent.addSpouse(newParent)
-
-    } else if (existingParent.spouse !== newParent) {
-
-      throw new Error('This person already has two parents.')
-    }
-  }
-
-}
-
-
-  /** Kind an Elternteil anhängen – auch ohne Ehe; nur an EINE Seite (kanonisch) */
-  private addChild(parent: Member, child: Member): void {
-    this.attachChildCanonically(parent, child)
-  }
-
-  /**
-   * Kanonisches Anhängen eines Kindes:
-   * - Bei gemischtgeschlechtlicher Ehe: immer an die Mutter hängen (kompatibel zur bestehenden Rebuild/Render-Logik)
-   * - Bei gleichgeschlechtlicher Ehe oder Single-Parent: an den ausgewählten Elternteil hängen
-   */
-  private attachChildCanonically(parent: Member, child: Member): void {
-    const spouse = parent.spouse
-
-    if (spouse && spouse.gender !== parent.gender) {
-      // gemischtgeschlechtlich → Mutter als kanonischer Parent
-      const mother = parent.gender === Gender.FEMALE ? parent : spouse
-      mother.addChild(child)
-      return
-    }
-
-    // gleichgeschlechtlich oder Single → an den ausgewählten Parent hängen
-    parent.addChild(child)
-  }
-
-  /** Ehepartner hinzufügen – gleichgeschlechtlich erlaubt */
-  private addSpouse(member: Member, spouse: Member): void {
-    if (member.isMarried()) {
-      throw new Error(
-        `${member.name} is already married to ${member.spouse?.name}.`,
-      )
-    }
-    member.addSpouse(spouse)
-  }
-
-  /* -------------------- GET-Funktionen -------------------- */
-
-  public get(
-    name: string,
-    relationship: Relationship,
-  ): Member[] | Member | null {
     switch (relationship) {
-      case 'PATERNAL-UNCLE':
-        return this.paternalUncles(name)
-      case 'MATERNAL-UNCLE':
-        return this.maternalUncles(name)
-      case 'PATERNAL-AUNT':
-        return this.paternalAunts(name)
-      case 'MATERNAL-AUNT':
-        return this.maternalAunts(name)
-      case 'SISTER-IN-LAW':
-        return this.sisterInLaws(name)
-      case 'BROTHER-IN-LAW':
-        return this.brotherInLaws(name)
-      case 'COUSIN':
-        return this.cousins(name)
-      case 'FATHER':
-        return this.father(name)
-      case 'MOTHER':
-        return this.mother(name)
       case 'CHILD':
-        return this.children(name)
-      case 'SON':
-        return this.sons(name)
-      case 'DAUGHTER':
-        return this.daughters(name)
-      case 'BROTHER':
-        return this.brothers(name)
-      case 'SISTER':
-        return this.sisters(name)
-      case 'GRAND-CHILD':
-        return this.grandChildren(name)
-      case 'GRAND-DAUGHTER':
-        return this.grandDaughters(name)
-      case 'GRAND-SON':
-        return this.grandSons(name)
-      case 'SIBLING':
-        return this.siblings(name)
+        addChild(this.root, source, member)
+        break
       case 'SPOUSE':
-        return this.spouse(name)
+        addSpouse(source, member)
+        break
+      case 'PARENT':
+        addParent(this, source, member)
+        break
       default:
         throw new Error('Relationship not supported')
     }
+
+    return member
   }
 
-  public getRelationship(
-    memberName: string,
-    relativeName: string,
-  ): SearchableRelationship | null {
-    let member: [Member | null, number | null] = [null, null]
-    let relative: [Member | null, number | null] = [null, null]
+  /* -------------------- Queries (öffentliche API) -------------------- */
 
-    this.traverse((currentMember: Member, depth: number) => {
-      if (member[0] && relative[0]) {
-        return // Both member and relative are already found, exit the callback
-      }
+  public get(name: string, relationship: Relationship): Member[] | Member | null {
+    return getByRelationship(this.root, name, relationship)
+  }
 
-      if (currentMember.name === memberName) {
-        member = [currentMember, depth]
-      }
-      if (currentMember.spouse?.name === memberName) {
-        member = [currentMember.spouse, depth]
-      }
-      if (currentMember.name === relativeName) {
-        relative = [currentMember, depth]
-      }
-      if (currentMember.spouse?.name === relativeName) {
-        relative = [currentMember.spouse, depth]
-      }
-    })
-
-    if (!member) {
-      throw new Error(`${memberName} does not exists in the family tree.`)
-    }
-    if (!relative) {
-      throw new Error(`${relativeName} does not exists in the family tree.`)
-    }
-
-    const [memberNode, memberDepth] = member as [Member, number]
-    const [relativeNode, relativeDepth] = relative as [Member, number]
-
-    if (memberDepth - relativeDepth >= 2) {
-      return 'ANCESTOR'
-    } else if (relativeDepth - memberDepth >= 2) {
-      return 'DESCENDANT'
-    } else if (memberDepth === relativeDepth) {
-      if (memberNode.name === relativeNode.spouse?.name) {
-        return 'SPOUSE'
-      }
-
-      //SIBLINGS
-      const siblings = this.siblings(memberName)
-      if (siblings.some((sibling) => sibling.name === relativeName)) {
-        return isMale(relativeNode) ? 'BROTHER' : 'SISTER'
-      }
-
-      // IN-LAWS: spouse's siblings & sibling's spouse
-      const spouceSiblings = this.siblings(memberNode.spouse?.name as string)
-      const inLaws = [...siblings.map(getSpouse), ...spouceSiblings]
-      const isRelativeInLaw = inLaws.some(
-        (inLaw) => inLaw?.name === relativeName,
-      )
-
-      if (isRelativeInLaw) {
-        const inLaw = inLaws.find(
-          (inLaw) => inLaw?.name === relativeName,
-        ) as Member
-        return isMale(inLaw) ? 'BROTHER-IN-LAW' : 'SISTER-IN-LAW'
-      }
-
-      const cousins = this.cousins(memberName)
-      if (cousins.some((cousin) => cousin.name === relativeName)) {
-        return 'COUSIN'
-      }
-
-      const cousinInLaws = cousins.map(getSpouse)
-      if (
-        cousinInLaws.some((cousinInLaw) => cousinInLaw?.name === relativeName)
-      ) {
-        return 'COUSIN-IN-LAW'
-      }
-    } else if (memberDepth - relativeDepth === 1) {
-      //PARENT
-      const parent = this.parent(memberName)
-      if (parent) {
-        if (parent?.name === relativeName) {
-          return isMale(relativeNode) ? 'FATHER' : 'MOTHER'
-        }
-
-        if (parent.spouse?.name === relativeName) {
-          return isMale(relativeNode) ? 'FATHER' : 'MOTHER'
-        }
-      }
-
-      // PARENT-IN-LAW
-      const parentInLaw = this.parent(memberNode.spouse?.name as string)
-      if (parentInLaw) {
-        if (parentInLaw?.name === relativeName) {
-          return isMale(relativeNode) ? 'FATHER-IN-LAW' : 'MOTHER-IN-LAW'
-        }
-        if (parentInLaw.spouse?.name === relativeName) {
-          return isMale(relativeNode) ? 'FATHER-IN-LAW' : 'MOTHER-IN-LAW'
-        }
-      }
-
-      // UNCLE | AUNT
-      const paternalUncles = this.paternalUncles(memberName)
-      if (paternalUncles.some((uncle) => uncle.name === relativeName)) {
-        return 'PATERNAL-UNCLE'
-      }
-
-      const maternalUncles = this.maternalUncles(memberName)
-      if (maternalUncles.some((uncle) => uncle.name === relativeName)) {
-        return 'MATERNAL-UNCLE'
-      }
-      const paternalAunts = this.paternalAunts(memberName)
-      if (paternalAunts.some((aunt) => aunt.name === relativeName)) {
-        return 'PATERNAL-AUNT'
-      }
-
-      const maternalAunts = this.maternalAunts(memberName)
-      if (maternalAunts.some((aunt) => aunt.name === relativeName)) {
-        return 'MATERNAL-AUNT'
-      }
-    } else if (relativeDepth - memberDepth === 1) {
-      // CHILDREN
-      const children = this.children(memberName)
-      if (children.some((child) => child.name === relativeName)) {
-        return isMale(relativeNode) ? 'SON' : 'DAUGHTER'
-      }
-      if (
-        children.some(
-          (child) => child.spouse && child.spouse.name === relativeName,
-        )
-      ) {
-        return isMale(relativeNode) ? 'SON-IN-LAW' : 'DAUGHTER-IN-LAW'
-      }
-    }
-
-    return null
+  public getRelationship(memberName: string, relativeName: string): SearchableRelationship | null {
+    return computeRelationship(this.root, memberName, relativeName)
   }
 
   public mothersWithMostGirlChildren(): Member[] {
-    let mothersWithMostGirls: Member[] = []
-    let maxGirlsCount = 0
+    let mothers: Member[] = []
+    let maxGirls = 0
 
-    this.traverse((currentMember: Member) => {
-      const spouse = isFemale(currentMember)
-        ? currentMember
-        : currentMember.spouse
+    const all: Member[] = []
+    const queue: Member[] = [this.root]
+    const seen = new Set<Member>()
+    while (queue.length) {
+      const m = queue.shift()!
+      if (seen.has(m)) continue
+      seen.add(m)
+      all.push(m)
+      for (const c of m.children) queue.push(c)
+      if (m.spouse) queue.push(m.spouse)
+    }
 
+    for (const node of all) {
+      const spouse = node.gender === Gender.FEMALE ? node : node.spouse
       if (spouse) {
-        const girlsCount = this.daughters(spouse?.name).length
-        if (girlsCount > maxGirlsCount) {
-          maxGirlsCount = girlsCount
-          mothersWithMostGirls = [spouse] // Reset the array with the new mother
-        } else if (girlsCount > 0 && girlsCount === maxGirlsCount) {
-          mothersWithMostGirls.push(spouse) // Add the new mother to the array
+        const girlsCount = (this.get(spouse.name, 'DAUGHTER') as Member[]).length
+        if (girlsCount > maxGirls) {
+          maxGirls = girlsCount
+          mothers = [spouse]
+        } else if (girlsCount > 0 && girlsCount === maxGirls) {
+          mothers.push(spouse)
         }
       }
-    })
-
-    return mothersWithMostGirls
+    }
+    return mothers
   }
 
   public getMemberNames(): string[] {
-    const memberNames: string[] = []
-
-    this.traverse((currentMember: Member) => {
-      memberNames.push(currentMember.name)
-      currentMember?.spouse && memberNames.push(currentMember?.spouse.name)
-    })
-
-    return memberNames
-  }
-
-  private traverse(cb: (currentMember: Member, depth: number) => void): void {
-    // Queue to store the members to be visited
-    const queue: [Member, number][] = [[this.root, 0]]
-
-    while (queue.length > 0) {
-      const [currentMember, depth] = queue.shift()! // Remove the first member from the queue
-
-      cb(currentMember, depth)
-
-      for (const child of currentMember.children) {
-        queue.push([child, depth + 1])
-      }
+    const names: string[] = []
+    const queue: Member[] = [this.root]
+    const seen = new Set<Member>()
+    while (queue.length) {
+      const n = queue.shift()!
+      if (seen.has(n)) continue
+      seen.add(n)
+      names.push(n.name)
+      if (n.spouse) names.push(n.spouse.name)
+      for (const c of n.children) queue.push(c)
     }
+    return names
   }
 
-  private parent(name: string): Member | null {
-    let parent: Member | null = null
-
-    // Traverse the tree and find the parent of the given member node
-    this.traverse((currentMember: Member) => {
-      const foundChild = currentMember.children.find(
-        (child) => child.name === name,
-      )
-
-      if (foundChild) {
-        parent = currentMember
-        return // Parent node found, exit the loop
-      }
-    })
-
-    return parent
-  }
-
-  private father(name: string): Member | null {
-    const parent = this.parent(name)
-    if (!parent) return null
-    return parent.gender === Gender.MALE ? parent : parent.spouse
-  }
-
-  private mother(name: string): Member | null {
-    const parent = this.parent(name)
-    if (!parent) return null
-    return parent.gender === Gender.FEMALE ? parent : parent.spouse
-  }
-
-  private children(name: string): Member[] {
-    let children: Member[] = []
-    this.traverse((currentMember: Member) => {
-      if (isMemberOrSpouse(name)(currentMember)) {
-        children = currentMember.children
-      }
-    })
-    return children
-  }
-
-  private sons(name: string): Member[] {
-    return this.children(name).filter(isMale)
-  }
-
-  private daughters(name: string): Member[] {
-    return this.children(name).filter(isFemale)
-  }
-
-  private siblings(name: string): Member[] {
-    let siblings: Member[] = []
-
-    // Traverse the tree and find the parent of the given member node
-    this.traverse((currentMember: Member) => {
-      const foundChild = currentMember.children.find(
-        (child) => child.name === name,
-      )
-
-      if (foundChild) {
-        siblings = currentMember.children.filter(
-          (child) => child.name !== foundChild.name,
-        )
-        return // Siblings populated, exit the loop
-      }
-    })
-
-    return siblings
-  }
-
-  private brothers(name: string): Member[] {
-    return this.siblings(name).filter(isMale)
-  }
-
-  private sisters(name: string): Member[] {
-    return this.siblings(name).filter(isFemale)
-  }
-
-  private grandChildren(name: string): Member[] {
-    const grandChildren: Member[] = []
-    this.traverse((currentMember: Member) => {
-      if (isMemberOrSpouse(name)(currentMember)) {
-        for (const child of currentMember.children) {
-          grandChildren.push(...child.children)
-        }
-      }
-    })
-    return grandChildren
-  }
-
-  private grandDaughters(name: string): Member[] {
-    return this.grandChildren(name).filter(isFemale)
-  }
-
-  private grandSons(name: string): Member[] {
-    return this.grandChildren(name).filter(isMale)
-  }
-
-  private cousins(name: string): Member[] {
-    const cousins: Member[] = []
-    const parent = this.parent(name)
-    if (parent) {
-      // Find the siblings of the parents
-      const parentSiblings = [
-        ...this.siblings(parent.name),
-        ...(parent.spouse?.name ? this.siblings(parent.spouse.name) : []),
-      ]
-
-      for (const sibling of parentSiblings) {
-        cousins.push(...sibling.children)
-      }
-    }
-    return cousins
-  }
-
-  private paternalUncles(name: string): Member[] {
-    const father = this.father(name)
-    if (!father) return []
-
-    const fatherSiblings = this.siblings(father.name)
-
-    return fatherSiblings.reduce(
-      (paternalUncles: Member[], sibling: Member) => {
-        const uncle = isMale(sibling) ? sibling : sibling.spouse
-        uncle && paternalUncles.push(uncle)
-        return paternalUncles
-      },
-      [],
-    )
-  }
-
-  private maternalUncles(name: string): Member[] {
-    const mother = this.mother(name)
-    if (!mother) return []
-
-    const motherSiblings = this.siblings(mother.name)
-
-    return motherSiblings.reduce(
-      (maternalUncles: Member[], sibling: Member) => {
-        const uncle = isMale(sibling) ? sibling : sibling.spouse
-        uncle && maternalUncles.push(uncle)
-
-        return maternalUncles
-      },
-      [],
-    )
-  }
-
-  private paternalAunts(name: string): Member[] {
-    const father = this.father(name)
-    if (!father) return []
-
-    const fatherSiblings = this.siblings(father.name)
-
-    return fatherSiblings.reduce((paternalAunts: Member[], sibling: Member) => {
-      const aunt = isFemale(sibling) ? sibling : sibling.spouse
-      aunt && paternalAunts.push(aunt)
-      return paternalAunts
-    }, [])
-  }
-
-  private maternalAunts(name: string): Member[] {
-    const mother = this.mother(name)
-    if (!mother) return []
-
-    const motherSiblings = this.siblings(mother.name)
-    return motherSiblings.reduce((maternalAunts: Member[], sibling: Member) => {
-      const aunts = isFemale(sibling) ? sibling : sibling.spouse
-      aunts && maternalAunts.push(aunts)
-
-      return maternalAunts
-    }, [])
-  }
-
-  private sisterInLaws(name: string): Member[] {
-    const sisterInLaws: Member[] = []
-
-    // get spouse's sisters
-    const spouse = this.spouse(name)
-    spouse && sisterInLaws.push(...this.sisters(spouse.name))
-
-    // get wives of borthers
-    const brothers = this.brothers(name)
-    brothers && sisterInLaws.push(...(brothers.map(getSpouse) as Member[]))
-
-    return sisterInLaws
-  }
-
-  private brotherInLaws(name: string): Member[] {
-    const brotherInLaws: Member[] = []
-
-    // get spouse's brothers
-    const spouse = this.spouse(name)
-    spouse && brotherInLaws.push(...this.brothers(spouse.name))
-
-    // get husbands of sisters
-    const sisters = this.sisters(name)
-    sisters && brotherInLaws.push(...(sisters.map(getSpouse) as Member[]))
-
-    return brotherInLaws
-  }
-
-  private spouse(name: string): Member | null {
-    let spouse: Member | null = null
-
-    this.traverse((currentMember: Member) => {
-      if (currentMember.name === name) {
-        spouse = currentMember?.spouse
-        return
-      }
-
-      if (currentMember?.spouse && currentMember?.spouse.name === name) {
-        spouse = currentMember
-        return
-      }
-    })
-
-    return spouse
-  }
-
-  private hasMember(name: string): boolean {
-    let hasFoundMember = false
-    this.traverse((currentMember: Member) => {
-      if (isMemberOrSpouse(name)(currentMember)) {
-        hasFoundMember = true
-        return
-      }
-    })
-    return hasFoundMember
-  }
+  /* -------------------- Interne Helfer -------------------- */
 
   private find(name: string): Member | null {
-    let foundMember: Member | null = null
-    this.traverse((currentMember: Member) => {
-      if (isMemberOrSpouse(name)(currentMember)) {
-        foundMember = currentMember
-        return
-      }
-    })
-    return foundMember
+    return find(this.root, name)
+  }
+
+  public findById(id: string): Member | null {
+    return findById(this.root, id)
   }
 }

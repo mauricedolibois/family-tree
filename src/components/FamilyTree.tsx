@@ -25,7 +25,7 @@ const SubFamilyTree = ({ rootMember, level = 0 }: SubFamilyTreeProps) => {
         inline-block
         relative z-10
         rounded-xl
-        bg-[color:var(--color-secondary-100)]
+        bg-white
         border-solid border-2 border-[color:var(--color-primary-800)]
         shadow-md p-3
       "

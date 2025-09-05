@@ -1,67 +1,77 @@
 // src/components/member-details/helpers.ts
-import { IMember } from '@/types/IMember'
-import {
-  type MediaKind,
-  type StoredMedia,
-  type StoredMember,
-  type StoredTree,
+import type { IMember } from '@/types/IMember'
+import type {
+  MediaKind,
+  StoredMedia,
+  StoredMemberV3,
+  StoredTree,
 } from '@/storage/schema'
 
-/** Tiefensuche nach Member (inkl. Spouse) */
-export function findByName(root: IMember | null, name: string | null): IMember | null {
-  if (!root || !name) return null
-  if (root.name === name) return root
-  if (root.spouse?.name === name) return root.spouse
+/* -------------------------------------------------------
+ * Tree-Suche (Runtime-Struktur) – ID-basiert
+ * ----------------------------------------------------- */
+
+/** Tiefensuche nach Member (inkl. Spouse) – ID-basiert */
+export function findById(root: IMember | null, id: string | null): IMember | null {
+  if (!root || !id) return null
+  if (root.id === id) return root
+  if (root.spouse?.id === id) return root.spouse
   for (const c of root.children ?? []) {
-    const hit = findByName(c, name)
+    const hit = findById(c, id)
     if (hit) return hit
   }
   return null
 }
 
-export function findParentName(stored: StoredTree, childName: string): string | null {
+/* -------------------------------------------------------
+ * StoredTree (Persistenz) – ausschließlich ID-basiert
+ * ----------------------------------------------------- */
+
+/** Parent-ID zu einem Kind finden (direkt, nicht „Großeltern“) */
+export function findParentId(stored: StoredTree, childId: string): string | null {
   for (const m of Object.values(stored.members)) {
-    if (m.childrenNames?.includes(childName)) return m.name
+    if (m.childrenIds?.includes(childId)) return m.id
   }
   return null
 }
 
-function coupleHasChildrenStored(stored: StoredTree, m: StoredMember): boolean {
-  if ((m.childrenNames?.length ?? 0) > 0) return true
-  if (m.spouseName) {
-    const spouse = stored.members[m.spouseName]
-    if (spouse && (spouse.childrenNames?.length ?? 0) > 0) return true
-  }
-  return false
-}
-
-export function canDeleteStored(stored: StoredTree, targetName: string): boolean {
-  if (targetName === stored.rootName) return false
-  const t = stored.members[targetName]
+/** Nur eigene Kinder zählen (Ehepartner-Kinder ignorieren) */
+export function canDeleteStoredById(stored: StoredTree, targetId: string): boolean {
+  if (targetId === stored.rootId) return false
+  const t = stored.members[targetId]
   if (!t) return false
-  if ((t.childrenNames?.length ?? 0) > 0) return false
-  if (t.spouseName && coupleHasChildrenStored(stored, t)) return false
+  if ((t.childrenIds?.length ?? 0) > 0) return false
   return true
 }
 
-export function deleteLeafInStored(stored: StoredTree, targetName: string): boolean {
-  const t = stored.members[targetName]
+/** Blatt (ID) löschen: Ehe lösen, aus Elternliste entfernen, Member löschen */
+export function deleteLeafInStored(stored: StoredTree, targetId: string): boolean {
+  const t = stored.members[targetId]
   if (!t) return false
-  if (t.spouseName) {
-    const spouse = stored.members[t.spouseName]
-    if (spouse && spouse.spouseName === t.name) spouse.spouseName = null
-    t.spouseName = null
+
+  // Ehe lösen (bidirektional)
+  if (t.spouseId) {
+    const spouse = stored.members[t.spouseId]
+    if (spouse && spouse.spouseId === t.id) spouse.spouseId = null
+    t.spouseId = null
   }
-  const parentName = findParentName(stored, targetName)
-  if (parentName) {
-    const p = stored.members[parentName]
-    if (p && p.childrenNames) {
-      p.childrenNames = p.childrenNames.filter((n) => n !== targetName)
+
+  // Aus Eltern-Kind-Liste entfernen
+  const parentId = findParentId(stored, targetId)
+  if (parentId) {
+    const p = stored.members[parentId]
+    if (p && p.childrenIds) {
+      p.childrenIds = p.childrenIds.filter((id) => id !== targetId)
     }
   }
-  delete stored.members[targetName]
+
+  delete stored.members[targetId]
   return true
 }
+
+/* -------------------------------------------------------
+ * Media-Helfer
+ * ----------------------------------------------------- */
 
 export const inferKind = (file: File): MediaKind => {
   if (file.type.startsWith('image/')) return 'image'

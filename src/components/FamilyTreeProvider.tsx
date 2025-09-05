@@ -12,9 +12,8 @@ import React, {
 import { FamilyTree } from '@/models/FamilyTree'
 import { IMember } from '@/types/IMember'
 import { buildTreeFromStored } from '@/storage/rebuild'
-import { StoredTree, serializeFromRoot } from '@/storage/schema'
+import { StoredTree as StoredTree, serializeFromRoot } from '@/storage/schema'
 import { setupShanFamilyTree } from '@/utils'
-import { serializeTagged } from '@/debug/serializeTagged'
 
 interface Ctx {
   root: IMember
@@ -83,10 +82,9 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
         setStoredSnapshot(data)
         setIsLoaded(true)
       } catch {
-        // Dev-Fallback (optional)
+        // Dev-Fallback (ID-basiert, v3)
         const seed = setupShanFamilyTree()
-        //const snap = serializeFromRoot(seed.root)
-        const snap = serializeTagged('UI-Init-Error', seed.root)
+        const snap = serializeFromRoot(seed.root) // StoredTreeV3 erzeugen
         const ft = buildTreeFromStored(snap)
         setFamilyTree(ft)
         setStoredSnapshot(snap)
@@ -100,46 +98,44 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  /* -------- Persist bei Änderungen -------- */
   /* -------- Persist bei Änderungen (Race-safe) -------- */
-useEffect(() => {
-  if (!familyTree || error === 'UNAUTHORIZED') return
+  useEffect(() => {
+    if (!familyTree || error === 'UNAUTHORIZED') return
 
-  // Snapshot der aktuellen Mutation
-  const myEpoch = mutateEpochRef.current
-  // eindeutige Persist-ID für dieses Schedule
-  const myPersistId = ++persistIdRef.current
+    // Snapshot der aktuellen Mutation
+    const myEpoch = mutateEpochRef.current
+    // eindeutige Persist-ID für dieses Schedule
+    const myPersistId = ++persistIdRef.current
 
-  const t = setTimeout(() => {
-    // Wenn seitdem eine NEUERE Mutation passierte: abbrechen
-    if (myEpoch !== mutateEpochRef.current) return
-    // Wenn dies nicht mehr der jüngste Persist-Job ist: abbrechen
-    if (myPersistId !== persistIdRef.current) return
+    const t = setTimeout(() => {
+      // Wenn seitdem eine NEUERE Mutation passierte: abbrechen
+      if (myEpoch !== mutateEpochRef.current) return
+      // Wenn dies nicht mehr der jüngste Persist-Job ist: abbrechen
+      if (myPersistId !== persistIdRef.current) return
 
-    // WICHTIG: payload JETZT erst berechnen (aktueller Tree!)
-    const payload = serializeFromRoot(
-      familyTree.root,
-      storedSnapshot ?? undefined
-    )
-  
+      // WICHTIG: payload JETZT erst berechnen (aktueller Tree!)
+      const payload = serializeFromRoot(
+        familyTree.root,
+        storedSnapshot ?? undefined
+      )
 
-    fetch('/api/family', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    }).catch(() => {})
+      fetch('/api/family', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).catch(() => {})
 
-    setStoredSnapshot(payload)
-  }, 100)
+      setStoredSnapshot(payload)
+    }, 100)
 
-  return () => clearTimeout(t)
-}, [familyTree, error])
+    return () => clearTimeout(t)
+  }, [familyTree, error, storedSnapshot])
 
   const value = useMemo(
     () => ({
       familyTree: familyTree!,
       setFamilyTree,
-      root: familyTree?.root as IMember,
+      root: (familyTree?.root as IMember),
       memberNames: familyTree?.getMemberNames?.(),
       isLoaded,
       error,

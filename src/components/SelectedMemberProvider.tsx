@@ -1,31 +1,28 @@
+// src/components/SelectedMemberProvider.tsx
 'use client'
 
 import { createContext, useContext, useState, type ReactNode } from 'react'
 
 type SelectedCtx = {
-  selectedName: string | null
-  openDetails: (name: string) => void
+  selectedId: string | null
+  openDetails: (id: string) => void
   closeDetails: () => void
   isDetailsOpen: boolean
 }
 
 const SelectedMemberContext = createContext({} as SelectedCtx)
 
-export const SelectedMemberProvider = ({
-  children,
-}: {
-  children: ReactNode
-}) => {
-  const [selectedName, setSelectedName] = useState<string | null>(null)
-  const isDetailsOpen = !!selectedName
+export const SelectedMemberProvider = ({ children }: { children: ReactNode }) => {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const isDetailsOpen = !!selectedId
 
   return (
     <SelectedMemberContext.Provider
       value={{
-        selectedName,
+        selectedId,
         isDetailsOpen,
-        openDetails: (name) => setSelectedName(name),
-        closeDetails: () => setSelectedName(null),
+        openDetails: (id) => setSelectedId(id),
+        closeDetails: () => setSelectedId(null),
       }}
     >
       {children}
