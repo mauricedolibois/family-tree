@@ -15,6 +15,7 @@ export interface IProfile {
   deathDate?: string | null
   country?: string | null
   city?: string | null
+  job?: string | null
   comments?: string | null
   titleImageUrl?: string | null
   media?: IMedia[]
@@ -26,6 +27,7 @@ export interface IMember {
   name: string
   gender: Gender
   spouse: IMember | null
+  parents: IMember[]
   children: IMember[]
   /** optionale Profildaten */
   profile?: IProfile

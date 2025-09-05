@@ -29,6 +29,7 @@ export type StoredMemberV3 = {
   name: string
   gender: Gender
   spouseId?: string | null
+  parentIds?: string[] 
   childrenIds: string[]
   profile?: StoredProfile
 }
@@ -62,6 +63,7 @@ export function serializeFromRoot(root: IMember, existing?: StoredTree | null): 
       gender: m.gender,
       spouseId,
       childrenIds: children.map((c) => c.id),
+      parentIds: m.parents?.map((p) => p.id) ?? [],    // 👈 neu
       profile: prevProfile
         ? {
             birthDate: prevProfile.birthDate ?? null,

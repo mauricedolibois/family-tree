@@ -34,6 +34,7 @@ export default function MemberDetailsModal() {
     deathDate: '',
     country: '',
     city: '',
+    job: '',
     comments: '',
     titleImageUrl: '',
   })
@@ -50,6 +51,7 @@ export default function MemberDetailsModal() {
       deathDate: member?.profile?.deathDate ?? '',
       country: member?.profile?.country ?? '',
       city: member?.profile?.city ?? '',
+      job: member?.profile?.job ?? '',
       comments: member?.profile?.comments ?? '',
       titleImageUrl: member?.profile?.titleImageUrl ?? '',
     })
@@ -114,6 +116,7 @@ export default function MemberDetailsModal() {
         deathDate: form.deathDate || null,
         country: form.country || null,
         city: form.city || null,
+        job: form.job || null,
         comments: form.comments || null,
         titleImageUrl: (pendingTitleUrl ?? form.titleImageUrl) || null,
         media: [...keptExisting, ...pendingMedia],
