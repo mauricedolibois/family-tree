@@ -2,21 +2,27 @@ import { Member } from '@/models/Member'
 import { Gender } from '@/types/Gender'
 import { isMemberOrSpouse } from '@/utils'
 
-/** BFS Traversal ab Root */
+/* ================================================================
+ * DOWNWARD BFS (children + spouse) — preserves depths
+ * Use this for relationship logic that depends on generations.
+ * ================================================================ */
+
+/** BFS Traversal from root (children-down, spouse same depth) */
 export function traverse(root: Member, cb: (current: Member, depth: number) => void): void {
   const queue: [Member, number][] = [[root, 0]]
-  const seen = new Set<Member>()
+  const seen = new Set<string>() // track by id
   while (queue.length > 0) {
     const [node, depth] = queue.shift()!
-    if (seen.has(node)) continue
-    seen.add(node)
+    if (seen.has(node.id)) continue
+    seen.add(node.id)
     cb(node, depth)
+
     for (const child of node.children) queue.push([child, depth + 1])
-    if (node.spouse) queue.push([node.spouse, depth]) // Ehepartner auf gleicher Ebene
+    if (node.spouse) queue.push([node.spouse, depth]) // spouse at same level
   }
 }
 
-/* -------------------- Name-basierte Helfer (bestehen bleiben) -------------------- */
+/* -------------------- Name-based helpers (downward) -------------------- */
 
 export function find(root: Member, name: string): Member | null {
   let found: Member | null = null
@@ -75,7 +81,7 @@ export function spouseOf(root: Member, name: string): Member | null {
   return sp
 }
 
-/* -------------------- NEU: ID-basierte Helfer -------------------- */
+/* -------------------- ID-based helpers (downward) -------------------- */
 
 export function findById(root: Member, id: string): Member | null {
   let found: Member | null = null
@@ -132,4 +138,48 @@ export function spouseOfId(root: Member, id: string): Member | null {
     else if (m.spouse?.id === id) sp = m
   })
   return sp
+}
+
+/* ================================================================
+ * CONNECTED WALK (parents + children + spouse) — full component
+ * Use this for UI lookups, graph building, search, lists, etc.
+ * ================================================================ */
+
+export function walkConnected(start: Member, cb: (m: Member) => void): void {
+  const stack: Member[] = [start]
+  const seen = new Set<string>()
+  while (stack.length) {
+    const m = stack.pop()!
+    if (seen.has(m.id)) continue
+    seen.add(m.id)
+    cb(m)
+
+    if (m.spouse) stack.push(m.spouse)
+    for (const c of m.children) stack.push(c)
+    for (const p of m.parents) stack.push(p)
+  }
+}
+
+/** Find by id anywhere in the connected component (up/down/through spouse) */
+export function findByIdConnected(root: Member, id: string): Member | null {
+  let found: Member | null = null
+  walkConnected(root, (m) => {
+    if (found) return
+    if (m.id === id) { found = m; return }
+    if (m.spouse?.id === id) { found = m.spouse; return }
+  })
+  return found
+}
+
+/** Collect all connected members as an array (no duplicates) */
+export function collectConnected(root: Member): Member[] {
+  const out: Member[] = []
+  const seen = new Set<string>()
+  walkConnected(root, (m) => {
+    if (!seen.has(m.id)) {
+      seen.add(m.id)
+      out.push(m)
+    }
+  })
+  return out
 }

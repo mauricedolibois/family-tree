@@ -2,7 +2,7 @@ import { Member } from '@/models/Member'
 import { Gender } from '@/types/Gender'
 import { AllowedRelationship, Relationship, SearchableRelationship } from '@/types/Relationship'
 import { addChild, addParent, addSpouse } from './family/mutations'
-import { find, findById } from './family/traverse'
+import { find, findByIdConnected, walkConnected } from './family/traverse'
 import { getByRelationship, getRelationship as computeRelationship } from './family/queries'
 
 export class FamilyTree {
@@ -15,12 +15,13 @@ export class FamilyTree {
     father.addSpouse(mother)
   }
 
-  /** Empfohlen: ID-basiert (eindeutig) */
+  /** Preferred: ID-based (supports duplicate names) */
   public addMemberById(
     sourceId: string,
     targetName: string,
     targetGender: Gender,
     relationship: AllowedRelationship,
+    options?: { marryExistingParent?: boolean }   // ⬅️ NEW
   ): Member {
     const source = this.findById(sourceId)
     if (!source) throw new Error('Source person not found')
@@ -35,7 +36,8 @@ export class FamilyTree {
         addSpouse(source, member)
         break
       case 'PARENT':
-        addParent(this, source, member)
+        // Forward options so mutations can decide whether to marry existing parent, etc.
+        addParent(this, source, member, options)
         break
       default:
         throw new Error('Relationship not supported')
@@ -44,7 +46,7 @@ export class FamilyTree {
     return member
   }
 
-  /* -------------------- Queries (öffentliche API) -------------------- */
+  /* -------------------- Queries (public API) -------------------- */
 
   public get(name: string, relationship: Relationship): Member[] | Member | null {
     return getByRelationship(this.root, name, relationship)
@@ -86,27 +88,25 @@ export class FamilyTree {
   }
 
   public getMemberNames(): string[] {
-    const names: string[] = []
-    const queue: Member[] = [this.root]
-    const seen = new Set<Member>()
-    while (queue.length) {
-      const n = queue.shift()!
-      if (seen.has(n)) continue
-      seen.add(n)
-      names.push(n.name)
-      if (n.spouse) names.push(n.spouse.name)
-      for (const c of n.children) queue.push(c)
-    }
-    return names
-  }
+  const names: string[] = []
+  const seen = new Set<string>()
+  // use walkConnected instead of BFS children-only
+  walkConnected(this.root, (n) => {
+    if (seen.has(n.id)) return
+    seen.add(n.id)
+    names.push(n.name)
+    if (n.spouse) names.push(n.spouse.name)
+  })
+  return names
+}
 
-  /* -------------------- Interne Helfer -------------------- */
+  /* -------------------- Helpers -------------------- */
 
   private find(name: string): Member | null {
     return find(this.root, name)
   }
 
   public findById(id: string): Member | null {
-    return findById(this.root, id)
+    return findByIdConnected(this.root, id)
   }
 }

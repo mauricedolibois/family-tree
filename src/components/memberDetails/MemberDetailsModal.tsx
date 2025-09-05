@@ -12,19 +12,20 @@ import {
   type StoredMedia,
 } from '@/storage/schema'
 import type { IMember } from '@/types/IMember'
-import { canDeleteStoredById, deleteLeafInStored, findById } from './helpers'
+import { canDeleteStoredById, deleteLeafInStored } from './helpers' // ⬅️ findById entfernt
 import DetailsView from './DetailsView'
 import EditView from './EditView'
 
 export default function MemberDetailsModal() {
-  const { root, applyStored, storedSnapshot } = useFamilyTree()
+  // getById neu aus dem Provider ziehen
+  const { root, applyStored, storedSnapshot, getById } = useFamilyTree()
   const { selectedId, isDetailsOpen, closeDetails } = useSelectedMember()
 
-  // Person immer per ID suchen
+  // Person immer per ID über den globalen Index suchen
   const member = useMemo<IMember | null>(() => {
-    if (!root || !selectedId) return null
-    return findById(root, selectedId)
-  }, [root, selectedId])
+    if (!selectedId) return null
+    return getById(selectedId)
+  }, [getById, selectedId])
 
   const [mode, setMode] = useState<'details' | 'add' | 'edit'>('details')
 
@@ -63,7 +64,6 @@ export default function MemberDetailsModal() {
   // Löschbarkeit prüfen → v3, ID-basiert
   const deletable = useMemo(() => {
     if (!member) return false
-    // Falls kein Snapshot vorliegt, erstellen wir einen aus dem aktuellen Graphen
     const snap: StoredTree =
       storedSnapshot?.version === 3
         ? storedSnapshot

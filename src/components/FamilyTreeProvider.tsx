@@ -1,3 +1,4 @@
+// src/components/FamilyTreeProvider.tsx
 'use client'
 
 import React, {
@@ -11,8 +12,8 @@ import React, {
 } from 'react'
 import { FamilyTree } from '@/models/FamilyTree'
 import { IMember } from '@/types/IMember'
-import { buildTreeFromStored } from '@/storage/rebuild'
-import { StoredTree as StoredTree, serializeFromRoot } from '@/storage/schema'
+import { buildTreeFromStored } from '@/storage/rebuild' // <-- deine neue Version
+import { StoredTree, serializeFromRoot } from '@/storage/schema'
 import { setupShanFamilyTree } from '@/utils'
 
 interface Ctx {
@@ -25,6 +26,10 @@ interface Ctx {
   isAuthed: boolean
   applyStored: (stored: StoredTree) => void
   storedSnapshot?: StoredTree
+  /** Neu: Vollständiger ID-Index */
+  membersById: Record<string, IMember>
+  /** Neu: Komfort-Lookup */
+  getById: (id: string) => IMember | null
 }
 
 const FamilyTreeContext = createContext({} as Ctx)
@@ -32,24 +37,29 @@ const FamilyTreeContext = createContext({} as Ctx)
 export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   const [familyTree, setFamilyTree] = useState<FamilyTree | null>(null)
   const [storedSnapshot, setStoredSnapshot] = useState<StoredTree | null>(null)
+  const [membersById, setMembersById] = useState<Record<string, IMember>>({})
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isAuthed, setIsAuthed] = useState<boolean>(true)
 
-  // Guards gegen späte Responses & Persist-Races
-  const loadReqIdRef = useRef(0)      // zählt GET-Requests
-  const mutateEpochRef = useRef(0)    // zählt lokale applyStored()-Mutationen
-  const persistIdRef = useRef(0)      // zählt laufende Persist-Operationen
+  const loadReqIdRef = useRef(0)
+  const mutateEpochRef = useRef(0)
+  const persistIdRef = useRef(0)
 
-  /** WICHTIG: lokal anwenden + Mutations-Epoch erhöhen */
   const applyStored = (stored: StoredTree) => {
     mutateEpochRef.current += 1
-    const ft = buildTreeFromStored(stored)
+    const rebuilt = buildTreeFromStored(stored)
+    // Falls du noch eine FamilyTree-Klasse brauchst:
+    const ft = new FamilyTree(rebuilt.root.name, rebuilt.root.gender) as any
+    // Achtung: Wenn du eine echte FamilyTree-Implementierung hast,
+    // übergib dort rebuilt.root (nicht neu erzeugen). Hier nur Platzhalter:
+    ft.root = rebuilt.root
+
     setFamilyTree(ft)
+    setMembersById(rebuilt.byId)
     setStoredSnapshot(stored)
   }
 
-  /* -------- Initial GET (StrictMode-sicher) -------- */
   useEffect(() => {
     const myReqId = ++loadReqIdRef.current
     let aborted = false
@@ -58,7 +68,6 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
       try {
         const res = await fetch('/api/family', { cache: 'no-store' })
         if (aborted) return
-        // Nur neueste Antwort akzeptieren
         if (myReqId !== loadReqIdRef.current) return
 
         if (res.status === 401) {
@@ -70,50 +79,48 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
         if (!res.ok) throw new Error(`GET /api/family ${res.status}`)
 
         const data = (await res.json()) as StoredTree
-        // Wenn seit dem GET-Start bereits eine lokale Mutation stattfand, GET ignorieren
         if (mutateEpochRef.current > 0) {
-          setIsLoaded(true) // trotzdem aus Loading raus
+          setIsLoaded(true)
           return
         }
 
-        const ft = buildTreeFromStored(data)
+        const rebuilt = buildTreeFromStored(data)
+        const ft = new FamilyTree(rebuilt.root.name, rebuilt.root.gender) as any
+        ft.root = rebuilt.root
+
         setIsAuthed(true)
         setFamilyTree(ft)
+        setMembersById(rebuilt.byId)
         setStoredSnapshot(data)
         setIsLoaded(true)
       } catch {
-        // Dev-Fallback (ID-basiert, v3)
         const seed = setupShanFamilyTree()
-        const snap = serializeFromRoot(seed.root) // StoredTreeV3 erzeugen
-        const ft = buildTreeFromStored(snap)
+        const snap = serializeFromRoot(seed.root)
+        const rebuilt = buildTreeFromStored(snap)
+        const ft = new FamilyTree(rebuilt.root.name, rebuilt.root.gender) as any
+        ft.root = rebuilt.root
+
         setFamilyTree(ft)
+        setMembersById(rebuilt.byId)
         setStoredSnapshot(snap)
         setIsLoaded(true)
         setError('Server storage unavailable; using in-memory seed.')
       }
     })()
 
-    return () => {
-      aborted = true
-    }
+    return () => { aborted = true }
   }, [])
 
-  /* -------- Persist bei Änderungen (Race-safe) -------- */
   useEffect(() => {
     if (!familyTree || error === 'UNAUTHORIZED') return
 
-    // Snapshot der aktuellen Mutation
     const myEpoch = mutateEpochRef.current
-    // eindeutige Persist-ID für dieses Schedule
     const myPersistId = ++persistIdRef.current
 
     const t = setTimeout(() => {
-      // Wenn seitdem eine NEUERE Mutation passierte: abbrechen
       if (myEpoch !== mutateEpochRef.current) return
-      // Wenn dies nicht mehr der jüngste Persist-Job ist: abbrechen
       if (myPersistId !== persistIdRef.current) return
 
-      // WICHTIG: payload JETZT erst berechnen (aktueller Tree!)
       const payload = serializeFromRoot(
         familyTree.root,
         storedSnapshot ?? undefined
@@ -131,6 +138,8 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     return () => clearTimeout(t)
   }, [familyTree, error, storedSnapshot])
 
+  const getById = (id: string) => membersById[id] ?? null
+
   const value = useMemo(
     () => ({
       familyTree: familyTree!,
@@ -142,8 +151,10 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
       isAuthed,
       applyStored,
       storedSnapshot: storedSnapshot ?? undefined,
+      membersById,
+      getById,
     }),
-    [familyTree, isLoaded, error, isAuthed, storedSnapshot]
+    [familyTree, isLoaded, error, isAuthed, storedSnapshot, membersById]
   )
 
   if (!isLoaded) return <div>Loading…</div>

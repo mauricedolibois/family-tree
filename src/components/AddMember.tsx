@@ -39,14 +39,19 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
     if (!name) return
 
     try {
-      // Neu: Hinzufügen per sourceId (Mitglied-ID), NICHT mehr über den Namen
-      // Signatur erwartet (sourceId, targetName, targetGender, relationship)
-      familyTree.addMemberById(member.id, name, gender, relationship)
+      // ID-basierte Anlage
+      if (relationship === 'PARENT') {
+        // ⬇️ NEU: Options-Objekt weitergeben (wird im FamilyTree/mutations verarbeitet)
+        familyTree.addMemberById(member.id, name, gender, relationship, {
+          marryExistingParent: marriedToExistingParent,
+          // adopt: isAdopted, // <- später nutzbar, wenn Adoption modelliert ist
+        })
+      } else {
+        familyTree.addMemberById(member.id, name, gender, relationship)
+      }
 
-      // Persistieren
       const stored = serializeFromRoot(familyTree.root, storedSnapshot)
       applyStored(stored)
-
       onSubmit()
     } catch (err: any) {
       console.error('[UI] addMember ERROR', err)
@@ -129,7 +134,7 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
             </select>
           </label>
 
-          {/* Name – gleiche Breite wie die Dropdowns */}
+          {/* Name */}
           <label className="text-sm flex flex-col gap-1 min-w-0">
             Name des neuen Mitglieds
             <input
@@ -147,7 +152,7 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
           </label>
         </div>
 
-        {/* Bedingte Toggles (Vorarbeit für spätere Optionen) */}
+        {/* Bedingte Toggles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {relationship === 'CHILD' && (
             <label className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 bg-[color:var(--color-surface-50)] border border-[color:var(--color-primary-50)]">

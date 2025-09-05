@@ -62,8 +62,8 @@ export function serializeFromRoot(root: IMember, existing?: StoredTree | null): 
       name: m.name,
       gender: m.gender,
       spouseId,
+      parentIds: m.parents.map((p) => p.id),      // 👈 add this
       childrenIds: children.map((c) => c.id),
-      parentIds: m.parents?.map((p) => p.id) ?? [],    // 👈 neu
       profile: prevProfile
         ? {
             birthDate: prevProfile.birthDate ?? null,
@@ -87,8 +87,10 @@ export function serializeFromRoot(root: IMember, existing?: StoredTree | null): 
           },
     }
 
+    // reach everything connected:
     if (m.spouse) stack.push(m.spouse)
     if (children.length) stack.push(...children)
+    if (Array.isArray(m.parents) && m.parents.length) stack.push(...m.parents) // 👈 NEW
   }
 
   return { version: 3, rootId: root.id, members }
