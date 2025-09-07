@@ -1,15 +1,17 @@
-import fs from 'fs'
-import path from 'path'
 import { randomUUID } from 'crypto'
 import type { NextApiRequest } from 'next'
 
-const LOG_DIR = path.resolve(process.cwd(), 'logs')
-const LOG_FILE = path.join(LOG_DIR, 'api.log')
+// --- disabled logging: no fs or log file creation ---
+// import fs from 'fs'
+// import path from 'path'
 
-function ensureLogFile() {
-  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-  if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, '', 'utf8')
-}
+// const LOG_DIR = path.resolve(process.cwd(), 'logs')
+// const LOG_FILE = path.join(LOG_DIR, 'api.log')
+
+// function ensureLogFile() {
+//   if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
+//   if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, '', 'utf8')
+// }
 
 function ipFromReq(req: NextApiRequest): string | undefined {
   const xf = (req.headers['x-forwarded-for'] || '') as string
@@ -54,10 +56,10 @@ type ErrorEvent = LogEventBase & {
   meta?: ApiLogMeta
 }
 
-async function append(line: object) {
-  ensureLogFile()
-  await fs.promises.appendFile(LOG_FILE, JSON.stringify(line) + '\n', 'utf8')
-}
+// async function append(line: object) {
+//   ensureLogFile()
+//   await fs.promises.appendFile(LOG_FILE, JSON.stringify(line) + '\n', 'utf8')
+// }
 
 export function startApiLog(req: NextApiRequest, route: string) {
   const id = randomUUID()
@@ -70,41 +72,43 @@ export function startApiLog(req: NextApiRequest, route: string) {
     ua: uaFromReq(req),
   }
 
-  // write request-start
-  void append({
-    ...base,
-    ts: new Date(startedAt).toISOString(),
-    type: 'request',
-    bodyKeys: req.body ? Object.keys(req.body as any) : [],
-    query: req.query || {},
-  } as RequestEvent)
+  // --- disabled logging ---
+  // void append({
+  //   ...base,
+  //   ts: new Date(startedAt).toISOString(),
+  //   type: 'request',
+  //   bodyKeys: req.body ? Object.keys(req.body as any) : [],
+  //   query: req.query || {},
+  // } as RequestEvent)
 
   return {
     id,
     startedAt,
     async end(status: number, meta?: ApiLogMeta) {
       const now = Date.now()
-      await append({
-        ...base,
-        ts: new Date(now).toISOString(),
-        type: 'response',
-        status,
-        duration_ms: now - startedAt,
-        meta,
-      } as ResponseEvent)
+      // --- disabled logging ---
+      // await append({
+      //   ...base,
+      //   ts: new Date(now).toISOString(),
+      //   type: 'response',
+      //   status,
+      //   duration_ms: now - startedAt,
+      //   meta,
+      // } as ResponseEvent)
     },
     async error(err: unknown, status?: number, meta?: ApiLogMeta) {
       const now = Date.now()
       const message = err instanceof Error ? err.message : String(err)
-      await append({
-        ...base,
-        ts: new Date(now).toISOString(),
-        type: 'error',
-        status,
-        duration_ms: now - startedAt,
-        error: message,
-        meta,
-      } as ErrorEvent)
+      // --- disabled logging ---
+      // await append({
+      //   ...base,
+      //   ts: new Date(now).toISOString(),
+      //   type: 'error',
+      //   status,
+      //   duration_ms: now - startedAt,
+      //   error: message,
+      //   meta,
+      // } as ErrorEvent)
     },
   }
 }
