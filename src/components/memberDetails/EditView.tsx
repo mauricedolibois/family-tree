@@ -130,8 +130,8 @@ export default function EditView(props: Props) {
     // 1) parent führt die eigentliche Mutation aus
     await onSave(e)
     // 2) genau ein persist-Call
-    markDirty()
-    await saveNow()
+    // markDirty()
+    // await saveNow()
   }
 
   return (

@@ -1,17 +1,29 @@
 import { randomUUID } from 'crypto'
 import type { NextApiRequest } from 'next'
 
-// --- disabled logging: no fs or log file creation ---
-// import fs from 'fs'
-// import path from 'path'
+// Toggle für Logging
+const ENABLE_LOGGING = false
 
-// const LOG_DIR = path.resolve(process.cwd(), 'logs')
-// const LOG_FILE = path.join(LOG_DIR, 'api.log')
+// Logging-spezifische Helfer nur definieren, wenn aktiv
+let append: ((line: object) => Promise<void>) | undefined
 
-// function ensureLogFile() {
-//   if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-//   if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, '', 'utf8')
-// }
+if (ENABLE_LOGGING) {
+  const fs = require('fs') as typeof import('fs')
+  const path = require('path') as typeof import('path')
+
+  const LOG_DIR = path.resolve(process.cwd(), 'logs')
+  const LOG_FILE = path.join(LOG_DIR, 'api.log')
+
+  function ensureLogFile() {
+    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
+    if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, '', 'utf8')
+  }
+
+  append = async (line: object) => {
+    ensureLogFile()
+    await fs.promises.appendFile(LOG_FILE, JSON.stringify(line) + '\n', 'utf8')
+  }
+}
 
 function ipFromReq(req: NextApiRequest): string | undefined {
   const xf = (req.headers['x-forwarded-for'] || '') as string
@@ -56,11 +68,6 @@ type ErrorEvent = LogEventBase & {
   meta?: ApiLogMeta
 }
 
-// async function append(line: object) {
-//   ensureLogFile()
-//   await fs.promises.appendFile(LOG_FILE, JSON.stringify(line) + '\n', 'utf8')
-// }
-
 export function startApiLog(req: NextApiRequest, route: string) {
   const id = randomUUID()
   const startedAt = Date.now()
@@ -72,43 +79,46 @@ export function startApiLog(req: NextApiRequest, route: string) {
     ua: uaFromReq(req),
   }
 
-  // --- disabled logging ---
-  // void append({
-  //   ...base,
-  //   ts: new Date(startedAt).toISOString(),
-  //   type: 'request',
-  //   bodyKeys: req.body ? Object.keys(req.body as any) : [],
-  //   query: req.query || {},
-  // } as RequestEvent)
+  if (ENABLE_LOGGING && append) {
+    void append({
+      ...base,
+      ts: new Date(startedAt).toISOString(),
+      type: 'request',
+      bodyKeys: req.body ? Object.keys(req.body as any) : [],
+      query: req.query || {},
+    } as RequestEvent)
+  }
 
   return {
     id,
     startedAt,
     async end(status: number, meta?: ApiLogMeta) {
-      const now = Date.now()
-      // --- disabled logging ---
-      // await append({
-      //   ...base,
-      //   ts: new Date(now).toISOString(),
-      //   type: 'response',
-      //   status,
-      //   duration_ms: now - startedAt,
-      //   meta,
-      // } as ResponseEvent)
+      if (ENABLE_LOGGING && append) {
+        const now = Date.now()
+        await append({
+          ...base,
+          ts: new Date(now).toISOString(),
+          type: 'response',
+          status,
+          duration_ms: now - startedAt,
+          meta,
+        } as ResponseEvent)
+      }
     },
     async error(err: unknown, status?: number, meta?: ApiLogMeta) {
-      const now = Date.now()
-      const message = err instanceof Error ? err.message : String(err)
-      // --- disabled logging ---
-      // await append({
-      //   ...base,
-      //   ts: new Date(now).toISOString(),
-      //   type: 'error',
-      //   status,
-      //   duration_ms: now - startedAt,
-      //   error: message,
-      //   meta,
-      // } as ErrorEvent)
+      if (ENABLE_LOGGING && append) {
+        const now = Date.now()
+        const message = err instanceof Error ? err.message : String(err)
+        await append({
+          ...base,
+          ts: new Date(now).toISOString(),
+          type: 'error',
+          status,
+          duration_ms: now - startedAt,
+          error: message,
+          meta,
+        } as ErrorEvent)
+      }
     },
   }
 }
