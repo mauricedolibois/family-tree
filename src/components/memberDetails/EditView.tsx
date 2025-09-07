@@ -1,4 +1,3 @@
-// src/components/memberDetails/EditView.tsx
 'use client'
 
 import React, { useRef, useState } from 'react'
@@ -8,13 +7,14 @@ import EditableMediaGallery from './EditableMediaGallery'
 import { ChipButton } from './ChipButtons'
 import { inferKind, newId } from './helpers'
 import { StoredMedia } from '@/storage/schema'
+import { useFamilyTree } from '@/components/FamilyTreeProvider'
 
 type FormState = {
   birthDate: string
   deathDate: string
   country: string
   city: string
-  job: string        // 👈 neu
+  job: string
   comments: string
   titleImageUrl: string
 }
@@ -31,25 +31,23 @@ type Props = {
   setPendingTitleUrl: React.Dispatch<React.SetStateAction<string | null>>
   uploading: boolean
   setUploading: React.Dispatch<React.SetStateAction<boolean>>
+  /** führt die eigentliche Mutation am Tree aus (z. B. Profilfelder setzen) */
   onSave: (e: React.FormEvent) => Promise<void>
   onCancel: () => void
 }
 
-export default function EditView({
-  member,
-  form,
-  setForm,
-  pendingMedia,
-  setPendingMedia,
-  removedIds,
-  setRemovedIds,
-  pendingTitleUrl,
-  setPendingTitleUrl,
-  uploading,
-  setUploading,
-  onSave,
-  onCancel,
-}: Props) {
+export default function EditView(props: Props) {
+  const {
+    member, form, setForm,
+    pendingMedia, setPendingMedia,
+    removedIds, setRemovedIds,
+    pendingTitleUrl, setPendingTitleUrl,
+    uploading, setUploading,
+    onSave, onCancel,
+  } = props
+
+  const { markDirty, saveNow } = useFamilyTree()
+
   const titleInputRef = useRef<HTMLInputElement>(null)
   const mediaInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -128,6 +126,14 @@ export default function EditView({
     ...pendingMedia,
   ]
 
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (e) => {
+    // 1) parent führt die eigentliche Mutation aus
+    await onSave(e)
+    // 2) genau ein persist-Call
+    markDirty()
+    await saveNow()
+  }
+
   return (
     <form
       className="
@@ -135,7 +141,7 @@ export default function EditView({
         w-full max-w-3xl mx-auto
         px-2 sm:px-4
       "
-      onSubmit={onSave}
+      onSubmit={handleSubmit}
     >
       {/* Sektion: Titelbild + Basisdaten */}
       <section
@@ -311,3 +317,4 @@ export default function EditView({
     </form>
   )
 }
+

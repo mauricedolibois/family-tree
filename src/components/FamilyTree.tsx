@@ -1,7 +1,7 @@
+// src/components/FamilyGraph.tsx
 'use client'
 
-import React, { useMemo, useRef, useState } from 'react'
-import type { ReactElement } from 'react'
+import React, { useMemo, useRef, useState, type ReactElement } from 'react'
 import { Person } from '@/components/Person'
 import { useFamilyTree } from './FamilyTreeProvider'
 import { buildFlatMemberMap, computeLayoutFiltered } from '@/utils/familyLayout'
@@ -18,7 +18,7 @@ import GraphOptions, { MemberOption } from '@/components/GraphOptions'
 import { Gender } from '@/types/Gender'
 
 export default function FamilyGraph() {
-  const { root } = useFamilyTree()
+  const { root, layoutNonce } = useFamilyTree()
   const apiRef = useRef<ReactZoomPanPinchRef | null>(null)
 
   // UI-State
@@ -27,8 +27,11 @@ export default function FamilyGraph() {
   const [bloodlineMemberId, setBloodlineMemberId] = useState<string>('') // '' = alle
   const [includeSpouses, setIncludeSpouses] = useState<boolean>(false)
 
-  // Basisdaten (voll)
-  const baseMap = useMemo(() => buildFlatMemberMap(root), [root])
+  // NEU: Verwandtschafts-Tiefe (0..3) steuert Geschwister/Cousins/Großcousins
+  const [kinDepth, setKinDepth] = useState<0 | 1 | 2 | 3>(0)
+
+  // Basisdaten (voll) — bei layoutNonce neu aufbauen
+  const baseMap = useMemo(() => buildFlatMemberMap(root), [root, layoutNonce])
 
   // Optionen für Member-Dropdown (mit Avatar-Infos)
   const memberOptions: MemberOption[] = useMemo(() => {
@@ -38,7 +41,6 @@ export default function FamilyGraph() {
       gender: (m.raw as any)?.gender ?? m.gender ?? Gender.MALE,
       titleImageUrl: (m.raw as any)?.profile?.titleImageUrl ?? null,
     }))
-    // eindeutige + sortiert
     const seen = new Set<string>()
     const uniq = list.filter(x => {
       if (seen.has(x.id)) return false
@@ -48,13 +50,16 @@ export default function FamilyGraph() {
     return uniq.sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
     )
-  }, [baseMap])
+  }, [baseMap, layoutNonce])
 
   // Layout auf Basis gefilterter Map
   const { nodes, edges, width, height } = useMemo(() => {
     const focus = bloodlineMemberId || undefined
-    return computeLayoutFiltered(baseMap, focus, { includeSpouses })
-  }, [baseMap, bloodlineMemberId, includeSpouses])
+    return computeLayoutFiltered(baseMap, focus, {
+      includeSpouses,
+      kinDepth,
+    })
+  }, [baseMap, bloodlineMemberId, includeSpouses, kinDepth, layoutNonce])
 
   // Paare (im aktuellen Layout)
   const couplePairs = useMemo(() => {
@@ -73,7 +78,7 @@ export default function FamilyGraph() {
       pairs.push([a, b, key])
     }
     return pairs
-  }, [nodes])
+  }, [nodes, layoutNonce])
 
   const isInCouple = (m?: MemberLite | null) =>
     !!(m?.spouseId && nodes.some(x => x.kind === 'person' && x.id === m.spouseId))
@@ -85,6 +90,7 @@ export default function FamilyGraph() {
       role="tree"
     >
       <TransformWrapper
+        key={layoutNonce}
         initialScale={INITIAL_SCALE}
         minScale={0.3}
         maxScale={2.5}
@@ -113,7 +119,7 @@ export default function FamilyGraph() {
                   {(() => {
                     const drawn = new Set<string>()
                     const items: ReactElement[] = []
-                    for (let i=0;i<nodes.length;i++) {
+                    for (let i = 0; i < nodes.length; i++) {
                       const n = nodes[i]
                       if (n.kind !== 'person') continue
                       const m = n.data as MemberLite
@@ -140,8 +146,8 @@ export default function FamilyGraph() {
 
                   {/* Eltern/Kind-Kanten */}
                   {edges.map(e => {
-                    const from = nodes.find(n=>n.id===e.from)!
-                    const to = nodes.find(n=>n.id===e.to)!
+                    const from = nodes.find(n => n.id === e.from)!
+                    const to = nodes.find(n => n.id === e.to)!
                     const d = edgePath(from, to, {
                       fromSide: e.fromSide,
                       toSide: e.toSide,
@@ -161,7 +167,7 @@ export default function FamilyGraph() {
                   })}
                 </svg>
 
-                {/* Paar-Container */}
+                {/* Paar-Container: transparent, ohne Schatten */}
                 {couplePairs.map(([a, b, key]) => {
                   const padding = 12
                   const minX = Math.min(a.x, b.x) - padding
@@ -173,9 +179,9 @@ export default function FamilyGraph() {
                     <div
                       key={`couple-${key}`}
                       className="
-                        absolute rounded-2xl bg-white
+                        absolute rounded-2xl bg-transparent
                         border-2 border-solid border-[color:var(--color-primary-800)]
-                        shadow-md pointer-events-none
+                        shadow-none pointer-events-none
                       "
                       style={{ left: minX, top, width: coupleW, height: coupleH, zIndex: 1 }}
                       aria-hidden
@@ -227,7 +233,7 @@ export default function FamilyGraph() {
               </div>
             </TransformComponent>
 
-            {/* Options Panel (neue Komponente) */}
+            {/* Options Panel */}
             <GraphOptions
               open={panelOpen}
               onRequestToggle={() => setPanelOpen(v => !v)}
@@ -239,6 +245,9 @@ export default function FamilyGraph() {
               bloodlineMemberId={bloodlineMemberId}
               onChangeBloodlineMember={setBloodlineMemberId}
               members={memberOptions}
+              // NEU:
+              kinDepth={kinDepth}
+              onChangeKinDepth={setKinDepth}
             />
 
             {/* Zoom controls */}

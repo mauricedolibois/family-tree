@@ -12,7 +12,7 @@ import {
   type StoredMedia,
 } from '@/storage/schema'
 import type { IMember } from '@/types/IMember'
-import { canDeleteStoredById, deleteLeafInStored } from './helpers' // ⬅️ findById entfernt
+import { canDeleteStoredById, deleteMemberSafeInStored } from './helpers'
 import DetailsView from './DetailsView'
 import EditView from './EditView'
 
@@ -61,15 +61,26 @@ export default function MemberDetailsModal() {
     setRemovedIds(new Set())
   }, [member])
 
-  // Löschbarkeit prüfen → v3, ID-basiert
+  // Einheitliche Lösch-Policy (oben/Root erlauben, Kinder an Spouse hängen, Spouse als neue Root bevorzugen)
+  const deletePolicy = useMemo(
+    () => ({
+      allowTopDeletion: true,
+      allowRootDeletion: true,
+      orphanStrategy: 'relinkToSpouse' as const,
+      preferNewRoot: 'spouse' as const,
+    }),
+    []
+  )
+
+  // Löschbarkeit prüfen → v3, ID-basiert, mit neuer Policy
   const deletable = useMemo(() => {
     if (!member) return false
     const snap: StoredTree =
       storedSnapshot?.version === 3
         ? storedSnapshot
         : serializeFromRoot(root, storedSnapshot ?? null)
-    return canDeleteStoredById(snap, member.id)
-  }, [member, root, storedSnapshot])
+    return canDeleteStoredById(snap, member.id, deletePolicy)
+  }, [member, root, storedSnapshot, deletePolicy])
 
   const handleClose = () => {
     setMode('details')
@@ -135,16 +146,19 @@ export default function MemberDetailsModal() {
     }
   }
 
-  // Person löschen → ID-basiert
+  // Person löschen → ID-basiert (mit sicherer Top-/Root-Deletion)
   const handleDelete = async () => {
     if (!member || !deletable) return
     if (!window.confirm(`„${member.name}“ löschen?`)) return
 
     const stored = serializeFromRoot(root, storedSnapshot ?? null)
-    if (!deleteLeafInStored(stored, member.id)) {
+
+    const ok = deleteMemberSafeInStored(stored, member.id, deletePolicy)
+    if (!ok) {
       alert('Konnte Person nicht entfernen.')
       return
     }
+
     await putStored(stored)
     handleClose()
   }

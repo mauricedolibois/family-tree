@@ -1,3 +1,4 @@
+// src/components/GraphOptions.tsx
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
@@ -29,6 +30,10 @@ type GraphOptionsProps = {
   onChangeBloodlineMember: (id: string) => void
 
   members: MemberOption[]
+
+  // Verwandtschaftstiefe (0..3)
+  kinDepth: 0 | 1 | 2 | 3
+  onChangeKinDepth: (d: 0 | 1 | 2 | 3) => void
 }
 
 export default function GraphOptions({
@@ -42,6 +47,8 @@ export default function GraphOptions({
   bloodlineMemberId,
   onChangeBloodlineMember,
   members,
+  kinDepth,
+  onChangeKinDepth,
 }: GraphOptionsProps) {
   const panelRef = useRef<HTMLDivElement | null>(null)
 
@@ -69,7 +76,7 @@ export default function GraphOptions({
   const memberButtonRef = useRef<HTMLButtonElement | null>(null)
   const memberMenuRef = useRef<HTMLDivElement | null>(null)
 
-  // Outside click schließt Memberdropdown
+  // Outside click für Member-Dropdown
   useEffect(() => {
     function onDocDown(ev: MouseEvent | TouchEvent) {
       if (!memberMenuOpen) return
@@ -89,13 +96,12 @@ export default function GraphOptions({
     }
   }, [memberMenuOpen])
 
-  // Beim Öffnen prüfen, ob genug Platz nach unten ist – sonst nach oben öffnen
   const toggleMemberMenu = () => {
     const next = !memberMenuOpen
     if (next && memberButtonRef.current) {
       const rect = memberButtonRef.current.getBoundingClientRect()
       const viewportH = window.innerHeight || document.documentElement.clientHeight
-      const estimatedMenuH = Math.min(64 * 4, 320) // grobe Schätzung (4 Items * 64px), capped at 320px
+      const estimatedMenuH = Math.min(64 * 4, 320)
       const spaceBelow = viewportH - rect.bottom
       const spaceAbove = rect.top
       setMemberMenuDir(spaceBelow >= estimatedMenuH || spaceBelow >= spaceAbove ? 'down' : 'up')
@@ -108,10 +114,15 @@ export default function GraphOptions({
     [members, bloodlineMemberId]
   )
 
+  // Labels für die Tiefenstufen
+  const kinLabels = ['nur direkte Linie', ' + Geschwister', ' + Cousins', ' + Großcousins'] as const
+
+  const showDepthAndSpouses = !!selectedMember // nur wenn nicht „Alle anzeigen“
+
   return (
     <>
-      {/* Toggle Button */}
-      <div className="fixed bottom-28 right-4 z-30">
+      {/* Toggle Button bleibt an gleicher Stelle */}
+      <div className="fixed bottom-16 right-4 z-30">
         <button
           type="button"
           onClick={onRequestToggle}
@@ -152,14 +163,14 @@ export default function GraphOptions({
               </select>
             </div>
 
-            {/* Bloodline */}
+            {/* Bloodline + Auswahl */}
             <div className="mb-4">
               <label className="block mb-1 text-sm font-medium text-[color:var(--color-primary-800)]">
                 Nur Blutlinie von …
               </label>
 
-              {/* Custom Member dropdown */}
-              <div className="relative">
+              {/* Wrapper ist relativ → Overlay-Chips können absolut darüber */}
+              <div className="relative mb-3">
                 <button
                   ref={memberButtonRef}
                   type="button"
@@ -197,12 +208,14 @@ export default function GraphOptions({
                   <ChevronDown className="h-4 w-4 shrink-0" />
                 </button>
 
+
                 {memberMenuOpen && (
                   <div
                     ref={memberMenuRef}
                     role="listbox"
                     className={clsx(
-                      'absolute max-h-64 w-full overflow-auto rounded-lg border-2 border-[color:var(--color-primary-800)] bg-[color:var(--color-surface-100)] shadow-lg',
+                      // z-40, damit die Overlay-Texte (z-50) darüber liegen
+                      'absolute z-40 max-h-64 w-full overflow-auto rounded-lg border-2 border-[color:var(--color-primary-800)] bg-[color:var(--color-surface-100)] shadow-lg',
                       memberMenuDir === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'
                     )}
                   >
@@ -260,18 +273,71 @@ export default function GraphOptions({
                 )}
               </div>
 
-              {/* Ehepartner-Option */}
-              <label className="mt-3 inline-flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-[color:var(--color-primary-800)]"
-                  checked={includeSpouses}
-                  onChange={(e) => onToggleIncludeSpouses(e.target.checked)}
-                />
-                <span className="text-[color:var(--color-primary-800)] text-sm">
-                  Ehepartner mit anzeigen
-                </span>
-              </label>
+              {/* Slider + Legende nur, wenn eine Person gewählt ist */}
+              {showDepthAndSpouses && (
+                <>
+                  {/* Schritte-Dragger (0..3) */}
+                  <div>
+                    <label className="block mb-1 text-xs text-[color:var(--color-primary-800)]/80">
+                      Verwandtschaftstiefe
+                    </label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={3}
+                      step={1}
+                      value={kinDepth}
+                      onChange={(e) => onChangeKinDepth(Number(e.target.value) as 0|1|2|3)}
+                      className="w-full accent-[color:var(--color-primary-800)]"
+                      aria-label="Verwandtschaftstiefe"
+                    />
+                    <div className="mt-1 text-xs text-[color:var(--color-primary-800)]">
+                      {kinLabels[kinDepth]}
+                    </div>
+
+                    {/* Kleine Legende der aktivierten Stufen */}
+                    <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
+                      <span className={clsx(
+                        'px-2 py-0.5 rounded border',
+                        kinDepth >= 0 ? 'bg-[color:var(--color-secondary-50)] border-[color:var(--color-secondary-200)]' : 'opacity-60'
+                      )}>
+                        direkte Linie
+                      </span>
+                      <span className={clsx(
+                        'px-2 py-0.5 rounded border',
+                        kinDepth >= 1 ? 'bg-[color:var(--color-secondary-50)] border-[color:var(--color-secondary-200)]' : 'opacity-60'
+                      )}>
+                        Geschwister
+                      </span>
+                      <span className={clsx(
+                        'px-2 py-0.5 rounded border',
+                        kinDepth >= 2 ? 'bg-[color:var(--color-secondary-50)] border-[color:var(--color-secondary-200)]' : 'opacity-60'
+                      )}>
+                        Cousins
+                      </span>
+                      <span className={clsx(
+                        'px-2 py-0.5 rounded border',
+                        kinDepth >= 3 ? 'bg-[color:var(--color-secondary-50)] border-[color:var(--color-secondary-200)]' : 'opacity-60'
+                      )}>
+                        Großcousins
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Ehepartner-Option */}
+                  <label className="mt-3 inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-[color:var(--color-primary-800)]"
+                      checked={includeSpouses}
+                      onChange={(e) => onToggleIncludeSpouses(e.target.checked)}
+                    />
+                    <span className="text-[color:var(--color-primary-800)] text-sm">
+                      Ehepartner mit anzeigen
+                    </span>
+                  </label>
+                </>
+              )}
             </div>
           </div>
         </div>

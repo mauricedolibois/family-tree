@@ -34,15 +34,12 @@ export class Member {
    * Add child to this member (and to spouse if present), updating both sides.
    * Keeps lists deduplicated.
    */
-  public addChild(child: Member): void {
-    Member.pushUnique(this.children, child)
-    Member.pushUnique(child.parents, this)
+public addChild(child: Member): void {
+  // Nur diesen Parent ↔ Kind verknüpfen (KEINE Spouse-Seiteneffekte)
+  if (!this.children.some(c => c.id === child.id)) this.children.push(child)
+  if (!child.parents.some(p => p.id === this.id)) child.parents.push(this)
+}
 
-    if (this.spouse) {
-      Member.pushUnique(this.spouse.children, child)
-      Member.pushUnique(child.parents, this.spouse)
-    }
-  }
 
   /** Is married? */
   public isMarried(): boolean {

@@ -1,4 +1,3 @@
-// src/components/FamilyTreeProvider.tsx
 'use client'
 
 import React, {
@@ -12,7 +11,7 @@ import React, {
 } from 'react'
 import { FamilyTree } from '@/models/FamilyTree'
 import { IMember } from '@/types/IMember'
-import { buildTreeFromStored } from '@/storage/rebuild' // <-- deine neue Version
+import { buildTreeFromStored } from '@/storage/rebuild'
 import { StoredTree, serializeFromRoot } from '@/storage/schema'
 import { setupShanFamilyTree } from '@/utils'
 
@@ -20,15 +19,23 @@ interface Ctx {
   root: IMember
   familyTree: FamilyTree
   setFamilyTree: (tree: FamilyTree) => void
+
+  /** Markiere, dass der Tree **mutiert** wurde (erzwingt Re-Render + optional Debounce-Save) */
+  markDirty: () => void
+
+  /** Sofort persistieren (ein PUT). Wartet bis abgeschlossen. */
+  saveNow: () => Promise<void>
+
+  /** Optional: key um Graph/Canvas hart zu remounten (z. B. <Graph key={layoutNonce} />) */
+  layoutNonce: number
+
   memberNames?: string[]
   isLoaded: boolean
   error?: string | null
   isAuthed: boolean
   applyStored: (stored: StoredTree) => void
   storedSnapshot?: StoredTree
-  /** Neu: Vollständiger ID-Index */
   membersById: Record<string, IMember>
-  /** Neu: Komfort-Lookup */
   getById: (id: string) => IMember | null
 }
 
@@ -42,24 +49,35 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null)
   const [isAuthed, setIsAuthed] = useState<boolean>(true)
 
+  // für harten Remount von graphischen Komponenten
+  const [layoutNonce, setLayoutNonce] = useState(0)
+
+  // Steuerung
   const loadReqIdRef = useRef(0)
   const mutateEpochRef = useRef(0)
   const persistIdRef = useRef(0)
+  const debounceTimerRef = useRef<number | null>(null)
 
-  const applyStored = (stored: StoredTree) => {
-    mutateEpochRef.current += 1
+  // Resolver für saveNow()
+  const pendingPersistResolversRef = useRef<Array<() => void>>([])
+
+  const rebuildFromStored = (stored: StoredTree) => {
     const rebuilt = buildTreeFromStored(stored)
-    // Falls du noch eine FamilyTree-Klasse brauchst:
     const ft = new FamilyTree(rebuilt.root.name, rebuilt.root.gender) as any
-    // Achtung: Wenn du eine echte FamilyTree-Implementierung hast,
-    // übergib dort rebuilt.root (nicht neu erzeugen). Hier nur Platzhalter:
     ft.root = rebuilt.root
 
     setFamilyTree(ft)
     setMembersById(rebuilt.byId)
     setStoredSnapshot(stored)
+    setLayoutNonce((n) => n + 1)
   }
 
+  const applyStored = (stored: StoredTree) => {
+    mutateEpochRef.current += 1
+    rebuildFromStored(stored)
+  }
+
+  // Initial load
   useEffect(() => {
     const myReqId = ++loadReqIdRef.current
     let aborted = false
@@ -67,8 +85,7 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     ;(async () => {
       try {
         const res = await fetch('/api/family', { cache: 'no-store' })
-        if (aborted) return
-        if (myReqId !== loadReqIdRef.current) return
+        if (aborted || myReqId !== loadReqIdRef.current) return
 
         if (res.status === 401) {
           setIsAuthed(false)
@@ -83,26 +100,13 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
           setIsLoaded(true)
           return
         }
-
-        const rebuilt = buildTreeFromStored(data)
-        const ft = new FamilyTree(rebuilt.root.name, rebuilt.root.gender) as any
-        ft.root = rebuilt.root
-
+        rebuildFromStored(data)
         setIsAuthed(true)
-        setFamilyTree(ft)
-        setMembersById(rebuilt.byId)
-        setStoredSnapshot(data)
         setIsLoaded(true)
       } catch {
         const seed = setupShanFamilyTree()
         const snap = serializeFromRoot(seed.root)
-        const rebuilt = buildTreeFromStored(snap)
-        const ft = new FamilyTree(rebuilt.root.name, rebuilt.root.gender) as any
-        ft.root = rebuilt.root
-
-        setFamilyTree(ft)
-        setMembersById(rebuilt.byId)
-        setStoredSnapshot(snap)
+        rebuildFromStored(snap)
         setIsLoaded(true)
         setError('Server storage unavailable; using in-memory seed.')
       }
@@ -111,32 +115,86 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     return () => { aborted = true }
   }, [])
 
+  // Debounced persist, immer wenn familyTree-Referenz wechselt (durch markDirty)
   useEffect(() => {
     if (!familyTree || error === 'UNAUTHORIZED') return
 
-    const myEpoch = mutateEpochRef.current
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
     const myPersistId = ++persistIdRef.current
+    const t = window.setTimeout(async () => {
+      const payload = serializeFromRoot(
+        familyTree.root,
+        storedSnapshot ?? undefined
+      )
+      try {
+        await fetch('/api/family', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        setStoredSnapshot(payload)
+      } finally {
+        const resolvers = pendingPersistResolversRef.current
+        pendingPersistResolversRef.current = []
+        resolvers.forEach((r) => r())
+      }
+    }, 400) // großzügigeres Debounce
 
-    const t = setTimeout(() => {
-      if (myEpoch !== mutateEpochRef.current) return
-      if (myPersistId !== persistIdRef.current) return
+    debounceTimerRef.current = t
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familyTree])
+
+  /** von außen aufrufen, nachdem du AM OBJEKT mutiert hast */
+ const markDirty = () => {
+    if (!familyTree) return
+    mutateEpochRef.current += 1
+
+    // WICHTIG: komplette Struktur neu aufbauen, damit alle Referenzen wechseln
+    const snap = serializeFromRoot(familyTree.root, storedSnapshot ?? undefined)
+    const rebuilt = buildTreeFromStored(snap)
+    const ft = new FamilyTree(rebuilt.root.name, rebuilt.root.gender) as any
+    ft.root = rebuilt.root
+
+    // NICHT storedSnapshot setzen (das passiert erst nach saveNow)
+    setFamilyTree(ft)
+    setMembersById(rebuilt.byId)
+    setLayoutNonce((n) => n + 1)
+  }
+
+  /** sofort persistieren (ein PUT) und auf Abschluss warten */
+  const saveNow = async () => {
+    return new Promise<void>((resolve) => {
+      if (!familyTree) {
+        resolve()
+        return
+      }
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
+      }
+      pendingPersistResolversRef.current.push(resolve)
 
       const payload = serializeFromRoot(
         familyTree.root,
         storedSnapshot ?? undefined
       )
-
       fetch('/api/family', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-      }).catch(() => {})
-
-      setStoredSnapshot(payload)
-    }, 100)
-
-    return () => clearTimeout(t)
-  }, [familyTree, error, storedSnapshot])
+      })
+        .then(() => setStoredSnapshot(payload))
+        .finally(() => {
+          const resolvers = pendingPersistResolversRef.current
+          pendingPersistResolversRef.current = []
+          resolvers.forEach((r) => r())
+        })
+    })
+  }
 
   const getById = (id: string) => membersById[id] ?? null
 
@@ -144,7 +202,7 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       familyTree: familyTree!,
       setFamilyTree,
-      root: (familyTree?.root as IMember),
+      root: familyTree?.root as IMember,
       memberNames: familyTree?.getMemberNames?.(),
       isLoaded,
       error,
@@ -153,8 +211,19 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
       storedSnapshot: storedSnapshot ?? undefined,
       membersById,
       getById,
+      markDirty,
+      saveNow,
+      layoutNonce,
     }),
-    [familyTree, isLoaded, error, isAuthed, storedSnapshot, membersById]
+    [
+      familyTree,
+      isLoaded,
+      error,
+      isAuthed,
+      storedSnapshot,
+      membersById,
+      layoutNonce,
+    ]
   )
 
   if (!isLoaded) return <div>Loading…</div>

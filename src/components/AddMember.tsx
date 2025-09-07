@@ -1,4 +1,3 @@
-// src/components/AddMember.tsx
 'use client'
 
 import { FormEvent, useMemo, useState } from 'react'
@@ -7,7 +6,6 @@ import { IMember } from '@/types/IMember'
 import { Gender } from '@/types/Gender'
 import { AllowedRelationship } from '@/types/Relationship'
 import { useFamilyTree } from '@/components/FamilyTreeProvider'
-import { serializeFromRoot } from '@/storage/schema'
 import { Button } from '@zendeskgarden/react-buttons'
 
 interface AddMemberProps {
@@ -18,40 +16,40 @@ interface AddMemberProps {
 
 export default function AddMember({ onSubmit, member, isOpen = true }: AddMemberProps) {
   const [newMember, setNewMember] = useState<string>('')
-
   const [relationship, setRelationship] = useState<AllowedRelationship>('CHILD')
   const [gender, setGender] = useState<Gender>(Gender.MALE)
 
-  // Flags (werden später für Optionen wie Adoption/Ehe genutzt)
+  // Flags (später nutzbar für Adoption/Ehe etc.)
   const [isAdopted, setIsAdopted] = useState<boolean>(false) // nur bei CHILD
   const [marriedToExistingParent, setMarriedToExistingParent] = useState<boolean>(true) // nur bei PARENT
 
-  const { familyTree, applyStored, storedSnapshot } = useFamilyTree()
+  const { familyTree, markDirty, saveNow } = useFamilyTree()
 
   const canSubmit = useMemo(
     () => newMember.trim().length > 0 && !!relationship && gender !== undefined,
     [newMember, relationship, gender]
   )
 
-  const handleAddMember = (e: FormEvent<HTMLFormElement>) => {
+  const handleAddMember = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const name = newMember.trim()
     if (!name) return
 
     try {
-      // ID-basierte Anlage
+      // Mutation am bestehenden Tree-Objekt
       if (relationship === 'PARENT') {
-        // ⬇️ NEU: Options-Objekt weitergeben (wird im FamilyTree/mutations verarbeitet)
         familyTree.addMemberById(member.id, name, gender, relationship, {
           marryExistingParent: marriedToExistingParent,
-          // adopt: isAdopted, // <- später nutzbar, wenn Adoption modelliert ist
+          // adopt: isAdopted, // ← wenn Adoption modelliert wird
         })
       } else {
         familyTree.addMemberById(member.id, name, gender, relationship)
       }
 
-      const stored = serializeFromRoot(familyTree.root, storedSnapshot)
-      applyStored(stored)
+      // genau ein Save auslösen
+      markDirty()
+      await saveNow()
+
       onSubmit()
     } catch (err: any) {
       console.error('[UI] addMember ERROR', err)
@@ -97,7 +95,6 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
 
         {/* Felder */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full min-w-0">
-          {/* Beziehung */}
           <label className="text-sm flex flex-col gap-1 min-w-0">
             Beziehung
             <select
@@ -116,7 +113,6 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
             </select>
           </label>
 
-          {/* Geschlecht */}
           <label className="text-sm flex flex-col gap-1 min-w-0">
             Geschlecht
             <select
@@ -134,7 +130,6 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
             </select>
           </label>
 
-          {/* Name */}
           <label className="text-sm flex flex-col gap-1 min-w-0">
             Name des neuen Mitglieds
             <input
