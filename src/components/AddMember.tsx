@@ -19,7 +19,7 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
   const [relationship, setRelationship] = useState<AllowedRelationship>('CHILD')
   const [gender, setGender] = useState<Gender>(Gender.MALE)
 
-  // Flags (später nutzbar für Adoption/Ehe etc.)
+  // Flags
   const [isAdopted, setIsAdopted] = useState<boolean>(false) // nur bei CHILD
   const [marriedToExistingParent, setMarriedToExistingParent] = useState<boolean>(true) // nur bei PARENT
 
@@ -36,11 +36,14 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
     if (!name) return
 
     try {
-      // Mutation am bestehenden Tree-Objekt
       if (relationship === 'PARENT') {
         familyTree.addMemberById(member.id, name, gender, relationship, {
           marryExistingParent: marriedToExistingParent,
-          // adopt: isAdopted, // ← wenn Adoption modelliert wird
+        })
+      } else if (relationship === 'CHILD') {
+        // 👇 Adoption-Flag wirklich bis zum Model durchreichen
+        familyTree.addMemberById(member.id, name, gender, relationship, {
+          adopt: isAdopted,
         })
       } else {
         familyTree.addMemberById(member.id, name, gender, relationship)

@@ -144,8 +144,7 @@ export default function FamilyGraph() {
                     return items
                   })()}
 
-                  {/* Eltern/Kind-Kanten */}
-                  {edges.map(e => {
+                 {edges.map(e => {
                     const from = nodes.find(n => n.id === e.from)!
                     const to = nodes.find(n => n.id === e.to)!
                     const d = edgePath(from, to, {
@@ -162,6 +161,8 @@ export default function FamilyGraph() {
                         strokeWidth={2}
                         markerEnd="url(#dot)"
                         opacity={0.9}
+                        /* 👇 NEU: gestrichelt, wenn adoptiert */
+                        strokeDasharray={e.adopted ? '6 6' : undefined}
                       />
                     )
                   })}

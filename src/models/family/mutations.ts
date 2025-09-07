@@ -1,6 +1,5 @@
 // src/models/family/mutations.ts
 import { Member } from '@/models/Member'
-import { Gender } from '@/types/Gender'
 
 /* ------------------------------------------------------------------ */
 /* PARENT-ONLY LINKING (kein Auto-Spouse, kein Auto-Grandparenting)   */
@@ -11,22 +10,16 @@ import { Gender } from '@/types/Gender'
  * - Fügt child zu parent.children hinzu (falls nicht vorhanden)
  * - Fügt parent zu child.parents hinzu (falls nicht vorhanden)
  * - KEIN Propagieren zum Spouse, KEIN Auto-Heiraten
+ * - Optional: Adoption-Flag für genau diese Parent→Child-Kante
  */
-function linkParentOneSided(parent: Member, child: Member) {
+function linkParentOneSided(parent: Member, child: Member, opts?: { adopted?: boolean }) {
   // max. 2 Eltern durchsetzen (außer parent ist schon verknüpft)
   if (child.parents.length >= 2 && !child.parents.some((p) => p.id === parent.id)) {
     throw new Error('This person already has two parents.')
   }
 
-  // parent -> children
-  if (!parent.children.some((c) => c.id === child.id)) {
-    parent.children.push(child)
-  }
-
-  // child -> parents
-  if (!child.parents.some((p) => p.id === parent.id)) {
-    child.parents.push(parent)
-  }
+  // einseitiger Link + optionales Adoption-Flag
+  parent.addChild(child, { adopted: opts?.adopted === true })
 }
 
 /* ------------------------------------------------------------------ */
@@ -35,23 +28,26 @@ function linkParentOneSided(parent: Member, child: Member) {
 
 /**
  * Kind hinzufügen:
- * - Bei gemischtgeschlechtlichem Ehepaar → beide als Eltern verknüpfen
- * - Bei gleichgeschlechtlichem Paar ODER Single → nur den ausgewählten Parent verknüpfen
- *   (kein automatisches Hinzufügen des Spouse!)
+ * - Wenn parent verheiratet → Kind bei BEIDEN Eltern verknüpfen (unabhängig vom Gender)
+ *   • Falls opts.adopted === true → Adoption bei BEIDEN Parents markieren
+ * - Wenn Single → nur beim ausgewählten Parent verknüpfen
  */
-export function addChild(_root: Member, parent: Member, child: Member): void {
+export function addChild(
+  _root: Member,
+  parent: Member,
+  child: Member,
+  opts?: { adopted?: boolean }
+): void {
+  const adopted = opts?.adopted === true
   const spouse = parent.spouse
 
-  if (spouse && spouse.gender !== parent.gender) {
-    // gemischtgeschlechtliches Paar → beide als Eltern
-    // (Reihenfolge egal; wir verknüpfen explizit BEIDE)
-    linkParentOneSided(parent, child)
-    linkParentOneSided(spouse, child)
-    return
-  }
+  // immer den ausgewählten Parent verknüpfen
+  linkParentOneSided(parent, child, { adopted })
 
-  // gleichgeschlechtlich oder Single → nur der ausgewählte Parent
-  linkParentOneSided(parent, child)
+  // wenn verheiratet: auch den Ehepartner verknüpfen
+  if (spouse) {
+    linkParentOneSided(spouse, child, { adopted })
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -75,17 +71,9 @@ export function addSpouse(member: Member, spouse: Member): void {
 
 /**
  * Elternteil hinzufügen (ID/Instanz-basiert, kein Name-Lookup).
- * Anforderungen:
  * - Neuer Parent bekommt das Kind **ohne** den Spouse als zweiten Parent zu verknüpfen.
- * - Kein automatisches Verheiraten existierender Eltern (optional via options).
- * - Root-Handling (optional – du hast es drin; ich lasse die Logik intakt):
- *    • Wenn das Kind bisher keine Eltern hatte → neuer Parent kann Root werden.
- *    • Wenn das Kind Root oder Root-Spouse war → neuer Parent kann Root werden.
- *
- * options:
- *   - marryExistingParent?: boolean
- *       Wenn das Kind GENAU EINEN anderen Parent hat und beide unverheiratet sind,
- *       diese beiden als Ehepartner verknüpfen (ohne Kinderlisten zu verändern).
+ * - Optional: vorhandene einzelne Eltern verheiraten (ohne Kinderlisten zu verändern).
+ * - Root-Handling bleibt unverändert.
  */
 export function addParent(
   rootRef: { root: Member },
@@ -112,7 +100,6 @@ export function addParent(
         (p1.spouse && p1.spouse.id === p2.id) || (p2.spouse && p2.spouse.id === p1.id)
       if (!alreadySpouses && !p1.spouse && !p2.spouse) {
         p1.addSpouse(p2)
-        // addSpouse ändert KEINE children/parents-Listen → kein Auto-Grandparenting
       }
     }
   }

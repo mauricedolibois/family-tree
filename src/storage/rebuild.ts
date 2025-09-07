@@ -11,8 +11,9 @@ export type RebuiltGraph = {
 /**
  * Baut den Runtime-Graph *vollständig*:
  * - Erst alle Instanzen erzeugen (damit IDs auflösbar sind)
- * - Dann Relationen setzen (Spouse beidseitig, Parent<->Child beidseitig)
- * - Gibt zusätzlich ein byId-Register zurück, damit *alle* Knoten zugreifbar sind.
+ * - Dann Spouses verknüpfen (idempotent)
+ * - Dann Parent→Child je *Parent* verknüpfen (einseitig pro Parent) und Adoption je Kante setzen
+ *   → nutzt `parent.addChild(child, { adopted })`, damit `adoptedChildrenIds` korrekt gefüllt wird.
  */
 export function buildTreeFromStored(stored: StoredTree): RebuiltGraph {
   if (!stored || stored.version !== 3) {
@@ -21,51 +22,62 @@ export function buildTreeFromStored(stored: StoredTree): RebuiltGraph {
 
   const byId: Record<string, Member> = {}
 
-  // 1) Instanzen anlegen
+  // 1) Instanzen anlegen (+ Profile + adoptierte-Kinder-Liste)
   for (const mId of Object.keys(stored.members)) {
-    const m = stored.members[mId] as StoredMemberV3
-    byId[mId] = new Member(m.name, m.gender, m.id)
+    const rec = stored.members[mId] as StoredMemberV3
+    const inst = new Member(rec.name, rec.gender, rec.id)
+
     // Profile direkt anheften (optional/falls genutzt)
-    if (m.profile) {
-      (byId[mId] as any).profile = { ...m.profile }
+    if (rec.profile) {
+      ;(inst as any).profile = { ...rec.profile }
+    }
+
+    // Adoption-Flags aus Persistenz an die Runtime-Instanz hängen
+    inst.adoptedChildrenIds = Array.isArray(rec.adoptedChildrenIds)
+      ? rec.adoptedChildrenIds.slice()
+      : []
+
+    byId[mId] = inst
+  }
+
+  // 2) Spouse-Beziehungen herstellen (idempotent)
+  for (const mId of Object.keys(stored.members)) {
+    const rec = stored.members[mId] as StoredMemberV3
+    const me = byId[mId]
+    const sId = rec.spouseId ?? null
+    if (!sId) continue
+    const sp = byId[sId]
+    if (sp && me.spouse?.id !== sp.id && sp.spouse?.id !== me.id) {
+      me.addSpouse(sp)
     }
   }
 
-  // 2) Relationen setzen
-  for (const mId of Object.keys(stored.members)) {
-    const sm = stored.members[mId] as StoredMemberV3
-    const me = byId[mId]
+  // 3) Eltern-Kind-Verknüpfungen je Parent (inkl. Adoption je Kante)
+  //    Wichtig: wir gehen **pro Parent** über dessen childrenIds und verlinken
+  //    parent.addChild(child, { adopted: ... }). Das baut beidseitig parent↔child
+  //    und setzt das Adoptiv-Flag NUR für diesen Parent.
+  for (const pId of Object.keys(stored.members)) {
+    const prec = stored.members[pId] as StoredMemberV3
+    const parent = byId[pId]
+    if (!parent) continue
 
-    // Spouse (beidseitig, idempotent)
-    if (sm.spouseId) {
-      const sp = byId[sm.spouseId]
-      if (sp && me.spouse?.id !== sp.id) {
-        me.addSpouse(sp)
-      }
-    }
+    const kids = Array.isArray(prec.childrenIds) ? prec.childrenIds : []
+    const adoptedSet = new Set<string>(
+      Array.isArray(prec.adoptedChildrenIds) ? prec.adoptedChildrenIds : []
+    )
 
-    // Parents <-> Child (beidseitig, ohne Auto-Heiraten)
-    const parentIds = sm.parentIds ?? []
-    for (const pId of parentIds) {
-      const p = byId[pId]
-      if (p && !me.parents.some(x => x.id === p.id)) {
-        // Nur eine Seite, Member.addParent macht beidseitig
-        me.addParent(p)
-      }
-    }
+    for (let i = 0; i < kids.length; i++) {
+      const cId = kids[i]
+      const child = byId[cId]
+      if (!child) continue
 
-    // Children <-> Parent (zur Absicherung, falls parentIds fehlten)
-    for (const cId of sm.childrenIds ?? []) {
-      const c = byId[cId]
-      if (c && !me.children.some(x => x.id === c.id)) {
-        me.addChild(c) // addChild verknüpft beidseitig + ggf. spouse.children
-      }
+      // einseitig pro Parent verknüpfen + Adoption auf der Kante setzen
+      parent.addChild(child, { adopted: adoptedSet.has(cId) })
     }
   }
 
   const root = byId[stored.rootId]
   if (!root) throw new Error('Root not found in stored tree')
 
-  // Runtime-Typ auf IMember abbilden
   return { root: root as IMember, byId: byId as Record<string, IMember> }
 }

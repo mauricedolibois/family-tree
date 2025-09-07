@@ -372,6 +372,17 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
     genY[g] = (g - minGen) * (CARD_H + MIN_V_GAP)
   }
 
+  // helper: adoption flag for a block's parents -> child
+  const isAdoptedEdge = (parentIds: string[], childId: string): boolean => {
+    const pA = parentIds[0] ? map[parentIds[0]] : undefined
+    const pB = parentIds[1] ? map[parentIds[1]] : undefined
+    const aHas = !!pA?.adoptedChildrenIds?.includes(childId)
+    const bHas = !!pB?.adoptedChildrenIds?.includes(childId)
+    // OR-Logik (mind. ein Parent adoptiert) → gestrichelt
+    // Für AND-Logik (beide adoptiert), statt || einfach && verwenden.
+    return aHas || bHas
+  }
+
   // 1) Place parents
   for (let g = minGen; g <= maxGen; g++) {
     const blocks = blocksByGen.get(g) ?? []
@@ -456,8 +467,17 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
       const cid = childIds[i]
       const already = nodesById.get(cid)
 
+      const adopted = isAdoptedEdge(b.parentIds, cid)
+
       if (already && lockedAsParent.has(cid) && already.gen === childGen) {
-        edges.push({ id: `e-${uid}-${cid}`, from: unionNode.id, to: cid, fromSide: 'bottom', toSide: 'top' })
+        edges.push({
+          id: `e-${uid}-${cid}`,
+          from: unionNode.id,
+          to: cid,
+          fromSide: 'bottom',
+          toSide: 'top',
+          adopted,
+        })
         placedChildIds.push(cid)
         startX += CARD_W + MIN_CHILD_GAP
         continue
@@ -465,7 +485,14 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
 
       const cn = upsertPersonNode(cid, childGen, startX, genY[childGen], map[cid])
       if (cn) {
-        edges.push({ id: `e-${uid}-${cid}`, from: unionNode.id, to: cid, fromSide: 'bottom', toSide: 'top' })
+        edges.push({
+          id: `e-${uid}-${cid}`,
+          from: unionNode.id,
+          to: cid,
+          fromSide: 'bottom',
+          toSide: 'top',
+          adopted,
+        })
         placedChildIds.push(cid)
         startX += CARD_W + MIN_CHILD_GAP
       }
@@ -476,7 +503,7 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
       registerChildGroup(childGen, blockOrder, placedChildIds)
     }
 
-    // Edges Parent → Union
+    // Edges Parent → Union (ohne adopted-Flag; nur Kind-Kanten sind stilprägend)
     if (b.parentIds.length === 2) {
       if (getPerson(b.parentIds[0])) {
         edges.push({ id: `e-${b.parentIds[0]}-${uid}`, from: b.parentIds[0], to: uid, fromSide: 'bottom', toSide: 'top' })
@@ -493,7 +520,7 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
 
   for (let g = minGen; g <= maxGen; g++) {
     const blocks = blocksByGen.get(g) ?? []
-    for (let i = 0; i < blocks.length; i++) placeChildrenUnderBlock(blocks[i], i) // ← blockOrder = i
+    for (let i = 0; i < blocks.length; i++) placeChildrenUnderBlock(blocks[i], i)
   }
 
   // NEU: Kindergruppen je Generation in Block-Reihenfolge stabil anordnen
@@ -501,8 +528,6 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
     const groups = (childGroupsByGen.get(childGen) ?? []).slice().sort((a, b) => a.order - b.order)
     if (groups.length <= 1) return
 
-    // Wir laufen Gruppen in Ordnung ab und stellen sicher,
-    // dass jede nächste Gruppe links >= (right_of_prev + MIN_BLOCK_GAP) beginnt.
     let cursor = Number.NEGATIVE_INFINITY
     for (let gi = 0; gi < groups.length; gi++) {
       const g = groups[gi]
@@ -522,13 +547,11 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
         for (let k = 0; k < nodes.length; k++) nodes[k]!.x += dx
       }
 
-      // neuen cursor anhand ggf. verschobener nodes berechnen
       const newMax = Math.max(...nodes.map(n => n.x + n.w))
       cursor = newMax + MIN_BLOCK_GAP
     }
   }
 
-  // Für alle Kinder-Generationen anwenden
   {
     const gensWithChildren = Array.from(childGroupsByGen.keys()).sort((a, b) => a - b)
     for (let i = 0; i < gensWithChildren.length; i++) {
@@ -536,7 +559,7 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
     }
   }
 
-  // 4) Overlaps for all rows (feintuning; Reihenfolge bleibt stabil durch Gruppenvorschub)
+  // 4) Overlaps for all rows
   const allGens = Array.from(new Set(Array.from(nodesById.values()).map(n => n.gen))).sort((a, b) => a - b)
   for (let i = 0; i < allGens.length; i++) {
     const g = allGens[i]
@@ -670,6 +693,10 @@ export function buildFlatMemberMap(root: IMember): Record<MemberId, MemberLite> 
       parentIds: ((m as any).parentIds ?? []).filter(Boolean),
       childrenIds:
         ((m as any).children?.map((c: IMember) => c.id) ?? (m as any).childrenIds ?? []).filter(Boolean),
+      // NEU: adoptedChildrenIds aus Runtime übernehmen (falls vorhanden)
+      adoptedChildrenIds: Array.isArray((m as any).adoptedChildrenIds)
+        ? ((m as any).adoptedChildrenIds as string[]).slice()
+        : [],
       raw: m,
     }
   }

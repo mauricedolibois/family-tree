@@ -21,7 +21,7 @@ export class FamilyTree {
     targetName: string,
     targetGender: Gender,
     relationship: AllowedRelationship,
-    options?: { marryExistingParent?: boolean }   // ⬅️ NEW
+    options?: { marryExistingParent?: boolean; adopt?: boolean } // ⬅️ NEW
   ): Member {
     const source = this.findById(sourceId)
     if (!source) throw new Error('Source person not found')
@@ -29,15 +29,17 @@ export class FamilyTree {
     const member = new Member(targetName, targetGender)
 
     switch (relationship) {
-      case 'CHILD':
-        addChild(this.root, source, member)
+      case 'CHILD': {
+        const adopted = options?.adopt === true
+        addChild(this.root, source, member, { adopted })
         break
+      }
       case 'SPOUSE':
         addSpouse(source, member)
         break
       case 'PARENT':
         // Forward options so mutations can decide whether to marry existing parent, etc.
-        addParent(this, source, member, options)
+        addParent(this, source, member, { marryExistingParent: options?.marryExistingParent })
         break
       default:
         throw new Error('Relationship not supported')
@@ -88,17 +90,17 @@ export class FamilyTree {
   }
 
   public getMemberNames(): string[] {
-  const names: string[] = []
-  const seen = new Set<string>()
-  // use walkConnected instead of BFS children-only
-  walkConnected(this.root, (n) => {
-    if (seen.has(n.id)) return
-    seen.add(n.id)
-    names.push(n.name)
-    if (n.spouse) names.push(n.spouse.name)
-  })
-  return names
-}
+    const names: string[] = []
+    const seen = new Set<string>()
+    // use walkConnected instead of BFS children-only
+    walkConnected(this.root, (n) => {
+      if (seen.has(n.id)) return
+      seen.add(n.id)
+      names.push(n.name)
+      if (n.spouse) names.push(n.spouse.name)
+    })
+    return names
+  }
 
   /* -------------------- Helpers -------------------- */
 

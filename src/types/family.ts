@@ -10,6 +10,8 @@ export type MemberLite = {
   spouseId?: MemberId | null
   parentIds: MemberId[]
   childrenIds: MemberId[]
+  /** NEW: per-parent adoption flags (child ids adopted by THIS member) */
+  adoptedChildrenIds?: MemberId[]
   raw: IMember
 }
 
@@ -32,8 +34,10 @@ export type Edge = {
   id: string
   from: string
   to: string
-  fromSide?: 'top'|'bottom'
-  toSide?: 'top'|'bottom'
+  fromSide?: 'top' | 'bottom'
+  toSide?: 'top' | 'bottom'
+  /** NEW: render hint → dashed if true */
+  adopted?: boolean
 }
 
 export type LayoutResult = {

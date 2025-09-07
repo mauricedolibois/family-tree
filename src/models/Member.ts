@@ -8,6 +8,8 @@ export class Member {
   public spouse: Member | null
   public parents: Member[]
   public children: Member[]
+  /** NEW: welche Kinder sind (von DIESEM Parent) adoptiert? */
+  public adoptedChildrenIds: string[]
 
   constructor(name: string, gender: Gender, id?: string) {
     this.id = id ?? nanoid(10)
@@ -16,6 +18,7 @@ export class Member {
     this.spouse = null
     this.parents = []
     this.children = []
+    this.adoptedChildrenIds = []
   }
 
   /** Small helper to avoid duplicates by id */
@@ -31,15 +34,30 @@ export class Member {
   }
 
   /**
-   * Add child to this member (and to spouse if present), updating both sides.
-   * Keeps lists deduplicated.
+   * Add child to THIS parent only (no spouse side-effects).
+   * Optionally flag this parent→child link as adopted.
    */
-public addChild(child: Member): void {
-  // Nur diesen Parent ↔ Kind verknüpfen (KEINE Spouse-Seiteneffekte)
-  if (!this.children.some(c => c.id === child.id)) this.children.push(child)
-  if (!child.parents.some(p => p.id === this.id)) child.parents.push(this)
-}
+  public addChild(child: Member, opts?: { adopted?: boolean }): void {
+    // link (one-sided to this parent)
+    if (!this.children.some(c => c.id === child.id)) this.children.push(child)
+    if (!child.parents.some(p => p.id === this.id)) child.parents.push(this)
 
+    // adoption flag on this edge
+    if (opts?.adopted === true) {
+      if (!this.adoptedChildrenIds.includes(child.id)) {
+        this.adoptedChildrenIds.push(child.id)
+      }
+    }
+  }
+
+  /** Toggle/set adoption flag for THIS parent→child link */
+  public markAdopted(child: Member, adopted = true): void {
+    const has = this.adoptedChildrenIds.includes(child.id)
+    if (adopted && !has) this.adoptedChildrenIds.push(child.id)
+    if (!adopted && has) {
+      this.adoptedChildrenIds = this.adoptedChildrenIds.filter(id => id !== child.id)
+    }
+  }
 
   /** Is married? */
   public isMarried(): boolean {

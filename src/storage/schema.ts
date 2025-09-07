@@ -1,7 +1,6 @@
 import { IMember } from '@/types/IMember'
 import { Gender } from '@/types/Gender'
 
-
 /* ===== v3 (neu, ID-basiert) ===== */
 export type MediaKind = 'image' | 'video' | 'pdf' | 'other'
 
@@ -29,8 +28,10 @@ export type StoredMemberV3 = {
   name: string
   gender: Gender
   spouseId?: string | null
-  parentIds?: string[] 
+  parentIds?: string[]
   childrenIds: string[]
+  /** Adoption ist eine Eigenschaft der Parent→Child-Kante: welche Kinder sind (von DIESEM Parent) adoptiert? */
+  adoptedChildrenIds?: string[]
   profile?: StoredProfile
 }
 
@@ -39,7 +40,6 @@ export type StoredTree = {
   rootId: string
   members: Record<string, StoredMemberV3> // key = id
 }
-
 
 /* ===== Serialize (Graph -> Stored, ID-basiert) ===== */
 export function serializeFromRoot(root: IMember, existing?: StoredTree | null): StoredTree {
@@ -53,17 +53,30 @@ export function serializeFromRoot(root: IMember, existing?: StoredTree | null): 
     if (!m || !m.id || seen.has(m.id)) continue
     seen.add(m.id)
 
-    const prevProfile = prev?.members[m.id]?.profile
+    const prevRec = prev?.members[m.id]
+    const prevProfile = prevRec?.profile
     const children = Array.isArray(m.children) ? m.children : []
     const spouseId = m.spouse?.id ?? null
+
+    // NEU: Adoption-Flags bevorzugt aus Runtime lesen (Member.adoptedChildrenIds),
+    // sonst aus vorherigem Snapshot übernehmen, sonst []
+    const runtimeAdopted: string[] =
+      Array.isArray((m as any).adoptedChildrenIds) ? (m as any).adoptedChildrenIds as string[] : []
+    const adoptedChildrenIds: string[] =
+      runtimeAdopted.length > 0
+        ? runtimeAdopted.slice()
+        : Array.isArray(prevRec?.adoptedChildrenIds)
+          ? prevRec!.adoptedChildrenIds.slice()
+          : []
 
     members[m.id] = {
       id: m.id,
       name: m.name,
       gender: m.gender,
       spouseId,
-      parentIds: m.parents.map((p) => p.id),      // 👈 add this
+      parentIds: m.parents.map((p) => p.id),
       childrenIds: children.map((c) => c.id),
+      adoptedChildrenIds,
       profile: prevProfile
         ? {
             birthDate: prevProfile.birthDate ?? null,
@@ -90,7 +103,7 @@ export function serializeFromRoot(root: IMember, existing?: StoredTree | null): 
     // reach everything connected:
     if (m.spouse) stack.push(m.spouse)
     if (children.length) stack.push(...children)
-    if (Array.isArray(m.parents) && m.parents.length) stack.push(...m.parents) // 👈 NEW
+    if (Array.isArray(m.parents) && m.parents.length) stack.push(...m.parents)
   }
 
   return { version: 3, rootId: root.id, members }
