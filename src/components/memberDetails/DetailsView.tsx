@@ -17,10 +17,19 @@ type Props = {
 }
 
 /** Kleiner Avatar-Chip für Personenlisten (spouse/parents/children) */
-function PersonChip({ person, className }: { person: IMember; className?: string }) {
+function PersonChip({
+  person,
+  className,
+  meta, // z.B. "adoptiert"
+}: {
+  person: IMember
+  className?: string
+  meta?: string
+}) {
   const { openDetails } = useSelectedMember()
   const titleImage = person.profile?.titleImageUrl ?? undefined
   const color = person.gender === Gender.MALE ? 'bg-male' : 'bg-female'
+  const title = meta ? `${person.name} (${meta})` : person.name
 
   return (
     <button
@@ -32,7 +41,7 @@ function PersonChip({ person, className }: { person: IMember; className?: string
         'max-w-full',
         className
       )}
-      title={person.name}
+      title={title}
     >
       <div className="shrink-0">
         <Avatar
@@ -45,6 +54,17 @@ function PersonChip({ person, className }: { person: IMember; className?: string
       <span className="text-sm text-[color:var(--color-primary-800)] break-words">
         {person.name}
       </span>
+      {meta && (
+        <span
+          className={clsx(
+            'ml-1 rounded-full border px-2 py-[2px]',
+            'text-[10px] leading-none',
+            'bg-[color:var(--color-surface-50)] border-[color:var(--color-primary-100)] text-[color:var(--color-primary-700)]'
+          )}
+        >
+          {meta}
+        </span>
+      )}
     </button>
   )
 }
@@ -69,65 +89,75 @@ export default function DetailsView({
   if (member.profile?.job)        infoItems.push({ label: 'Beruf', value: member.profile.job })
   if (member.profile?.comments)   infoItems.push({ label: 'Kommentare', value: member.profile.comments })
 
+  // Helper: Adoption prüfen
+  const adoptedByParent = (parent: IMember, child: IMember): boolean => {
+    const ids = (parent as any).adoptedChildrenIds as string[] | undefined
+    return Array.isArray(ids) ? ids.includes(child.id) : false
+  }
+  const adoptedChildOfMember = (child: IMember): boolean => {
+    const ids = (member as any).adoptedChildrenIds as string[] | undefined
+    return Array.isArray(ids) ? ids.includes(child.id) : false
+  }
+
   return (
     <div className="flex flex-col gap-6 text-left">
       {/* Kopfbereich */}
       <div className="flex gap-4 items-start">
         <div className="rounded-xl border bg-white shadow-sm overflow-hidden w-32">
           <div className="relative aspect-[3/4] bg-gray-100">
-        {member.profile?.titleImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={member.profile.titleImageUrl}
-            alt={`${member.name} Titelbild`}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-            Kein Titelbild
-          </div>
-        )}
+            {member.profile?.titleImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={member.profile.titleImageUrl}
+                alt={`${member.name} Titelbild`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
+                Kein Titelbild
+              </div>
+            )}
           </div>
         </div>
 
         <div className="text-sm text-gray-700 space-y-2 flex-1 min-w-0">
           {/* Geschlecht */}
           <div className="grid grid-cols-[max-content_1fr] gap-x-1 items-start min-w-0">
-        <span className="shrink-0 whitespace-nowrap font-medium text-[color:var(--color-primary-800)]">Geschlecht:</span>
-        <span className="min-w-0 break-words">
-          {member.gender === Gender.MALE ? 'männlich' : 'weiblich'}
-        </span>
+            <span className="shrink-0 whitespace-nowrap font-medium text-[color:var(--color-primary-800)]">Geschlecht:</span>
+            <span className="min-w-0 break-words">
+              {member.gender === Gender.MALE ? 'männlich' : 'weiblich'}
+            </span>
           </div>
 
-            {/* Weitere Infos */}
-            {infoItems.length > 0 ? (
+          {/* Weitere Infos */}
+          {infoItems.length > 0 ? (
             <div className="flex flex-wrap gap-y-2 gap-x-6">
               {infoItems.map(({ label, value }) => {
-              const isMultiline = value.includes('\n')
-              return (
-                <div key={label} className="w-full sm:w-1/2 min-w-0">
-                <div className="grid grid-cols-[max-content_1fr] gap-x-1 items-start min-w-0">
-                  <span className="shrink-0 whitespace-nowrap font-medium text-[color:var(--color-primary-800)]">
-                  {label}:
-                  </span>
-                  <span
-                  className={clsx(
-                    'min-w-0 break-words whitespace-pre-wrap',
-                    isMultiline && 'col-span-2'
-                  )}
-                  >
-                  {value}
-                  </span>
-                </div>
-                </div>
-              )
+                const isMultiline = value.includes('\n')
+                return (
+                  <div key={label} className="w-full sm:w-1/2 min-w-0">
+                    <div className="grid grid-cols-[max-content_1fr] gap-x-1 items-start min-w-0">
+                      <span className="shrink-0 whitespace-nowrap font-medium text-[color:var(--color-primary-800)]">
+                        {label}:
+                      </span>
+                      <span
+                        className={clsx(
+                          'min-w-0 break-words whitespace-pre-wrap',
+                          isMultiline && 'col-span-2'
+                        )}
+                      >
+                        {value}
+                      </span>
+                    </div>
+                  </div>
+                )
               })}
             </div>
-            ) : (
+          ) : (
             <div className="text-xs text-gray-500">Keine weiteren Angaben</div>
-            )}
-          </div>
-          </div>
+          )}
+        </div>
+      </div>
 
       {/* Relationen */}
       <div className="flex flex-col gap-3">
@@ -142,9 +172,10 @@ export default function DetailsView({
           <div>
             <div className="font-medium text-[color:var(--color-primary-900)] mb-1">Eltern</div>
             <div className="flex flex-wrap gap-2">
-              {parents.map((p) => (
-                <PersonChip key={p.id} person={p} />
-              ))}
+              {parents.map((p) => {
+                const meta = adoptedByParent(p, member) ? 'adoptiert' : undefined
+                return <PersonChip key={p.id} person={p} meta={meta} />
+              })}
             </div>
           </div>
         )}
@@ -153,9 +184,10 @@ export default function DetailsView({
           <div>
             <div className="font-medium text-[color:var(--color-primary-900)] mb-1">Kinder</div>
             <div className="flex flex-wrap gap-2">
-              {children.map((c) => (
-                <PersonChip key={c.id} person={c} />
-              ))}
+              {children.map((c) => {
+                const meta = adoptedChildOfMember(c) ? 'adoptiert' : undefined
+                return <PersonChip key={c.id} person={c} meta={meta} />
+              })}
             </div>
           </div>
         )}

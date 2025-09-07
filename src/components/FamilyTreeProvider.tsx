@@ -1,3 +1,4 @@
+// src/components/FamilyTreeProvider.tsx
 'use client'
 
 import React, {
@@ -40,6 +41,39 @@ interface Ctx {
 }
 
 const FamilyTreeContext = createContext({} as Ctx)
+
+/** Schöne, leichte Loading-Animation (zugänglich, ohne Extra-Deps) */
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen w-full grid place-items-center bg-[color:var(--color-surface-50)]">
+      <div className="flex flex-col items-center gap-4" role="status" aria-live="polite">
+        {/* Spinner */}
+        <div className="relative">
+          <div className="h-14 w-14 rounded-full border-4 border-[color:var(--color-primary-100)] border-t-[color:var(--color-primary)] animate-spin motion-reduce:animate-none" />
+          {/* zarter Glanz */}
+          <div className="pointer-events-none absolute inset-0 rounded-full blur-md opacity-30" style={{
+            background: 'conic-gradient(var(--color-primary) 0turn, transparent 0.25turn)'
+          }} />
+        </div>
+
+        {/* Text + „pulsende“ Punkte */}
+        <div className="text-sm text-[color:var(--color-primary-800)] font-medium">
+          Stammbaum wird geladen<span className="inline-flex w-6">
+            <span className="animate-pulse">.</span>
+            <span className="animate-pulse [animation-delay:150ms]">.</span>
+            <span className="animate-pulse [animation-delay:300ms]">.</span>
+          </span>
+        </div>
+
+        {/* Subtext */}
+        <div className="text-xs text-[color:var(--color-primary-600)]">
+          Bitte einen Moment Geduld
+        </div>
+        <span className="sr-only">Inhalt wird geladen…</span>
+      </div>
+    </div>
+  )
+}
 
 export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   const [familyTree, setFamilyTree] = useState<FamilyTree | null>(null)
@@ -149,7 +183,7 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   }, [familyTree])
 
   /** von außen aufrufen, nachdem du AM OBJEKT mutiert hast */
- const markDirty = () => {
+  const markDirty = () => {
     if (!familyTree) return
     mutateEpochRef.current += 1
 
@@ -226,8 +260,16 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     ]
   )
 
-  if (!isLoaded) return <div>Loading…</div>
-  if (!familyTree && isAuthed) return <div>Kein Stammbaum geladen.</div>
+  if (!isLoaded) return <LoadingScreen />
+  if (!familyTree && isAuthed) {
+    return (
+      <div className="min-h-[60vh] grid place-items-center">
+        <div className="text-sm text-[color:var(--color-primary-700)]">
+          Kein Stammbaum geladen.
+        </div>
+      </div>
+    )
+  }
 
   return (
     <FamilyTreeContext.Provider value={value}>
