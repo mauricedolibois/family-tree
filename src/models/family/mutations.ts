@@ -1,4 +1,3 @@
-// src/models/family/mutations.ts
 import { Member } from '@/models/Member'
 
 /* ------------------------------------------------------------------ */
@@ -28,25 +27,32 @@ function linkParentOneSided(parent: Member, child: Member, opts?: { adopted?: bo
 
 /**
  * Kind hinzufügen:
- * - Wenn parent verheiratet → Kind bei BEIDEN Eltern verknüpfen (unabhängig vom Gender)
- *   • Falls opts.adopted === true → Adoption bei BEIDEN Parents markieren
- * - Wenn Single → nur beim ausgewählten Parent verknüpfen
+ * - Immer: Bezugsperson als Parent verknüpfen
+ * - Optional (default=true): wenn Bezugsperson einen Ehepartner hat, auch diesen als Parent verknüpfen
+ *   • Falls opts.adopted === true → Adoption bei den verknüpften Parents markieren
+ *   • Überschreitung von 2 Eltern wird verhindert (kein Throw durch Guard)
  */
 export function addChild(
   _root: Member,
   parent: Member,
   child: Member,
-  opts?: { adopted?: boolean }
+  opts?: { adopted?: boolean; alsoChildOfSpouse?: boolean }
 ): void {
   const adopted = opts?.adopted === true
+  const alsoChildOfSpouse = opts?.alsoChildOfSpouse ?? true
   const spouse = parent.spouse
 
-  // immer den ausgewählten Parent verknüpfen
+  // 1) immer den ausgewählten Parent verknüpfen
   linkParentOneSided(parent, child, { adopted })
 
-  // wenn verheiratet: auch den Ehepartner verknüpfen
-  if (spouse) {
-    linkParentOneSided(spouse, child, { adopted })
+  // 2) optional auch den Ehepartner verknüpfen
+  if (alsoChildOfSpouse && spouse) {
+    const alreadyLinked = child.parents.some((p) => p.id === spouse.id)
+    // nicht versuchen, wenn dadurch >2 Eltern entstünden (oder bereits verknüpft)
+    if (!alreadyLinked && child.parents.length < 2) {
+      linkParentOneSided(spouse, child, { adopted })
+    }
+    // Falls bereits 2 andere Eltern existieren, überspringen wir still – kein Fehlerwurf.
   }
 }
 

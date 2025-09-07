@@ -248,28 +248,35 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
     })
   }
 
-  // Single-parent blocks
-  for (const m of Object.values(map)) {
-    const g = gen[m.id]
-    if (usedAsCoupleParent.has(m.id)) continue
-    const remKids: string[] = []
-    for (let i = 0; i < m.childrenIds.length; i++) {
-      const cid = m.childrenIds[i]
-      if (!map[cid]) continue
-      if (!usedChild.has(cid)) remKids.push(cid)
-    }
-    if (!remKids.length) continue
-    if (!blocksByGen.has(g)) blocksByGen.set(g, [])
-    const label = g >= 1 ? (childStrandDown[remKids[0]] || anchorOf(m.id)) : anchorOf(m.id)
-    blocksByGen.get(g)!.push({
-      gen: g,
-      parentIds: [m.id],
-      childrenIds: remKids,
-      strandKey: label,
-      x: 0,
-      width: 0,
-    })
+  /// Single-parent blocks
+for (const m of Object.values(map)) {
+  const g = gen[m.id]
+
+  // NICHT mehr: if (usedAsCoupleParent.has(m.id)) continue
+
+  // nur Kinder, die NICHT bereits in einem Paar-Block als gemeinsame Kinder benutzt wurden
+  const remKids: string[] = []
+  for (let i = 0; i < m.childrenIds.length; i++) {
+    const cid = m.childrenIds[i]
+    if (!map[cid]) continue
+    if (!usedChild.has(cid)) remKids.push(cid)
   }
+
+  if (!remKids.length) continue
+  if (!blocksByGen.has(g)) blocksByGen.set(g, [])
+
+  const label =
+    g >= 1 ? (childStrandDown[remKids[0]] || anchorOf(m.id)) : anchorOf(m.id)
+
+  blocksByGen.get(g)!.push({
+    gen: g,
+    parentIds: [m.id],         // Single-Parent-Block zusätzlich zum Paar-Block
+    childrenIds: remKids,
+    strandKey: label,
+    x: 0,
+    width: 0,
+  })
+}
 
   // Singleton blocks
   for (const [g, members] of Array.from(gens.entries())) {

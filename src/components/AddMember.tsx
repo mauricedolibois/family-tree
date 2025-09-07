@@ -22,6 +22,8 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
   // Flags
   const [isAdopted, setIsAdopted] = useState<boolean>(false) // nur bei CHILD
   const [marriedToExistingParent, setMarriedToExistingParent] = useState<boolean>(true) // nur bei PARENT
+  /** NEU: Ebenfalls Kind des Ehepartners (Default: true) */
+  const [alsoChildOfSpouse, setAlsoChildOfSpouse] = useState<boolean>(true) // nur bei CHILD
 
   const { familyTree, markDirty, saveNow } = useFamilyTree()
 
@@ -41,15 +43,15 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
           marryExistingParent: marriedToExistingParent,
         })
       } else if (relationship === 'CHILD') {
-        // 👇 Adoption-Flag wirklich bis zum Model durchreichen
         familyTree.addMemberById(member.id, name, gender, relationship, {
           adopt: isAdopted,
+          alsoChildOfSpouse, // 👈 wichtig
         })
       } else {
         familyTree.addMemberById(member.id, name, gender, relationship)
       }
 
-      // genau ein Save auslösen
+      // Persistenz explizit (nur hier & bei Edit): genau 1 PUT
       markDirty()
       await saveNow()
 
@@ -62,7 +64,10 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
 
   const onRelationshipChange = (value: AllowedRelationship) => {
     setRelationship(value)
-    if (value !== 'CHILD') setIsAdopted(false)
+    if (value !== 'CHILD') {
+      setIsAdopted(false)
+      setAlsoChildOfSpouse(true)
+    }
     if (value !== 'PARENT') setMarriedToExistingParent(true)
   }
 
@@ -153,26 +158,49 @@ export default function AddMember({ onSubmit, member, isOpen = true }: AddMember
         {/* Bedingte Toggles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {relationship === 'CHILD' && (
-            <label className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 bg-[color:var(--color-surface-50)] border border-[color:var(--color-primary-50)]">
-              <span className="text-sm">Adoptiert</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isAdopted}
-                onClick={() => setIsAdopted((v) => !v)}
-                className={`
-                  relative inline-flex h-6 w-11 items-center rounded-full transition
-                  ${isAdopted ? 'bg-[color:var(--color-primary)]' : 'bg-gray-300'}
-                `}
-              >
-                <span
+            <>
+              <label className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 bg-[color:var(--color-surface-50)] border border-[color:var(--color-primary-50)]">
+                <span className="text-sm">Adoptiert</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isAdopted}
+                  onClick={() => setIsAdopted((v) => !v)}
                   className={`
-                    inline-block h-5 w-5 transform rounded-full bg-white transition
-                    ${isAdopted ? 'translate-x-5' : 'translate-x-1'}
+                    relative inline-flex h-6 w-11 items-center rounded-full transition
+                    ${isAdopted ? 'bg-[color:var(--color-primary)]' : 'bg-gray-300'}
                   `}
-                />
-              </button>
-            </label>
+                >
+                  <span
+                    className={`
+                      inline-block h-5 w-5 transform rounded-full bg-white transition
+                      ${isAdopted ? 'translate-x-5' : 'translate-x-1'}
+                    `}
+                  />
+                </button>
+              </label>
+
+              <label className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 bg-[color:var(--color-surface-50)] border border-[color:var(--color-primary-50)]">
+                <span className="text-sm">Ebenfalls Kind des Ehepartners</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={alsoChildOfSpouse}
+                  onClick={() => setAlsoChildOfSpouse((v) => !v)}
+                  className={`
+                    relative inline-flex h-6 w-11 items-center rounded-full transition
+                    ${alsoChildOfSpouse ? 'bg-[color:var(--color-primary)]' : 'bg-gray-300'}
+                  `}
+                >
+                  <span
+                    className={`
+                      inline-block h-5 w-5 transform rounded-full bg-white transition
+                      ${alsoChildOfSpouse ? 'translate-x-5' : 'translate-x-1'}
+                    `}
+                  />
+                </button>
+              </label>
+            </>
           )}
 
           {relationship === 'PARENT' && (
