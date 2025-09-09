@@ -1,7 +1,12 @@
-// src/components/FamilyGraph.tsx
 'use client'
 
-import React, { useMemo, useRef, useState, type ReactElement } from 'react'
+import React, {
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  useEffect,
+} from 'react'
 import { Person } from '@/components/Person'
 import { useFamilyTree } from './FamilyTreeProvider'
 import { buildFlatMemberMap, computeLayoutFiltered } from '@/utils/familyLayout'
@@ -21,19 +26,18 @@ export default function FamilyGraph() {
   const { root, layoutNonce } = useFamilyTree()
   const apiRef = useRef<ReactZoomPanPinchRef | null>(null)
 
+  // NEU: Container-Ref für Auto-Fit
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
   // UI-State
   const [panelOpen, setPanelOpen] = useState(false)
   const [edgeStyle, setEdgeStyle] = useState<EdgeStyle>('rounded')
   const [bloodlineMemberId, setBloodlineMemberId] = useState<string>('') // '' = alle
   const [includeSpouses, setIncludeSpouses] = useState<boolean>(false)
-
-  // NEU: Verwandtschafts-Tiefe (0..3) steuert Geschwister/Cousins/Großcousins
   const [kinDepth, setKinDepth] = useState<0 | 1 | 2 | 3>(0)
 
-  // Basisdaten (voll) — bei layoutNonce neu aufbauen
   const baseMap = useMemo(() => buildFlatMemberMap(root), [root, layoutNonce])
 
-  // Optionen für Member-Dropdown (mit Avatar-Infos)
   const memberOptions: MemberOption[] = useMemo(() => {
     const list = Object.values(baseMap).map(m => ({
       id: m.id,
@@ -52,7 +56,6 @@ export default function FamilyGraph() {
     )
   }, [baseMap, layoutNonce])
 
-  // Layout auf Basis gefilterter Map
   const { nodes, edges, width, height } = useMemo(() => {
     const focus = bloodlineMemberId || undefined
     return computeLayoutFiltered(baseMap, focus, {
@@ -61,7 +64,6 @@ export default function FamilyGraph() {
     })
   }, [baseMap, bloodlineMemberId, includeSpouses, kinDepth, layoutNonce])
 
-  // Paare (im aktuellen Layout)
   const couplePairs = useMemo(() => {
     const set = new Set<string>()
     const pairs: Array<[PositionedNode, PositionedNode, string]> = []
@@ -83,8 +85,49 @@ export default function FamilyGraph() {
   const isInCouple = (m?: MemberLite | null) =>
     !!(m?.spouseId && nodes.some(x => x.kind === 'person' && x.id === m.spouseId))
 
+  // NEU: Auto-Fit / Auto-Center, sobald Maße feststehen oder Container sich ändert
+  useEffect(() => {
+    if (!apiRef.current || !containerRef.current) return
+    if (!width || !height) return
+
+    const fit = () => {
+      const cw = containerRef.current!.clientWidth
+      const ch = containerRef.current!.clientHeight
+      if (cw <= 0 || ch <= 0) return
+
+      // Scale berechnen, der in den Container passt (kleine Margin)
+      const scaleRaw = Math.min(cw / width, ch / height)
+      const marginFactor = 0.9 // 10% Rand
+      const desired = (scaleRaw || INITIAL_SCALE) * marginFactor
+
+      // min/max aus TransformWrapper respektieren
+      const minS = 0.3
+      const maxS = 2.5
+      const scale = Math.min(Math.max(desired, minS), maxS)
+
+      const x = (cw - width * scale) / 2
+      const y = (ch - height * scale) / 2
+
+      // sanft animieren
+      apiRef.current!.setTransform(x, y, scale, 250, 'easeOut')
+    }
+
+    // initial fit
+    const id = requestAnimationFrame(fit)
+
+    // Re-Fit bei Container-Resize
+    const ro = new ResizeObserver(() => requestAnimationFrame(fit))
+    ro.observe(containerRef.current)
+
+    return () => {
+      cancelAnimationFrame(id)
+      ro.disconnect()
+    }
+  }, [width, height, layoutNonce])
+
   return (
     <div
+      ref={containerRef}
       className="w-full h-full overflow-hidden bg-[color:var(--color-surface-100)] border-4 border-[color:var(--color-primary-800)]"
       data-testid="family-graph-root"
       role="tree"
@@ -144,7 +187,7 @@ export default function FamilyGraph() {
                     return items
                   })()}
 
-                 {edges.map(e => {
+                  {edges.map(e => {
                     const from = nodes.find(n => n.id === e.from)!
                     const to = nodes.find(n => n.id === e.to)!
                     const d = edgePath(from, to, {
@@ -161,14 +204,13 @@ export default function FamilyGraph() {
                         strokeWidth={2}
                         markerEnd="url(#dot)"
                         opacity={0.9}
-                        /* 👇 NEU: gestrichelt, wenn adoptiert */
                         strokeDasharray={e.adopted ? '6 6' : undefined}
                       />
                     )
                   })}
                 </svg>
 
-                {/* Paar-Container: transparent, ohne Schatten */}
+                {/* Paar-Container */}
                 {couplePairs.map(([a, b, key]) => {
                   const padding = 12
                   const minX = Math.min(a.x, b.x) - padding
@@ -227,6 +269,7 @@ export default function FamilyGraph() {
                       className={baseCls}
                       style={{ left: n.x, top: n.y, width: CARD_W, height: CARD_H, zIndex: 2 }}
                     >
+                      {/* Person selbst hat jetzt Ellipsis im Namen */}
                       <Person member={m.raw} isDescendant={isDescendant} />
                     </div>
                   )
@@ -246,7 +289,6 @@ export default function FamilyGraph() {
               bloodlineMemberId={bloodlineMemberId}
               onChangeBloodlineMember={setBloodlineMemberId}
               members={memberOptions}
-              // NEU:
               kinDepth={kinDepth}
               onChangeKinDepth={setKinDepth}
             />

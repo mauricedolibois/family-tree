@@ -1,4 +1,3 @@
-// src/components/Person.tsx
 import { IMember } from '@/types/IMember'
 import { Gender } from '@/types/Gender'
 import Avatar from '@/components/Avatar'
@@ -36,8 +35,18 @@ export const Person = ({ member, isDescendant = true, className }: IPersonProps)
           title={name}
         />
       </div>
-      {/* Namen weiß */}
-      <p className="m-0 mt-1 text-xs text-[color:var(--color-primary-800)]">{name}</p>
+
+     <p
+  className="
+    m-0 mt-1 text-xs text-[color:var(--color-primary-800)]
+    text-center leading-snug
+    whitespace-normal break-words
+    max-w-[100px]
+  "
+  title={name}
+>
+  {name}
+</p>
     </div>
   )
 }
