@@ -76,14 +76,30 @@ export default function DetailsView({
   onAdd,
   onDelete,
 }: Props) {
+  const formatGermanDate = (value: string) => {
+    const trimmed = value.trim()
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+    if (!match) return value
+    const [, y, m, d] = match
+    return `${d}.${m}.${y}`
+  }
+
   const spouse = member.spouse ?? null
   const parents = member.parents ?? []
   const children = member.children ?? []
   const media = member.profile?.media ?? []
 
   const infoItems: Array<{ label: string; value: string }> = []
-  if (member.profile?.birthDate) infoItems.push({ label: 'Geburtsdatum', value: member.profile.birthDate })
-  if (member.profile?.deathDate) infoItems.push({ label: 'Todesdatum', value: member.profile.deathDate })
+  if (member.profile?.birthDate)
+    infoItems.push({
+      label: 'Geburtsdatum',
+      value: formatGermanDate(member.profile.birthDate),
+    })
+  if (member.profile?.deathDate)
+    infoItems.push({
+      label: 'Todesdatum',
+      value: formatGermanDate(member.profile.deathDate),
+    })
   if (member.profile?.country)    infoItems.push({ label: 'Land', value: member.profile.country })
   if (member.profile?.city)       infoItems.push({ label: 'Wohnort', value: member.profile.city })
   if (member.profile?.job)        infoItems.push({ label: 'Beruf', value: member.profile.job })
