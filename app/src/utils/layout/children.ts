@@ -87,7 +87,10 @@ export function mergeChildGroupsBySpouses(
     const ga = groupOfId.get(n.id)
     const gb = groupOfId.get(sId)
     if (ga == null || gb == null) continue
-    if (ga !== gb) unite(ga, gb)
+    if (ga !== gb) {
+      if (groups[ga].order !== groups[gb].order) continue
+      unite(ga, gb)
+    }
   }
 
   const buckets = new Map<number, { order: number; ids: string[] }>()
@@ -163,7 +166,8 @@ export function enforceChildGroupOrderForGen(
   membershipFromGroups: Map<string, string>, // childId -> groupKey
   parentOrderIndex?: ParentOrderIndex,
   desiredCenterByOrder?: Map<number, number>,
-  fineOrderIndex?: Map<string, number>
+  fineOrderIndex?: Map<string, number>,
+  birthTsById?: Map<string, number>
 ) {
   // Sichern, dass jedes Kind Membership hat
   {
@@ -194,6 +198,11 @@ export function enforceChildGroupOrderForGen(
   const parsed: ChildGroup[] = []
   for (const [key, ids] of Array.from(tmpGroups.entries())) {
     ids.sort((a, b) => {
+      const ta = birthTsById?.get(a)
+      const tb = birthTsById?.get(b)
+      if (ta != null && tb != null && ta !== tb) return ta - tb
+      if (ta != null) return -1
+      if (tb != null) return 1
       const fa = fineOrderIndex?.get(a)
       const fb = fineOrderIndex?.get(b)
       if (fa != null && fb != null && fa !== fb) return fa - fb
