@@ -95,6 +95,8 @@ export default function DetailsView({
       label: 'Geburtsdatum',
       value: formatGermanDate(member.profile.birthDate),
     })
+  if (member.profile?.birthPlace)
+    infoItems.push({ label: 'Geburtsort', value: member.profile.birthPlace })
   if (member.profile?.deathDate)
     infoItems.push({
       label: 'Todesdatum',

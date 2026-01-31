@@ -14,6 +14,7 @@ export type StoredMedia = {
 
 export type StoredProfile = {
   birthDate?: string | null
+  birthPlace?: string | null
   deathDate?: string | null
   country?: string | null
   job?: string | null
@@ -80,6 +81,7 @@ export function serializeFromRoot(root: IMember, existing?: StoredTree | null): 
       profile: prevProfile
         ? {
             birthDate: prevProfile.birthDate ?? null,
+            birthPlace: prevProfile.birthPlace ?? null,
             deathDate: prevProfile.deathDate ?? null,
             country: prevProfile.country ?? null,
             job: prevProfile.job ?? null,
@@ -90,6 +92,7 @@ export function serializeFromRoot(root: IMember, existing?: StoredTree | null): 
           }
         : {
             birthDate: null,
+            birthPlace: null,
             deathDate: null,
             country: null,
             job: null,
