@@ -13,6 +13,7 @@ export interface IMedia {
 export interface IProfile {
   birthDate?: string | null
   birthPlace?: string | null
+  maidenName?: string | null
   deathDate?: string | null
   country?: string | null
   city?: string | null

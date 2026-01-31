@@ -33,6 +33,7 @@ export default function MemberDetailsModal() {
   const [form, setForm] = useState({
     birthDate: '',
     birthPlace: '',
+    maidenName: '',
     deathDate: '',
     country: '',
     city: '',
@@ -51,6 +52,7 @@ export default function MemberDetailsModal() {
     setForm({
       birthDate: member?.profile?.birthDate ?? '',
       birthPlace: member?.profile?.birthPlace ?? '',
+      maidenName: member?.profile?.maidenName ?? '',
       deathDate: member?.profile?.deathDate ?? '',
       country: member?.profile?.country ?? '',
       city: member?.profile?.city ?? '',
@@ -127,6 +129,7 @@ export default function MemberDetailsModal() {
         ...(rec.profile ?? {}),
         birthDate: form.birthDate || null,
         birthPlace: form.birthPlace || null,
+        maidenName: form.maidenName || null,
         deathDate: form.deathDate || null,
         country: form.country || null,
         city: form.city || null,

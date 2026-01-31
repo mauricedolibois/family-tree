@@ -97,6 +97,8 @@ export default function DetailsView({
     })
   if (member.profile?.birthPlace)
     infoItems.push({ label: 'Geburtsort', value: member.profile.birthPlace })
+  if (member.profile?.maidenName)
+    infoItems.push({ label: 'Geburtsname', value: member.profile.maidenName })
   if (member.profile?.deathDate)
     infoItems.push({
       label: 'Todesdatum',
