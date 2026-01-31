@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    build: ./app
     container_name: family-tree-app
     ports:
       - "3000:3000"
