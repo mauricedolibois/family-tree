@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    container_name: family-tree-app
+    ports:
+      - "3000:3000"
+    env_file:
+      - prod.env
+    command: npm run prod
