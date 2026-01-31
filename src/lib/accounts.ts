@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import bcrypt from 'bcryptjs'
 import { serialize, parse } from 'cookie'
-import { supaAdmin } from '@/lib/supabaseServer'
+import { getSupaAdmin } from '@/lib/supabaseServer'
 
 /**
  * DB-Schema (Supabase):
@@ -33,6 +33,7 @@ function toKey(name: string) {
  * Baut ein Objekt im alten FS-Format auf.
  */
 export async function loadAccounts(): Promise<AccountsFile> {
+  const supaAdmin = getSupaAdmin()
   const { data, error } = await supaAdmin
     .from('families')
     .select('id,name,pass_hash,created_at')
@@ -63,6 +64,7 @@ export async function saveAccounts(_db: AccountsFile) {
  * Wirft Fehler, wenn der Name bereits belegt ist.
  */
 export async function registerFamily(name: string, password: string) {
+  const supaAdmin = getSupaAdmin()
   const trimmed = name.trim()
   if (!trimmed) throw new Error('Name erforderlich')
   if (!password) throw new Error('Passwort erforderlich')
@@ -98,6 +100,7 @@ export async function registerFamily(name: string, password: string) {
  * Liefert Account im alten Shape zurück (passwordHash statt pass_hash).
  */
 export async function loginFamily(name: string, password: string) {
+  const supaAdmin = getSupaAdmin()
   const trimmed = name.trim()
   const { data, error } = await supaAdmin
     .from('families')
@@ -175,6 +178,7 @@ export function familyUploadDir(fid: string) {
 
 /** Familiennamen per ID laden (z. B. für Titelanzeige) */
 export async function getFamilyNameById(fid: string): Promise<string | null> {
+  const supaAdmin = getSupaAdmin()
   const { data, error } = await supaAdmin
     .from('families')
     .select('name')

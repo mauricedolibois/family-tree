@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { supaAdmin } from '@/lib/supabaseServer'
+import { getSupaAdmin } from '@/lib/supabaseServer'
 import { getFamilyIdFromReq } from '@/lib/accounts'
 import { startApiLog } from '@/lib/apiLogger' // ⬅️ add
 
@@ -24,6 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(405).end()
     }
 
+    const supaAdmin = getSupaAdmin()
     const fid = getFamilyIdFromReq(req)
     if (!fid) {
       await log.end(401, { error: 'unauthorized' })

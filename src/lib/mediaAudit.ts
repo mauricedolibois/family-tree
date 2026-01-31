@@ -1,5 +1,5 @@
 // src/lib/mediaAudit.ts
-import { supaAdmin } from '@/lib/supabaseServer'
+import { getSupaAdmin } from '@/lib/supabaseServer'
 
 /**
  * Aus einem Storage-Key wie "fid/550e8400-e29b-41d4-a716-446655440000-foto.jpg"
@@ -19,6 +19,7 @@ function parseNamePartsFromKey(key: string): { basename: string; uuidLike: strin
  * (Bei sehr großen Datenmengen alternativ paginieren oder serverseitig streamen.)
  */
 async function loadAllFamilyTreesAsStrings(): Promise<string[]> {
+  const supaAdmin = getSupaAdmin()
   const { data, error } = await supaAdmin
     .from('family_trees')
     .select('tree_json')
@@ -37,6 +38,7 @@ async function loadAllFamilyTreesAsStrings(): Promise<string[]> {
  * Listet alle Keys in allen Familienordnern (Prefix = fid/).
  */
 async function listAllMediaKeys(): Promise<string[]> {
+  const supaAdmin = getSupaAdmin()
   // 1) alle family-IDs holen
   const { data: fams, error: famErr } = await supaAdmin
     .from('families')
@@ -131,6 +133,7 @@ export async function auditMediaUsageByName(): Promise<{
  * Kannst du separat aufrufen; die Audit-Methode bleibt reine Prüfung.
  */
 export async function deleteKeys(keys: string[]): Promise<number> {
+  const supaAdmin = getSupaAdmin()
   if (!keys.length) return 0
   const BATCH = 100
   let deleted = 0

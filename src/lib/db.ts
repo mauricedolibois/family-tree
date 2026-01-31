@@ -1,7 +1,8 @@
 // src/lib/db.ts
-import { supaAdmin } from './supabaseServer'
+import { getSupaAdmin } from './supabaseServer'
 
 export async function getFamilyByName(name: string) {
+  const supaAdmin = getSupaAdmin()
   const { data, error } = await supaAdmin
     .from('families')
     .select('*')
@@ -12,6 +13,7 @@ export async function getFamilyByName(name: string) {
 }
 
 export async function createFamily(name: string, pass_hash: string) {
+  const supaAdmin = getSupaAdmin()
   const { data, error } = await supaAdmin
     .from('families')
     .insert({ name, pass_hash })
@@ -22,6 +24,7 @@ export async function createFamily(name: string, pass_hash: string) {
 }
 
 export async function getFamilyById(id: string) {
+  const supaAdmin = getSupaAdmin()
   const { data, error } = await supaAdmin
     .from('families')
     .select('*')
@@ -32,6 +35,7 @@ export async function getFamilyById(id: string) {
 }
 
 export async function loadFamilyTree(familyId: string) {
+  const supaAdmin = getSupaAdmin()
   const { data, error } = await supaAdmin
     .from('family_trees')
     .select('tree_json')
@@ -42,6 +46,7 @@ export async function loadFamilyTree(familyId: string) {
 }
 
 export async function saveFamilyTree(familyId: string, json: any) {
+  const supaAdmin = getSupaAdmin()
   const { error } = await supaAdmin
     .from('family_trees')
     .upsert({ family_id: familyId, tree_json: json, updated_at: new Date().toISOString() })
