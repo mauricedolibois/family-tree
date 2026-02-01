@@ -11,6 +11,8 @@ import { useFamilyTree } from '@/components/FamilyTreeProvider'
 
 type FormState = {
   birthDate: string
+  birthPlace: string
+  maidenName: string
   deathDate: string
   country: string
   city: string
@@ -185,6 +187,24 @@ export default function EditView(props: Props) {
                 className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
                 value={form.birthDate}
                 onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))}
+              />
+            </label>
+
+            <label className="text-sm gap-1 flex flex-col">
+              Geburtsort
+              <input
+                className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
+                value={form.birthPlace}
+                onChange={(e) => setForm((f) => ({ ...f, birthPlace: e.target.value }))}
+              />
+            </label>
+
+            <label className="text-sm gap-1 flex flex-col">
+              Geburtsname
+              <input
+                className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
+                value={form.maidenName}
+                onChange={(e) => setForm((f) => ({ ...f, maidenName: e.target.value }))}
               />
             </label>
 

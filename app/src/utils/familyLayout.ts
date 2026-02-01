@@ -46,6 +46,214 @@ function recenterRow(nodesInRow: PositionedNode[], targetWidth: number) {
   for (let i = 0; i < nodesInRow.length; i++) nodesInRow[i].x += offset
 }
 
+function birthDateToUtcMs(value?: string | null): number | null {
+  if (!value) return null
+  const trimmed = value.trim()
+  let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed)
+  if (m) {
+    const y = Number(m[1]); const mo = Number(m[2]); const d = Number(m[3])
+    if (!Number.isNaN(y) && !Number.isNaN(mo) && !Number.isNaN(d)) {
+      return Date.UTC(y, mo - 1, d)
+    }
+  }
+  m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(trimmed)
+  if (m) {
+    const d = Number(m[1]); const mo = Number(m[2]); const y = Number(m[3])
+    if (!Number.isNaN(y) && !Number.isNaN(mo) && !Number.isNaN(d)) {
+      return Date.UTC(y, mo - 1, d)
+    }
+  }
+  const parsed = Date.parse(trimmed)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function coupleOrderByGender(
+  aId: string,
+  bId: string,
+  map: Record<MemberId, MemberLite>,
+  nodesById: Map<string, PositionedNode>
+): [string, string] {
+  const aNode = nodesById.get(aId)
+  const bNode = nodesById.get(bId)
+  if (aNode && bNode) {
+    const [L, R] = spouseLeftRight(aNode, bNode)
+    return [L.id, R.id]
+  }
+  const gA = map[aId]?.gender?.toString().toUpperCase() || 'OTHER'
+  const gB = map[bId]?.gender?.toString().toUpperCase() || 'OTHER'
+  if (gA === 'MALE' && gB === 'FEMALE') return [aId, bId]
+  if (gA === 'FEMALE' && gB === 'MALE') return [bId, aId]
+  return aId < bId ? [aId, bId] : [bId, aId]
+}
+
+function computeParentOrderForRow(
+  row: PositionedNode[],
+  map: Record<MemberId, MemberLite>
+): Map<string, number> {
+  const byId: Record<string, PositionedNode> = {}
+  for (const n of row) byId[n.id] = n
+  const sorted = row.slice().sort((a, b) => a.x - b.x)
+  const visited = new Set<string>()
+  const order = new Map<string, number>()
+  let idx = 0
+
+  for (const n of sorted) {
+    if (visited.has(n.id)) continue
+    const sId = map[n.id]?.spouseId ?? null
+    if (sId && byId[sId] && !visited.has(sId)) {
+      const [L, R] = spouseLeftRight(n, byId[sId])
+      order.set(L.id, idx)
+      order.set(R.id, idx)
+      visited.add(L.id); visited.add(R.id)
+      idx += 1
+    } else {
+      order.set(n.id, idx)
+      visited.add(n.id)
+      idx += 1
+    }
+  }
+  return order
+}
+
+function sortChildIdsByAge(ids: string[], map: Record<MemberId, MemberLite>): string[] {
+  if (ids.length <= 1) return ids.slice()
+  const withMeta = ids.map((id, idx) => {
+    const birthDate = map[id]?.raw?.profile?.birthDate ?? null
+    return { id, idx, ts: birthDateToUtcMs(birthDate) }
+  })
+  withMeta.sort((a, b) => {
+    if (a.ts != null && b.ts != null && a.ts !== b.ts) return a.ts - b.ts
+    if (a.ts != null) return -1
+    if (b.ts != null) return 1
+    return a.idx - b.idx
+  })
+  return withMeta.map(x => x.id)
+}
+
+function enforceChildOrderByParent(
+  gen: number,
+  nodesById: Map<string, PositionedNode>,
+  map: Record<MemberId, MemberLite>,
+  orderIndex: Map<string, number>,
+  birthTsById: Map<string, number>,
+  ownerIndex?: Map<string, number>
+) {
+  const row = rowPersons(Array.from(nodesById.values()), gen)
+  if (!row.length) return
+
+  const byId: Record<string, PositionedNode> = {}
+  for (const n of row) byId[n.id] = n
+
+  const baseOrderFor = (id: string) => {
+    const directOwner = ownerIndex?.get(id)
+    if (directOwner != null) return directOwner
+    const direct = orderIndex.get(id)
+    if (direct != null) return direct
+    return 1e9
+  }
+
+  const effectiveOrder = new Map<string, number>()
+  for (const n of row) {
+    if (effectiveOrder.has(n.id)) continue
+    const sId = map[n.id]?.spouseId ?? null
+    if (sId && byId[sId]) {
+      const a = baseOrderFor(n.id)
+      const b = baseOrderFor(sId)
+      let ord = 1e9
+      if (a !== 1e9 && b !== 1e9) {
+        ord = Math.min(a, b)
+      } else if (a !== 1e9) {
+        ord = a
+      } else if (b !== 1e9) {
+        ord = b
+      }
+      effectiveOrder.set(n.id, ord)
+      effectiveOrder.set(sId, ord)
+    } else {
+      effectiveOrder.set(n.id, baseOrderFor(n.id))
+    }
+  }
+
+  const groups = new Map<number, string[]>()
+  for (const n of row) {
+    const ord = effectiveOrder.get(n.id) ?? 1e9
+    if (!groups.has(ord)) groups.set(ord, [])
+    groups.get(ord)!.push(n.id)
+  }
+
+  const orders = Array.from(groups.keys()).sort((a, b) => a - b)
+
+  for (const ord of orders) {
+    const ids = groups.get(ord) ?? []
+    ids.sort((a, b) => {
+      const ta = birthTsById.get(a)
+      const tb = birthTsById.get(b)
+      if (ta != null && tb != null && ta !== tb) return ta - tb
+      if (ta != null) return -1
+      if (tb != null) return 1
+      return (byId[a]?.x ?? 0) - (byId[b]?.x ?? 0)
+    })
+
+    const used = new Set<string>()
+    type Unit = { ids: string[]; key: number }
+    const units: Unit[] = []
+
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i]
+      if (used.has(id)) continue
+      const sId = map[id]?.spouseId ?? null
+      const hasSpouse =
+        sId && byId[sId] && !used.has(sId) && (effectiveOrder.get(sId) ?? 1e9) === ord
+      if (hasSpouse) {
+        const [L, R] = spouseLeftRight(byId[id], byId[sId])
+        const ta = birthTsById.get(L.id)
+        const tb = birthTsById.get(R.id)
+        const key = Math.min(
+          ta != null ? ta : Number.POSITIVE_INFINITY,
+          tb != null ? tb : Number.POSITIVE_INFINITY
+        )
+        units.push({ ids: [L.id, R.id], key })
+        used.add(L.id)
+        used.add(R.id)
+      } else {
+        const key = birthTsById.get(id) ?? Number.POSITIVE_INFINITY
+        units.push({ ids: [id], key })
+        used.add(id)
+      }
+    }
+
+    units.sort((a, b) => a.key - b.key)
+
+    const groupLeft = Math.min(...ids.map(id => byId[id]?.x ?? 0))
+    const groupRight = Math.max(...ids.map(id => (byId[id]?.x ?? 0) + (byId[id]?.w ?? CARD_W)))
+    const groupWidth = Math.max(0, groupRight - groupLeft)
+    const totalWidth =
+      units.reduce((s, u) => s + (u.ids.length === 2 ? (CARD_W * 2 + MIN_COUPLE_GAP) : CARD_W), 0) +
+      (units.length > 1 ? (units.length - 1) * MIN_CHILD_GAP : 0)
+    let cursor = groupLeft
+    if (totalWidth <= groupWidth && Number.isFinite(groupWidth)) {
+      cursor = groupLeft + (groupWidth - totalWidth) / 2
+    }
+
+    for (const u of units) {
+      if (u.ids.length === 2) {
+        const leftId = u.ids[0]
+        const rightId = u.ids[1]
+        const leftNode = byId[leftId]
+        const rightNode = byId[rightId]
+        if (leftNode) leftNode.x = cursor
+        if (rightNode) rightNode.x = cursor + CARD_W + MIN_COUPLE_GAP
+        cursor += (CARD_W * 2 + MIN_COUPLE_GAP + MIN_CHILD_GAP)
+      } else {
+        const onlyId = u.ids[0]
+        const node = byId[onlyId]
+        if (node) node.x = cursor
+        cursor += CARD_W + MIN_CHILD_GAP
+      }
+    }
+  }
+}
+
 export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberId): LayoutResult {
   if (DEBUG_LAYOUT) console.groupCollapsed('[familyLayout] computeLayout')
 
@@ -54,10 +262,56 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
 
   // Global layer order (median sweeps)
   const build = buildSupernodeLayers({ gen, map })
-  minimizeCrossings(build.graph, 10)
+  // Align ordering with the "first parents anchor" rule for child couples
+  {
+    const fullEdges = build.graph.edges.slice()
+    const isCoupleUnit = (id: string) => id.startsWith('C:')
+    let prevKey = ''
+    for (let iter = 0; iter < 3; iter++) {
+      const anchorByChild = new Map<string, string>()
+      const parentsByChild = new Map<string, Set<string>>()
+      for (const e of fullEdges) {
+        if (!isCoupleUnit(e.to)) continue
+        if (!parentsByChild.has(e.to)) parentsByChild.set(e.to, new Set())
+        parentsByChild.get(e.to)!.add(e.from)
+      }
+      for (const [childU, parents] of parentsByChild.entries()) {
+        let best: string | null = null
+        let bestIdx = Number.POSITIVE_INFINITY
+        for (const p of parents) {
+          const idx = build.graph.indexOfUnit.get(p)
+          if (idx == null) continue
+          if (idx < bestIdx) {
+            bestIdx = idx
+            best = p
+          }
+        }
+        if (best) anchorByChild.set(childU, best)
+      }
+
+      const key = Array.from(anchorByChild.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([c, p]) => `${c}->${p}`)
+        .join('|')
+      if (key === prevKey) break
+      prevKey = key
+
+      build.graph.edges = fullEdges.filter((e) => {
+        if (!isCoupleUnit(e.to)) return true
+        const anchor = anchorByChild.get(e.to)
+        return !anchor || e.from === anchor
+      })
+      minimizeCrossings(build.graph, 6)
+    }
+  }
 
   // Multi-level upstream index (parents+grandparents+great-grandparents)
   const upstreamIndex = computeMemberUpstreamIndexMulti(gen, map, build, 3)
+  const birthTsById = new Map<string, number>()
+  for (const m of Object.values(map)) {
+    const ts = birthDateToUtcMs(m.raw?.profile?.birthDate ?? null)
+    if (ts != null) birthTsById.set(m.id, ts)
+  }
 
   // Helpers
   const orderedUnitsByGenIndex = build.graph.layers.map(L => L.map(u => u))
@@ -75,6 +329,9 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
   const childGroupOfId = new Map<string, string>()
   const parentOrderIndexByGen = new Map<number, ParentOrderIndex>()
   const fineOrderIndexByGen = new Map<number, Map<string, number>>() // childId -> fine index
+  const lockedIdsByGen = new Map<number, Set<string>>() // keep spouses together once placed
+  const childOwnerOrderByGen = new Map<number, Map<string, number>>() // childId -> parent block order
+  const parentGroupOrderByGen = new Map<number, Map<string, number>>() // parentId -> group order
 
   const genY: Record<number, number> = {}
   for (let g = build.minGen; g <= build.maxGen; g++) genY[g] = (g - build.minGen) * (CARD_H + MIN_V_GAP)
@@ -159,6 +416,8 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
     width: number
     // sortX steuert ausschließlich die Order (damit Single-Parent-Blöcke L/R neben dem Paar stehen)
     sortX: number
+    // groupKey: gleich für zusammengehörige Blöcke (z. B. Couple + exklusive Kinder)
+    groupKey: string
   }
   const blocksByGen = new Map<number, PBlock[]>()
 
@@ -178,10 +437,11 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
         const L = n.x <= byId[sId].x ? n : byId[sId]
         const R = L === n ? byId[sId] : n
         const parentIds = [L.id, R.id]
+        const coupleKey = `C:${[L.id, R.id].sort().join('|')}`
         const left = L.x
         const width = (R.x + R.w) - L.x
-        const aKids = (map[L.id]?.childrenIds ?? [])
-        const bKids = (map[R.id]?.childrenIds ?? [])
+        const aKids = sortChildIdsByAge(map[L.id]?.childrenIds ?? [], map)
+        const bKids = sortChildIdsByAge(map[R.id]?.childrenIds ?? [], map)
         const shared: string[] = []
         const exclL: string[] = []
         const exclR: string[] = []
@@ -194,7 +454,7 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
         const center = left + width / 2
 
         // Couple block with shared children (sortX = center)
-        perGen.push({ gen: g, parentIds, childrenIds: shared, x: left, width, sortX: center })
+        perGen.push({ gen: g, parentIds, childrenIds: shared, x: left, width, sortX: center, groupKey: coupleKey })
         seenCouple.add(L.id); seenCouple.add(R.id)
 
         // Single-parent blocks for exclusive kids:
@@ -203,7 +463,8 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
           const lx = L.x
           perGen.push({
             gen: g, parentIds: [L.id], childrenIds: exclL,
-            x: lx, width: L.w, sortX: lx - 0.001 // garantiert links eingeordnet
+            x: lx, width: L.w, sortX: lx - 0.001, // garantiert links eingeordnet
+            groupKey: coupleKey
           })
         }
         // - rechte exklusive Kinder RECHTS vom Paar (leicht nachschieben)
@@ -211,16 +472,18 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
           const rx = R.x
           perGen.push({
             gen: g, parentIds: [R.id], childrenIds: exclR,
-            x: rx, width: R.w, sortX: rx + R.w + 0.001 // garantiert rechts eingeordnet
+            x: rx, width: R.w, sortX: rx + R.w + 0.001, // garantiert rechts eingeordnet
+            groupKey: coupleKey
           })
         }
 
       } else {
         // Single parent (ohne sichtbaren Partner)
         const parentIds = [n.id]
-        const kids = (map[n.id]?.childrenIds ?? []).filter(id => !!map[id])
+        const kids = sortChildIdsByAge(map[n.id]?.childrenIds ?? [], map).filter(id => !!map[id])
         perGen.push({
-          gen: g, parentIds, childrenIds: kids, x: n.x, width: n.w, sortX: n.x + n.w / 2
+          gen: g, parentIds, childrenIds: kids, x: n.x, width: n.w, sortX: n.x + n.w / 2,
+          groupKey: `S:${n.id}`
         })
       }
     }
@@ -234,7 +497,7 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
   const parentCentersByGen = new Map<number, Map<number, number[]>>() // childGen -> order -> centers[]
   function placeChildrenUnderBlock(b: PBlock, blockOrder: number) {
     if (b.childrenIds.length === 0) return
-    const childIds = b.childrenIds.filter(cid => !!map[cid])
+    const childIds = sortChildIdsByAge(b.childrenIds.filter(cid => !!map[cid]), map)
     if (!childIds.length) return
 
     const yUnion = genY[b.gen] + CARD_H + UNION_DY
@@ -266,18 +529,55 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
     const yChild = genY[childGen] ?? (childGen - build.minGen) * (CARD_H + MIN_V_GAP)
     genY[childGen] = yChild
 
+    if (!lockedIdsByGen.has(childGen)) lockedIdsByGen.set(childGen, new Set())
+    const locked = lockedIdsByGen.get(childGen)!
+    const wasLocked = new Set(locked)
+
     // ensure fineIndex map for this child generation
     if (!fineOrderIndexByGen.has(childGen)) fineOrderIndexByGen.set(childGen, new Map())
     const fineIdxMap = fineOrderIndexByGen.get(childGen)!
 
-    const totalChildrenWidth = childIds.length * CARD_W + (childIds.length - 1) * MIN_CHILD_GAP
-    let startX = unionCenterX - totalChildrenWidth / 2
-
-    const placedChildIds: string[] = []
+    type ChildUnit = { childId: string; ids: string[]; width: number }
+    const units: ChildUnit[] = []
+    const used = new Set<string>()
     for (const cid of childIds) {
-      const already = nodesById.get(cid)
-      const adopted = isAdoptedEdge(b.parentIds, cid)
+      if (used.has(cid)) continue
+      if (locked.has(cid)) {
+        used.add(cid)
+        continue
+      }
+      const spouseId = map[cid]?.spouseId ?? null
+      const ownerMap = childOwnerOrderByGen.get(childGen)
+      const spouseOrder = spouseId ? ownerMap?.get(spouseId) : undefined
+      const hasSpouse =
+        !!(spouseId && map[spouseId] && !used.has(spouseId)) &&
+        (spouseOrder == null || spouseOrder === blockOrder)
+      if (hasSpouse) {
+        const [leftId, rightId] = coupleOrderByGender(cid, spouseId!, map, nodesById)
+        units.push({
+          childId: cid,
+          ids: [leftId, rightId],
+          width: CARD_W * 2 + MIN_COUPLE_GAP,
+        })
+        used.add(leftId)
+        used.add(rightId)
+        locked.add(leftId)
+        locked.add(rightId)
+      } else {
+        units.push({ childId: cid, ids: [cid], width: CARD_W })
+        used.add(cid)
+        locked.add(cid)
+      }
+    }
 
+    const totalUnitsWidth =
+      units.reduce((s, u) => s + u.width, 0) +
+      (units.length > 1 ? (units.length - 1) * MIN_CHILD_GAP : 0)
+    let startX = unionCenterX - totalUnitsWidth / 2
+
+    const newChildIds: string[] = []
+    for (const cid of childIds) {
+      const adopted = isAdoptedEdge(b.parentIds, cid)
       // fine parent index (multi-level barycenter up to depth 3)
       const pUnits: number[] = []
       const parents = (map[cid]?.parentIds ?? [])
@@ -300,7 +600,7 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
           }
         }
       }
-      if (pUnits.length) {
+      if (pUnits.length && !wasLocked.has(cid)) {
         pUnits.sort((a, b) => a - b)
         const mid = Math.floor(pUnits.length / 2)
         const med = (pUnits.length % 2 === 1) ? pUnits[mid] : (pUnits[mid - 1] + pUnits[mid]) / 2
@@ -308,25 +608,46 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
         fineIdxMap.set(cid, (med + avg) / 2 + blockOrder * 1e-3)
       }
 
-      if (already && already.gen === childGen) {
-        edges.push({ id: `e-${uid}-${cid}`, from: unionNode.id, to: cid, fromSide: 'bottom', toSide: 'top', adopted })
-        placedChildIds.push(cid)
-        startX += CARD_W + MIN_CHILD_GAP
-      } else {
-        const cn = upsertPersonNode(cid, childGen, startX, genY[childGen], map[cid])
-        if (cn) {
-          edges.push({ id: `e-${uid}-${cid}`, from: unionNode.id, to: cid, fromSide: 'bottom', toSide: 'top', adopted })
-          placedChildIds.push(cid)
-          startX += CARD_W + MIN_CHILD_GAP
-        }
-      }
+      edges.push({
+        id: `e-${uid}-${cid}`,
+        from: unionNode.id,
+        to: cid,
+        fromSide: 'bottom',
+        toSide: 'top',
+        adopted,
+      })
+      if (!wasLocked.has(cid)) newChildIds.push(cid)
     }
 
-    if (placedChildIds.length) {
+    for (const u of units) {
+      if (u.ids.length === 2) {
+        const leftId = u.ids[0]
+        const rightId = u.ids[1]
+        upsertPersonNode(leftId, childGen, startX, genY[childGen], map[leftId])
+        upsertPersonNode(
+          rightId,
+          childGen,
+          startX + CARD_W + MIN_COUPLE_GAP,
+          genY[childGen],
+          map[rightId]
+        )
+      } else {
+        const onlyId = u.ids[0]
+        upsertPersonNode(onlyId, childGen, startX, genY[childGen], map[onlyId])
+      }
+      startX += u.width + MIN_CHILD_GAP
+    }
+
+    const unitIds: string[] = []
+    for (const u of units) unitIds.push(...u.ids)
+
+    if (unitIds.length) {
       if (!parentOrderIndexByGen.has(childGen)) parentOrderIndexByGen.set(childGen, new Map())
       const idx = parentOrderIndexByGen.get(childGen)!
-      placedChildIds.forEach(id => idx.set(id, blockOrder))
-      registerChildGroup(childGroupsByGen, childGroupOfId, childGen, blockOrder, placedChildIds)
+      newChildIds.forEach(id => { if (!idx.has(id)) idx.set(id, blockOrder) })
+      unitIds.forEach(id => { if (!idx.has(id)) idx.set(id, blockOrder) })
+
+      registerChildGroup(childGroupsByGen, childGroupOfId, childGen, blockOrder, unitIds)
 
       if (!parentCentersByGen.has(childGen)) parentCentersByGen.set(childGen, new Map())
       const centersForGen = parentCentersByGen.get(childGen)!
@@ -347,7 +668,49 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
   for (let g = build.minGen; g <= build.maxGen; g++) {
     const blocks = (blocksByGen.get(g) ?? []).slice().sort((A, B) => A.sortX - B.sortX)
     blocksByGen.set(g, blocks)
-    for (let i = 0; i < blocks.length; i++) placeChildrenUnderBlock(blocks[i], i)
+    const parentRow = rowPersons(Array.from(nodesById.values()), g)
+    if (!parentGroupOrderByGen.has(g)) {
+      parentGroupOrderByGen.set(g, computeParentOrderForRow(parentRow, map))
+    }
+    const parentGroupOrder = parentGroupOrderByGen.get(g)!
+
+    const childGen = g + 1
+    if (!childOwnerOrderByGen.has(childGen)) childOwnerOrderByGen.set(childGen, new Map())
+    const owner = childOwnerOrderByGen.get(childGen)!
+    const groupOrderByKey = new Map<string, number>()
+
+    const resolveBlockOrder = (b: PBlock, fallback: number) => {
+      if (b.parentIds.length === 2) {
+        const aOrd = parentGroupOrder.get(b.parentIds[0])
+        const bOrd = parentGroupOrder.get(b.parentIds[1])
+        if (aOrd != null && bOrd != null) return Math.min(aOrd, bOrd)
+        if (aOrd != null) return aOrd
+        if (bOrd != null) return bOrd
+      } else {
+        const ord = parentGroupOrder.get(b.parentIds[0])
+        if (ord != null) return ord
+      }
+      return fallback
+    }
+
+    for (let i = 0; i < blocks.length; i++) {
+      const key = blocks[i].groupKey
+      const blockOrder = resolveBlockOrder(blocks[i], i)
+      const prev = groupOrderByKey.get(key)
+      if (prev == null || blockOrder < prev) groupOrderByKey.set(key, blockOrder)
+    }
+
+    for (let i = 0; i < blocks.length; i++) {
+      const key = blocks[i].groupKey
+      const groupOrder = groupOrderByKey.get(key) ?? resolveBlockOrder(blocks[i], i)
+      const kids = blocks[i].childrenIds ?? []
+      for (const cid of kids) if (!owner.has(cid)) owner.set(cid, groupOrder)
+    }
+    for (let i = 0; i < blocks.length; i++) {
+      const key = blocks[i].groupKey
+      const groupOrder = groupOrderByKey.get(key) ?? resolveBlockOrder(blocks[i], i)
+      placeChildrenUnderBlock(blocks[i], groupOrder)
+    }
   }
 
   // ---------- 4) Kindergruppen packen & unter Eltern-Zentren ausrichten ----------
@@ -369,6 +732,35 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
         for (const id of gr.ids) membership.set(id, key)
       }
 
+      // Spouse override: keep couples together and anchor to the first parents' order
+      {
+        const ownerIdx = childOwnerOrderByGen.get(g)
+        const orderFor = (id: string) => {
+          const o = ownerIdx?.get(id)
+          if (o != null) return o
+          const p = idx.get(id)
+          if (p != null) return p
+          return 1e9
+        }
+        const byId: Record<string, PositionedNode> = {}
+        for (const n of row) byId[n.id] = n
+        const forced = new Map<string, number>()
+        for (const n of row) {
+          if (forced.has(n.id)) continue
+          const sId = (n.data as MemberLite | undefined)?.spouseId ?? null
+          if (!sId || !byId[sId]) continue
+          const a = orderFor(n.id)
+          const b = orderFor(sId)
+          if (a === 1e9 && b === 1e9) continue
+          const ord = Math.min(a, b)
+          forced.set(n.id, ord)
+          forced.set(sId, ord)
+        }
+        for (const [id, ord] of forced.entries()) {
+          membership.set(id, `${g}#${ord}`)
+        }
+      }
+
       // desired centers aus Union-Zentren mitteln
       const desiredCenterByOrder = new Map<number, number>()
       const centers = parentCentersByGen.get(g)
@@ -379,7 +771,19 @@ export function computeLayout(map: Record<MemberId, MemberLite>, rootId: MemberI
       }
 
       const fineIdx = fineOrderIndexByGen.get(g)
-      enforceChildGroupOrderForGen(g, childGroupsByGen, row, membership, idx, desiredCenterByOrder, fineIdx)
+      enforceChildGroupOrderForGen(
+        g,
+        childGroupsByGen,
+        row,
+        membership,
+        idx,
+        desiredCenterByOrder,
+        fineIdx,
+        birthTsById
+      )
+
+      const ownerIdx = childOwnerOrderByGen.get(g)
+      enforceChildOrderByParent(g, nodesById, map, idx, birthTsById, ownerIdx)
     }
   }
 
