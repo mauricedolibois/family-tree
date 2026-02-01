@@ -52,3 +52,6 @@ next-env.d.ts
 /.env.local
 /todos.txt
 logs/
+
+# copilot files
+instruction.txt
