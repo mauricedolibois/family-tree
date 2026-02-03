@@ -55,6 +55,24 @@ export function CountryFlag({ country, className, size = 'sm' }: CountryFlagProp
     )
   }
 
+  if (normalizedCountry === 'spanien' || normalizedCountry === 'spain') {
+    return (
+      <div
+        className={clsx(
+          sizeClasses[size],
+          'rounded-[2px] shadow-sm border border-gray-300 overflow-hidden flex flex-col',
+          className
+        )}
+        title="Spanien"
+      >
+        {/* Spanische Flagge: Rot, Gelb, Rot (horizontal, 1:2:1) */}
+        <div className="h-[25%] bg-[#AA151B]" />
+        <div className="h-[50%] bg-[#F1BF00]" />
+        <div className="h-[25%] bg-[#AA151B]" />
+      </div>
+    )
+  }
+
   // Unbekanntes Land - keine Flagge anzeigen
   return null
 }
