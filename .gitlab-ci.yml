@@ -34,6 +34,6 @@ deploy:
   script:
     - scp -i ~/.ssh/id_ed25519 -P $SSH_PORT docker-compose.yml $SSH_USER@$SSH_HOST:~/family-tree/docker-compose.yml
     - scp -i ~/.ssh/id_ed25519 -P $SSH_PORT deploy_tools/deploy_prod.sh $SSH_USER@$SSH_HOST:~/deploy_prod.sh
-    - ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT $SSH_USER@$SSH_HOST "bash ./deploy_prod.sh ${CI_REGISTRY} ${CI_DEPLOY_USER} ${CI_DEPLOY_PASSWORD}"
+    - ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT $SSH_USER@$SSH_HOST "bash ~/deploy_prod.sh ${CI_REGISTRY} ${CI_DEPLOY_USER} ${CI_DEPLOY_PASSWORD}"
   after_script:
     - rm -rf ~/.ssh

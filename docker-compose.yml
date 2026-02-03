@@ -1,5 +1,6 @@
 services:
   app:
+    image: "registry.lptzocker.com/lptzocker/family-tree/family-tree:latest"
     build: ./app
     container_name: family-tree-app
     ports:
