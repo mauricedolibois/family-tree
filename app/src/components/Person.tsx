@@ -5,19 +5,31 @@ import { CountryFlag } from '@/components/CountryFlag'
 import { useSelectedMember } from '@/components/SelectedMemberProvider'
 import clsx from 'clsx'
 
+function extractYear(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null
+  const iso = dateStr.match(/^(\d{4})-\d{2}-\d{2}/)
+  if (iso) return parseInt(iso[1], 10)
+  const german = dateStr.match(/^\d{2}\.\d{2}\.(\d{4})$/)
+  if (german) return parseInt(german[1], 10)
+  return null
+}
+
 interface IPersonProps {
   member: IMember | null
   isDescendant?: boolean
+  showBirthYear?: boolean
   className?: string
 }
 
-export const Person = ({ member, isDescendant = true, className }: IPersonProps) => {
+export const Person = ({ member, isDescendant = true, showBirthYear = false, className }: IPersonProps) => {
   const { openDetails } = useSelectedMember()
   if (!member) return null
 
   const { id, name, gender, profile } = member
   const titleImage = profile?.titleImageUrl ?? null
   const country = profile?.country
+  const birthYear = extractYear(profile?.birthDate)
+  const deathYear = extractYear(profile?.deathDate)
 
   return (
     <div
@@ -56,6 +68,15 @@ export const Person = ({ member, isDescendant = true, className }: IPersonProps)
       >
         {name}
       </p>
+      {showBirthYear && (birthYear || deathYear) && (
+        <p className="m-0 text-[10px] text-[color:var(--color-primary-800)] opacity-60 text-center leading-none">
+          {birthYear && deathYear
+            ? `* ${birthYear} · † ${deathYear}`
+            : birthYear
+            ? `* ${birthYear}\u00A0\u00A0`
+            : `† ${deathYear}\u00A0\u00A0`}
+        </p>
+      )}
     </div>
   )
 }

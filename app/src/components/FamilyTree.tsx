@@ -35,6 +35,7 @@ export default function FamilyGraph() {
   const [bloodlineMemberId, setBloodlineMemberId] = useState<string>('') // '' = alle
   const [includeSpouses, setIncludeSpouses] = useState<boolean>(false)
   const [kinDepth, setKinDepth] = useState<0 | 1 | 2 | 3>(0)
+  const [showBirthYear, setShowBirthYear] = useState(false)
 
   const baseMap = useMemo(() => buildFlatMemberMap(root), [root, layoutNonce])
 
@@ -270,7 +271,7 @@ export default function FamilyGraph() {
                       style={{ left: n.x, top: n.y, width: CARD_W, height: CARD_H, zIndex: 2 }}
                     >
                       {/* Person selbst hat jetzt Ellipsis im Namen */}
-                      <Person member={m.raw} isDescendant={isDescendant} />
+                      <Person member={m.raw} isDescendant={isDescendant} showBirthYear={showBirthYear} />
                     </div>
                   )
                 })}
@@ -291,6 +292,8 @@ export default function FamilyGraph() {
               members={memberOptions}
               kinDepth={kinDepth}
               onChangeKinDepth={setKinDepth}
+              showBirthYear={showBirthYear}
+              onToggleShowBirthYear={setShowBirthYear}
             />
 
             {/* Zoom controls */}
