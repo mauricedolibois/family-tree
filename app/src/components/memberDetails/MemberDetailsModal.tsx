@@ -31,6 +31,8 @@ export default function MemberDetailsModal() {
 
   // Profil-Formstate
   const [form, setForm] = useState({
+    name: '',
+    extraParentIds: [] as string[],
     birthDate: '',
     birthPlace: '',
     maidenName: '',
@@ -50,6 +52,8 @@ export default function MemberDetailsModal() {
   useEffect(() => {
     setMode('details')
     setForm({
+      name: member?.name ?? '',
+      extraParentIds: [],
       birthDate: member?.profile?.birthDate ?? '',
       birthPlace: member?.profile?.birthPlace ?? '',
       maidenName: member?.profile?.maidenName ?? '',
@@ -111,6 +115,9 @@ export default function MemberDetailsModal() {
       const rec = stored.members[member.id]
       if (!rec) throw new Error('Datensatz nicht gefunden')
 
+      const trimmedName = form.name.trim()
+      if (trimmedName) rec.name = trimmedName
+
       const existing = rec.profile?.media ?? []
       const keptExisting = existing.filter((m) => !removedIds.has(m.id))
       const deletedExisting = existing.filter((m) => removedIds.has(m.id))
@@ -137,6 +144,15 @@ export default function MemberDetailsModal() {
         comments: form.comments || null,
         titleImageUrl: (pendingTitleUrl ?? form.titleImageUrl) || null,
         media: [...keptExisting, ...pendingMedia],
+      }
+
+      // Neue Eltern verknüpfen
+      for (const pid of form.extraParentIds) {
+        const parentRec = stored.members[pid]
+        if (!parentRec) continue
+        if (!rec.parentIds) rec.parentIds = []
+        if (!rec.parentIds.includes(pid)) rec.parentIds.push(pid)
+        if (!parentRec.childrenIds.includes(member.id)) parentRec.childrenIds.push(member.id)
       }
 
       await putStored(stored)

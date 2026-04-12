@@ -106,9 +106,10 @@ export function startApiLog(req: NextApiRequest, route: string) {
       }
     },
     async error(err: unknown, status?: number, meta?: ApiLogMeta) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(`[api] ${route} ${status ?? ''}`, message, err)
       if (ENABLE_LOGGING && append) {
         const now = Date.now()
-        const message = err instanceof Error ? err.message : String(err)
         await append({
           ...base,
           ts: new Date(now).toISOString(),
