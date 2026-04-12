@@ -34,6 +34,9 @@ type GraphOptionsProps = {
   // Verwandtschaftstiefe (0..3)
   kinDepth: 0 | 1 | 2 | 3
   onChangeKinDepth: (d: 0 | 1 | 2 | 3) => void
+
+  showBirthYear: boolean
+  onToggleShowBirthYear: (v: boolean) => void
 }
 
 export default function GraphOptions({
@@ -49,6 +52,8 @@ export default function GraphOptions({
   members,
   kinDepth,
   onChangeKinDepth,
+  showBirthYear,
+  onToggleShowBirthYear,
 }: GraphOptionsProps) {
   const panelRef = useRef<HTMLDivElement | null>(null)
 
@@ -73,8 +78,10 @@ export default function GraphOptions({
   // Member-Dropdown (custom) state
   const [memberMenuOpen, setMemberMenuOpen] = useState(false)
   const [memberMenuDir, setMemberMenuDir] = useState<'up' | 'down'>('down')
+  const [memberSearch, setMemberSearch] = useState('')
   const memberButtonRef = useRef<HTMLButtonElement | null>(null)
   const memberMenuRef = useRef<HTMLDivElement | null>(null)
+  const memberSearchRef = useRef<HTMLInputElement | null>(null)
 
   // Outside click für Member-Dropdown
   useEffect(() => {
@@ -105,6 +112,10 @@ export default function GraphOptions({
       const spaceBelow = viewportH - rect.bottom
       const spaceAbove = rect.top
       setMemberMenuDir(spaceBelow >= estimatedMenuH || spaceBelow >= spaceAbove ? 'down' : 'up')
+      setMemberSearch('')
+      setTimeout(() => memberSearchRef.current?.focus(), 0)
+    } else {
+      setMemberSearch('')
     }
     setMemberMenuOpen(next)
   }
@@ -113,6 +124,12 @@ export default function GraphOptions({
     () => members.find(m => m.id === bloodlineMemberId) || null,
     [members, bloodlineMemberId]
   )
+
+  const filteredMembers = useMemo(() => {
+    const q = memberSearch.trim().toLowerCase()
+    if (!q) return members
+    return members.filter(m => m.name.toLowerCase().includes(q))
+  }, [members, memberSearch])
 
   // Labels für die Tiefenstufen
   const kinLabels = ['nur direkte Linie', ' + Geschwister', ' + Cousins', ' + Großcousins'] as const
@@ -162,6 +179,19 @@ export default function GraphOptions({
                 <option value="orthogonal">Eckig</option>
               </select>
             </div>
+
+            {/* Geburtsjahr */}
+            <label className="mb-4 inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[color:var(--color-primary-800)]"
+                checked={showBirthYear}
+                onChange={(e) => onToggleShowBirthYear(e.target.checked)}
+              />
+              <span className="text-[color:var(--color-primary-800)] text-sm">
+                Jahreszahlen anzeigen
+              </span>
+            </label>
 
             {/* Bloodline + Auswahl */}
             <div className="mb-4">
@@ -219,22 +249,38 @@ export default function GraphOptions({
                       memberMenuDir === 'down' ? 'top-full mt-2' : 'bottom-full mb-2'
                     )}
                   >
-                    {/* "Alle anzeigen" */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onChangeBloodlineMember('')
-                        setMemberMenuOpen(false)
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-[color:var(--color-secondary-50)] text-[color:var(--color-primary-800)] flex items-center justify-between"
-                    >
-                      <span>— Alle anzeigen —</span>
-                      {!selectedMember && <Check className="h-4 w-4" />}
-                    </button>
+                    {/* Suchfeld */}
+                    <div className="p-2 border-b border-[color:var(--color-primary-800)]/20">
+                      <input
+                        ref={memberSearchRef}
+                        type="text"
+                        placeholder="Suchen…"
+                        value={memberSearch}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMemberSearch(e.target.value)}
+                        className="w-full rounded-md border border-[color:var(--color-primary-800)]/40 px-2 py-1 text-sm bg-white text-[color:var(--color-primary-800)] outline-none focus:border-[color:var(--color-primary-800)]"
+                        onClick={(e: React.MouseEvent<HTMLInputElement>) => e.stopPropagation()}
+                      />
+                    </div>
 
-                    <div className="h-px bg-[color:var(--color-primary-800)]/20 my-1" />
+                    {/* "Alle anzeigen" — nur wenn kein Suchtext */}
+                    {!memberSearch && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onChangeBloodlineMember('')
+                            setMemberMenuOpen(false)
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-[color:var(--color-secondary-50)] text-[color:var(--color-primary-800)] flex items-center justify-between"
+                        >
+                          <span>— Alle anzeigen —</span>
+                          {!selectedMember && <Check className="h-4 w-4" />}
+                        </button>
+                        <div className="h-px bg-[color:var(--color-primary-800)]/20 my-1" />
+                      </>
+                    )}
 
-                    {members.map((m) => {
+                    {filteredMembers.map((m) => {
                       const isActive = m.id === bloodlineMemberId
                       return (
                         <button
