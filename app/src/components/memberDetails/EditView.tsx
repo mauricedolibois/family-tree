@@ -10,6 +10,8 @@ import { StoredMedia } from '@/storage/schema'
 import { useFamilyTree } from '@/components/FamilyTreeProvider'
 
 type FormState = {
+  name: string
+  extraParentIds: string[]
   birthDate: string
   birthPlace: string
   maidenName: string
@@ -180,6 +182,16 @@ export default function EditView(props: Props) {
 
           {/* Formfelder */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="text-sm gap-1 flex flex-col sm:col-span-2">
+              Name
+              <input
+                required
+                className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </label>
+
             <label className="text-sm gap-1 flex flex-col">
               Geburtsdatum
               <input
@@ -258,6 +270,71 @@ export default function EditView(props: Props) {
           </div>
         </div>
       </section>
+
+      {/* Sektion: Eltern */}
+      {(() => {
+        const candidateParents = member.parents
+          .flatMap((p) => (p.spouse ? [p.spouse] : []))
+          .filter((s) => !member.parents.some((p) => p.id === s.id))
+          .filter((s, i, arr) => arr.findIndex((x) => x.id === s.id) === i)
+
+        if (candidateParents.length === 0) return null
+
+        const canAddMore = member.parents.length + form.extraParentIds.length < 2
+
+        return (
+          <section
+            className="
+              rounded-2xl border border-[color:var(--color-primary-50)]
+              bg-white shadow-sm p-4 sm:p-5
+            "
+          >
+            <h3 className="text-base font-semibold mb-1 text-[color:var(--color-primary-900)]">
+              Eltern
+            </h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Ist einer dieser Ehepartner auch ein Elternteil?
+            </p>
+            <div className="flex flex-col gap-2">
+              {candidateParents.map((candidate) => {
+                const isChecked = form.extraParentIds.includes(candidate.id)
+                const disabled = !isChecked && !canAddMore
+                return (
+                  <label
+                    key={candidate.id}
+                    className={`flex items-center gap-3 text-sm rounded-lg px-3 py-2 border ${
+                      isChecked
+                        ? 'border-[color:var(--color-primary)] bg-[color:var(--color-surface-50)]'
+                        : 'border-gray-200'
+                    } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      disabled={disabled}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          extraParentIds: e.target.checked
+                            ? [...f.extraParentIds, candidate.id]
+                            : f.extraParentIds.filter((id) => id !== candidate.id),
+                        }))
+                      }
+                      className="w-4 h-4 rounded"
+                    />
+                    {candidate.name}
+                  </label>
+                )
+              })}
+            </div>
+            {!canAddMore && (
+              <p className="text-xs text-gray-400 mt-2">
+                Maximum von 2 Elternteilen erreicht.
+              </p>
+            )}
+          </section>
+        )
+      })()}
 
       {/* Sektion: Medien Upload/Verwaltung */}
       <section
