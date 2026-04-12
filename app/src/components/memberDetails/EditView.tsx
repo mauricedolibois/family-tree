@@ -9,6 +9,85 @@ import { inferKind, newId } from './helpers'
 import { StoredMedia } from '@/storage/schema'
 import { useFamilyTree } from '@/components/FamilyTreeProvider'
 
+const MONTH_NAMES = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+]
+
+function parseDateInput(val: string): { valid: boolean; display: string } | null {
+  const v = val.trim()
+  if (!v) return null
+
+  const yearOnly = v.match(/^(\d{4})$/)
+  if (yearOnly) {
+    const y = parseInt(yearOnly[1], 10)
+    if (y >= 1000 && y <= 2100) return { valid: true, display: String(y) }
+  }
+
+  const monthYear = v.match(/^(\d{1,2})\.(\d{4})$/)
+  if (monthYear) {
+    const m = parseInt(monthYear[1], 10)
+    const y = parseInt(monthYear[2], 10)
+    if (m >= 1 && m <= 12 && y >= 1000 && y <= 2100)
+      return { valid: true, display: `${MONTH_NAMES[m - 1]} ${y}` }
+  }
+
+  const german = v.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (german) {
+    const d = parseInt(german[1], 10)
+    const m = parseInt(german[2], 10)
+    const y = parseInt(german[3], 10)
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1000 && y <= 2100)
+      return { valid: true, display: `${d}. ${MONTH_NAMES[m - 1]} ${y}` }
+  }
+
+  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (iso) {
+    const y = parseInt(iso[1], 10)
+    const m = parseInt(iso[2], 10)
+    const d = parseInt(iso[3], 10)
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1000 && y <= 2100)
+      return { valid: true, display: `${d}. ${MONTH_NAMES[m - 1]} ${y}` }
+  }
+
+  return { valid: false, display: '' }
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const parsed = parseDateInput(value)
+  const borderCls = parsed === null
+    ? 'border'
+    : parsed.valid
+    ? 'border-2 border-green-500'
+    : 'border-2 border-red-400'
+
+  return (
+    <label className="text-sm gap-1 flex flex-col">
+      {label}
+      <input
+        type="text"
+        placeholder="JJJJ, MM.JJJJ oder TT.MM.JJJJ"
+        className={`${borderCls} rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none`}
+        value={value}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+      />
+      {parsed !== null && (
+        <span className={`text-[11px] leading-none ${parsed.valid ? 'text-green-600' : 'text-red-500'}`}>
+          {parsed.valid ? `→ ${parsed.display}` : 'Ungültiges Format'}
+        </span>
+      )}
+    </label>
+  )
+}
+
 type FormState = {
   name: string
   extraParentIds: string[]
@@ -192,15 +271,11 @@ export default function EditView(props: Props) {
               />
             </label>
 
-            <label className="text-sm gap-1 flex flex-col">
-              Geburtsdatum
-              <input
-                type="date"
-                className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
-                value={form.birthDate}
-                onChange={(e) => setForm((f) => ({ ...f, birthDate: e.target.value }))}
-              />
-            </label>
+            <DateField
+              label="Geburtsdatum"
+              value={form.birthDate}
+              onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
+            />
 
             <label className="text-sm gap-1 flex flex-col">
               Geburtsort
@@ -220,15 +295,11 @@ export default function EditView(props: Props) {
               />
             </label>
 
-            <label className="text-sm gap-1 flex flex-col">
-              Todesdatum
-              <input
-                type="date"
-                className="border rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none"
-                value={form.deathDate}
-                onChange={(e) => setForm((f) => ({ ...f, deathDate: e.target.value }))}
-              />
-            </label>
+            <DateField
+              label="Todesdatum"
+              value={form.deathDate}
+              onChange={(v) => setForm((f) => ({ ...f, deathDate: v }))}
+            />
 
             <label className="text-sm gap-1 flex flex-col">
               Land

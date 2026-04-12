@@ -7,6 +7,10 @@ import clsx from 'clsx'
 
 function extractYear(dateStr: string | null | undefined): number | null {
   if (!dateStr) return null
+  const yearOnly = dateStr.match(/^(\d{4})$/)
+  if (yearOnly) return parseInt(yearOnly[1], 10)
+  const monthYear = dateStr.match(/^\d{2}\.(\d{4})$/)
+  if (monthYear) return parseInt(monthYear[1], 10)
   const iso = dateStr.match(/^(\d{4})-\d{2}-\d{2}/)
   if (iso) return parseInt(iso[1], 10)
   const german = dateStr.match(/^\d{2}\.\d{2}\.(\d{4})$/)
