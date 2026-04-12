@@ -74,7 +74,7 @@ function DateField({
       {label}
       <input
         type="text"
-        placeholder="JJJJ, MM.JJJJ oder TT.MM.JJJJ"
+        placeholder="YYYY, YYYY-MM-DD oder DD.MM.YYYY"
         className={`${borderCls} rounded-lg p-2 w-full focus:ring-2 focus:ring-[color:var(--color-primary)] outline-none`}
         value={value}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
