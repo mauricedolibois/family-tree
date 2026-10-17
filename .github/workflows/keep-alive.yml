@@ -1,4 +1,5 @@
 name: Keep Supabase Alive
+# Hält das kostenlose Supabase-Projekt wach und sichert täglich alle Stammbäume.
 
 on:
   schedule:
@@ -29,6 +30,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/keep-alive.mjs
+
+      - name: Tägliche Sicherung der Stammbäume
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/daily-backup.mjs
 
   # GitHub schaltet geplante Workflows in öffentlichen Repos nach 60 Tagen
   # ohne Commit automatisch ab (so ist es im April 2026 passiert, danach hat
