@@ -9,7 +9,9 @@ on:
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -17,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Install Dependencies
         run: npm ci
@@ -27,3 +29,19 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/keep-alive.mjs
+
+  # GitHub schaltet geplante Workflows in öffentlichen Repos nach 60 Tagen
+  # ohne Commit automatisch ab (so ist es im April 2026 passiert, danach hat
+  # Supabase pausiert). Dieser Job schaltet den Workflow bei jedem Lauf per
+  # API wieder ein und setzt damit die 60-Tage-Frist zurück. Er läuft auch,
+  # wenn der Supabase-Job oben fehlschlägt.
+  keep-workflow-enabled:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - name: Workflow aktiv halten
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keep-alive.yml/enable"
