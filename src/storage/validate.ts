@@ -115,7 +115,8 @@ export function validateStoredTree(input: unknown): ValidationResult {
       if (raw.id !== key) throw new Invalid(`${f}.id: passt nicht zum Schlüssel`)
       const gender = raw.gender
       if (typeof gender !== 'string' || !GENDERS.has(gender)) throw new Invalid(`${f}.gender: unbekannt`)
-      const rawSpouse = raw.spouseId === undefined || raw.spouseId === null ? null : str(raw.spouseId, `${f}.spouseId`, 100)
+      const rawSpouse =
+        raw.spouseId === undefined || raw.spouseId === null ? null : str(raw.spouseId, `${f}.spouseId`, 100)
       const spouseId = rawSpouse !== null && ids.has(rawSpouse) && rawSpouse !== key ? rawSpouse : null
       const childrenIds = idList(raw.childrenIds, `${f}.childrenIds`, ids)
       members[key] = {
@@ -126,7 +127,7 @@ export function validateStoredTree(input: unknown): ValidationResult {
         parentIds: idList(raw.parentIds, `${f}.parentIds`, ids),
         childrenIds,
         adoptedChildrenIds: idList(raw.adoptedChildrenIds, `${f}.adoptedChildrenIds`, ids).filter((c) =>
-          childrenIds.includes(c)
+          childrenIds.includes(c),
         ),
         profile: profile(raw.profile, `${f}.profile`),
       }

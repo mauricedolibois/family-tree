@@ -20,7 +20,7 @@ describe('validateStoredTree', () => {
       tree({
         a: member('a', { childrenIds: ['b'], hacker: 'x' }),
         b: member('b', { parentIds: ['a'], gender: 'FEMALE' }),
-      })
+      }),
     )
     expect(r.ok).toBe(true)
     if (r.ok) {
@@ -50,7 +50,7 @@ describe('validateStoredTree', () => {
 
   it('übernimmt Adoptionen nur für echte Kinder', () => {
     const r = validateStoredTree(
-      tree({ a: member('a', { childrenIds: ['b'], adoptedChildrenIds: ['b', 'c'] }), b: member('b'), c: member('c') })
+      tree({ a: member('a', { childrenIds: ['b'], adoptedChildrenIds: ['b', 'c'] }), b: member('b'), c: member('c') }),
     )
     expect(r.ok && r.tree.members.a.adoptedChildrenIds).toEqual(['b'])
   })
