@@ -38,3 +38,5 @@ next-env.d.ts
 /public
 /.env.local
 /todos.txt
+# lokale Logs
+/logs
