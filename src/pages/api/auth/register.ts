@@ -26,7 +26,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const ipKey = `ip:${clientIp(req)}`
 
   try {
-    if (await isLimited('register', [ipKey], { max: REGISTRATIONS_PER_IP_PER_DAY, windowMinutes: 24 * 60, onlyFailures: false })) {
+    if (
+      await isLimited('register', [ipKey], {
+        max: REGISTRATIONS_PER_IP_PER_DAY,
+        windowMinutes: 24 * 60,
+        onlyFailures: false,
+      })
+    ) {
       return res.status(429).json({ error: 'too many attempts' })
     }
 

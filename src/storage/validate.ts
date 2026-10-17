@@ -17,7 +17,8 @@ export const LIMITS = {
 
 const GENDERS = new Set(['MALE', 'FEMALE'])
 const MEDIA_KINDS = new Set<MediaKind>(['image', 'video', 'pdf', 'other'])
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+/** Ganzes Datum, nur Monat und Jahr oder nur das Jahr (alte Quellen sind oft ungenau) */
+const ISO_DATE = /^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$/
 
 export type ValidationResult = { ok: true; tree: StoredTree } | { ok: false; error: string }
 
@@ -38,7 +39,7 @@ function optStr(v: unknown, field: string, max: number): string | null {
 
 function optDate(v: unknown, field: string): string | null {
   const s = optStr(v, field, 10)
-  if (s !== null && !ISO_DATE.test(s)) throw new Invalid(`${field}: Datum im Format JJJJ-MM-TT erwartet`)
+  if (s !== null && !ISO_DATE.test(s)) throw new Invalid(`${field}: Datum als JJJJ-MM-TT, JJJJ-MM oder JJJJ erwartet`)
   return s
 }
 
@@ -115,7 +116,8 @@ export function validateStoredTree(input: unknown): ValidationResult {
       if (raw.id !== key) throw new Invalid(`${f}.id: passt nicht zum Schlüssel`)
       const gender = raw.gender
       if (typeof gender !== 'string' || !GENDERS.has(gender)) throw new Invalid(`${f}.gender: unbekannt`)
-      const rawSpouse = raw.spouseId === undefined || raw.spouseId === null ? null : str(raw.spouseId, `${f}.spouseId`, 100)
+      const rawSpouse =
+        raw.spouseId === undefined || raw.spouseId === null ? null : str(raw.spouseId, `${f}.spouseId`, 100)
       const spouseId = rawSpouse !== null && ids.has(rawSpouse) && rawSpouse !== key ? rawSpouse : null
       const childrenIds = idList(raw.childrenIds, `${f}.childrenIds`, ids)
       members[key] = {
@@ -126,7 +128,7 @@ export function validateStoredTree(input: unknown): ValidationResult {
         parentIds: idList(raw.parentIds, `${f}.parentIds`, ids),
         childrenIds,
         adoptedChildrenIds: idList(raw.adoptedChildrenIds, `${f}.adoptedChildrenIds`, ids).filter((c) =>
-          childrenIds.includes(c)
+          childrenIds.includes(c),
         ),
         profile: profile(raw.profile, `${f}.profile`),
       }
