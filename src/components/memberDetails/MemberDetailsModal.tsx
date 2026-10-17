@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Modal from '@/components/Modal'
-import { useFamilyTree } from '@/components/FamilyTreeProvider'
+import { TreeConflictError, useFamilyTree } from '@/components/FamilyTreeProvider'
 import { useSelectedMember } from '@/components/SelectedMemberProvider'
 import AddMember from '@/components/AddMember'
 import {
@@ -18,7 +18,7 @@ import EditView from './EditView'
 
 export default function MemberDetailsModal() {
   // getById neu aus dem Provider ziehen
-  const { root, applyStored, storedSnapshot, getById } = useFamilyTree()
+  const { root, commit, storedSnapshot, getById } = useFamilyTree()
   const { selectedId, isDetailsOpen, closeDetails } = useSelectedMember()
 
   // Person immer per ID über den globalen Index suchen
@@ -87,16 +87,6 @@ export default function MemberDetailsModal() {
     closeDetails()
   }
 
-  // Persist + im State anwenden
-  const putStored = async (stored: StoredTree) => {
-    await fetch('/api/family', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(stored),
-    })
-    applyStored(stored)
-  }
-
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!member) return
@@ -111,15 +101,6 @@ export default function MemberDetailsModal() {
       const keptExisting = existing.filter((m) => !removedIds.has(m.id))
       const deletedExisting = existing.filter((m) => removedIds.has(m.id))
 
-      // Bereits gespeicherte Medien ggf. aus Storage löschen
-      if (deletedExisting.length) {
-        await fetch('/api/media/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ urls: deletedExisting.map((m) => m.url) }),
-        }).catch(() => {})
-      }
-
       // Profil aktualisieren
       rec.profile = {
         ...(rec.profile ?? {}),
@@ -133,7 +114,16 @@ export default function MemberDetailsModal() {
         media: [...keptExisting, ...pendingMedia],
       }
 
-      await putStored(stored)
+      await commit(stored)
+
+      // Entfernte Medien erst löschen, wenn der neue Stand sicher gespeichert ist
+      if (deletedExisting.length) {
+        await fetch('/api/media/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urls: deletedExisting.map((m) => m.url) }),
+        }).catch(() => {})
+      }
 
       // UI-Buffer resetten
       setPendingMedia([])
@@ -142,7 +132,7 @@ export default function MemberDetailsModal() {
       setMode('details')
     } catch (err) {
       console.error(err)
-      alert('Speichern fehlgeschlagen.')
+      if (!(err instanceof TreeConflictError)) alert('Speichern fehlgeschlagen.')
     }
   }
 
@@ -159,8 +149,13 @@ export default function MemberDetailsModal() {
       return
     }
 
-    await putStored(stored)
-    handleClose()
+    try {
+      await commit(stored)
+      handleClose()
+    } catch (err) {
+      console.error(err)
+      if (!(err instanceof TreeConflictError)) alert('Löschen fehlgeschlagen.')
+    }
   }
 
   return (

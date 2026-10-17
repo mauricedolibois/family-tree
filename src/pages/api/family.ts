@@ -1,43 +1,59 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getFamilyIdFromReq } from '@/lib/accounts'
-import { loadFamilyTree, saveFamilyTree } from '@/lib/db'
+import { getFamilyIdFromReq } from '@/lib/session'
+import { loadFamilyTree, saveFamilyTree, snapshotBeforeSave } from '@/lib/db'
+import { logError } from '@/lib/log'
 import { setupShanFamilyTree } from '@/utils'
 import { serializeFromRoot } from '@/storage/schema'
-import { startApiLog } from '@/lib/apiLogger' // ⬅️ add
+import { validateStoredTree } from '@/storage/validate'
+import { TREE_VERSION_HEADER as VERSION_HEADER } from '@/storage/version'
+
+export const config = { api: { bodyParser: { sizeLimit: '4mb' } } }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const log = startApiLog(req, '/api/family')
+  res.setHeader('Cache-Control', 'no-store')
   const fid = getFamilyIdFromReq(req)
+  if (!fid) return res.status(401).json({ error: 'unauthorized' })
 
   try {
-    if (!fid) {
-      await log.end(401, { error: 'unauthorized' })
-      return res.status(401).json({ error: 'unauthorized' })
-    }
-
     if (req.method === 'GET') {
-      const stored = await loadFamilyTree(fid)
-      if (stored) {
-        await log.end(200, { action: 'GET', fid, hasStored: true, bytes: JSON.stringify(stored).length })
-        return res.status(200).json(stored)
+      const loaded = await loadFamilyTree(fid)
+      if (loaded) {
+        res.setHeader(VERSION_HEADER, loaded.version)
+        return res.status(200).json(loaded.tree)
       }
-      const seed = setupShanFamilyTree()
-      const snap = serializeFromRoot(seed.root)
-      await saveFamilyTree(fid, snap)
-      await log.end(200, { action: 'GET(seed)', fid, bytes: JSON.stringify(snap).length })
-      return res.status(200).json(snap)
+      // Neue Familie: mit einem kleinen Startbaum beginnen
+      const starter = serializeFromRoot(setupShanFamilyTree().root)
+      const saved = await saveFamilyTree(fid, starter, null)
+      if (saved.status === 'conflict') return res.status(409).json({ error: 'conflict' })
+      res.setHeader(VERSION_HEADER, saved.version)
+      return res.status(200).json(starter)
     }
 
     if (req.method === 'PUT') {
-      await saveFamilyTree(fid, req.body)
-      await log.end(200, { action: 'PUT', fid, bytes: JSON.stringify(req.body || {}).length })
+      const checked = validateStoredTree(req.body)
+      if (!checked.ok) return res.status(400).json({ error: 'invalid tree', detail: checked.error })
+
+      const baseVersion = req.headers[VERSION_HEADER]
+      if (typeof baseVersion !== 'string' || !baseVersion) {
+        return res.status(428).json({ error: 'version required' })
+      }
+
+      const current = await loadFamilyTree(fid)
+      if (!current) return res.status(404).json({ error: 'not found' })
+      if (current.version !== baseVersion) return res.status(409).json({ error: 'conflict' })
+
+      await snapshotBeforeSave(fid, current.tree, checked.tree)
+      const saved = await saveFamilyTree(fid, checked.tree, baseVersion)
+      if (saved.status === 'conflict') return res.status(409).json({ error: 'conflict' })
+
+      res.setHeader(VERSION_HEADER, saved.version)
       return res.status(200).json({ ok: true })
     }
 
-    await log.end(405, { msg: 'method not allowed' })
+    res.setHeader('Allow', 'GET, PUT')
     return res.status(405).end()
   } catch (err) {
-    await log.error(err, 500, { fid })
+    logError('api/family', err)
     return res.status(500).json({ error: 'internal error' })
   }
 }

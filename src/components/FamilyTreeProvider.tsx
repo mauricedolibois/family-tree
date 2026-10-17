@@ -14,7 +14,14 @@ import { FamilyTree } from '@/models/FamilyTree'
 import { IMember } from '@/types/IMember'
 import { buildTreeFromStored } from '@/storage/rebuild'
 import { StoredTree, serializeFromRoot } from '@/storage/schema'
-import { setupShanFamilyTree } from '@/utils'
+import { TREE_VERSION_HEADER } from '@/storage/version'
+
+/** Der Baum wurde inzwischen woanders gespeichert (anderes Gerät oder Tab). */
+export class TreeConflictError extends Error {
+  constructor() {
+    super('Der Stammbaum wurde inzwischen woanders geändert.')
+  }
+}
 
 interface Ctx {
   root: IMember
@@ -26,6 +33,9 @@ interface Ctx {
 
   /** Sofort persistieren (genau ein PUT). */
   saveNow: () => Promise<void>
+
+  /** Gegebenen Stand speichern und bei Erfolg anzeigen. Wirft bei Fehler/Konflikt. */
+  commit: (stored: StoredTree) => Promise<void>
 
   /** Key um Graph/Canvas hart zu remounten (z. B. <Graph key={layoutNonce} />) */
   layoutNonce: number
@@ -68,6 +78,46 @@ function LoadingScreen() {
   )
 }
 
+function LoadErrorScreen({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="min-h-screen w-full grid place-items-center bg-[color:var(--color-surface-50)] p-6">
+      <div className="max-w-sm text-center flex flex-col items-center gap-3" role="alert">
+        <p className="text-base font-medium text-[color:var(--color-primary-800)]">
+          Der Stammbaum konnte nicht geladen werden.
+        </p>
+        <p className="text-sm text-[color:var(--color-primary-600)]">
+          Deine Daten sind sicher. Bitte prüfe die Verbindung und versuche es erneut.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-2 rounded-full px-5 py-2 bg-[color:var(--color-primary)] text-white font-medium"
+        >
+          Erneut versuchen
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ConflictBanner() {
+  return (
+    <div
+      role="alert"
+      className="fixed inset-x-0 top-0 z-[100] flex flex-wrap items-center justify-center gap-3 bg-amber-100 px-4 py-3 text-sm text-amber-900 shadow"
+    >
+      <span>Der Stammbaum wurde inzwischen woanders geändert. Deine letzte Änderung wurde nicht gespeichert.</span>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        className="rounded-full bg-amber-900 px-4 py-1 font-medium text-white"
+      >
+        Neu laden
+      </button>
+    </div>
+  )
+}
+
 export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   const [familyTree, setFamilyTree] = useState<FamilyTree | null>(null)
   const [storedSnapshot, setStoredSnapshot] = useState<StoredTree | null>(null)
@@ -75,6 +125,10 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isAuthed, setIsAuthed] = useState<boolean>(true)
+  /** Version des zuletzt geladenen/gespeicherten Serverstands */
+  const versionRef = useRef<string | null>(null)
+  const [hasConflict, setHasConflict] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
 
   // für harten Remount z. B. Graph
   const [layoutNonce, setLayoutNonce] = useState(0)
@@ -103,7 +157,8 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     rebuildFromStored(stored)
   }
 
-  // Initial load (read-only)
+  // Initial load (read-only). Bei Fehlern wird NIE ein Ersatzbaum angezeigt –
+  // sonst könnte eine Änderung daran den echten Baum überschreiben.
   useEffect(() => {
     const myReqId = ++loadReqIdRef.current
     let aborted = false
@@ -122,6 +177,7 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
         if (!res.ok) throw new Error(`GET /api/family ${res.status}`)
 
         const data = (await res.json()) as StoredTree
+        versionRef.current = res.headers.get(TREE_VERSION_HEADER)
 
         // Wurde lokal schon mutiert, während das GET in-flight war? Dann GET ignorieren.
         if (mutateEpochRef.current > 0) {
@@ -131,21 +187,20 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
 
         rebuildFromStored(data)
         setIsAuthed(true)
+        setError(null)
         setIsLoaded(true)
-      } catch {
-        // Fallback auf Seed – **kein** Auto-PUT!
-        const seed = setupShanFamilyTree()
-        const snap = serializeFromRoot(seed.root)
-        rebuildFromStored(snap)
+      } catch (e) {
+        if (aborted) return
+        console.error('[FamilyTreeProvider] load failed', e)
+        setError('LOAD_FAILED')
         setIsLoaded(true)
-        setError('Server storage unavailable; using in-memory seed.')
       }
     })()
 
     return () => {
       aborted = true
     }
-  }, [])
+  }, [loadAttempt])
 
   /** Nach lokaler MUTATION am Objekt aufrufen; baut Struktur neu und markiert dirty */
   const markDirty = () => {
@@ -165,35 +220,32 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
     setLayoutNonce((n) => n + 1)
   }
 
-  /** Persistiert JETZT (genau ein PUT). Nur aufrufen, wenn du wirklich speichern willst. */
+  /** Speichert genau diesen Stand (ein PUT) und zeigt ihn bei Erfolg an. */
+  const commit = async (stored: StoredTree) => {
+    if (!isAuthed) throw new Error('Nicht angemeldet')
+    const res = await fetch('/api/family', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(versionRef.current ? { [TREE_VERSION_HEADER]: versionRef.current } : {}),
+      },
+      body: JSON.stringify(stored),
+    })
+    if (res.status === 409) {
+      setHasConflict(true)
+      throw new TreeConflictError()
+    }
+    if (!res.ok) throw new Error(`PUT /api/family ${res.status}`)
+
+    versionRef.current = res.headers.get(TREE_VERSION_HEADER)
+    setIsDirty(false)
+    rebuildFromStored(stored)
+  }
+
+  /** Persistiert JETZT den aktuellen Stand im Speicher (genau ein PUT). */
   const saveNow = async () => {
     if (!familyTree) return
-    if (!isAuthed) return
-
-    const payload = serializeFromRoot(familyTree.root, storedSnapshot ?? undefined)
-
-    try {
-      console.log('[FamilyTreeProvider] Sending PUT /api/family …', {
-        members: Object.keys(payload.members).length,
-        rootId: payload.rootId,
-      })
-
-      const res = await fetch('/api/family', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) throw new Error(`PUT /api/family ${res.status}`)
-
-      setStoredSnapshot(payload)
-      setIsDirty(false)
-
-      console.log('[FamilyTreeProvider] PUT successful ✅')
-    } catch (e) {
-      console.error('[FamilyTreeProvider] saveNow failed ❌:', e)
-      // Absichtlich: isDirty bleibt true, damit erneut gespeichert werden kann
-      throw e
-    }
+    await commit(serializeFromRoot(familyTree.root, storedSnapshot ?? undefined))
   }
 
   const getById = (id: string) => membersById[id] ?? null
@@ -213,6 +265,7 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
       getById,
       markDirty,
       saveNow,
+      commit,
       layoutNonce,
     }),
     [
@@ -227,6 +280,17 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
   )
 
   if (!isLoaded) return <LoadingScreen />
+  if (error === 'LOAD_FAILED') {
+    return (
+      <LoadErrorScreen
+        onRetry={() => {
+          setIsLoaded(false)
+          setError(null)
+          setLoadAttempt((n) => n + 1)
+        }}
+      />
+    )
+  }
   if (!familyTree && isAuthed) {
     return (
       <div className="min-h-[60vh] grid place-items-center">
@@ -237,6 +301,7 @@ export const FamilyTreeProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <FamilyTreeContext.Provider value={value}>
+      {hasConflict && <ConflictBanner />}
       {children}
     </FamilyTreeContext.Provider>
   )
