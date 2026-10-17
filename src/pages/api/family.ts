@@ -2,8 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getFamilyIdFromReq } from '@/lib/session'
 import { loadFamilyTree, saveFamilyTree, snapshotBeforeSave } from '@/lib/db'
 import { logError } from '@/lib/log'
-import { setupShanFamilyTree } from '@/utils'
-import { serializeFromRoot } from '@/storage/schema'
+import { starterTree } from '@/family/edit'
 import { validateStoredTree } from '@/storage/validate'
 import { TREE_VERSION_HEADER as VERSION_HEADER } from '@/storage/version'
 
@@ -22,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json(loaded.tree)
       }
       // Neue Familie: mit einem kleinen Startbaum beginnen
-      const starter = serializeFromRoot(setupShanFamilyTree().root)
+      const starter = starterTree()
       const saved = await saveFamilyTree(fid, starter, null)
       if (saved.status === 'conflict') return res.status(409).json({ error: 'conflict' })
       res.setHeader(VERSION_HEADER, saved.version)
