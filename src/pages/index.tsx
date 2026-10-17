@@ -7,8 +7,8 @@ import MemberDetailsModal from '@/components/memberDetails/MemberDetailsModal'
 import { Poppins } from 'next/font/google'
 import { useState } from 'react'
 import type { GetServerSideProps } from 'next'
-import * as cookie from 'cookie'
-import { getFamilyNameById } from '@/lib/accounts'
+import { getFamilyIdFromReq } from '@/lib/session'
+import { getFamilyNameById } from '@/lib/db'
 import { Search, LogOut } from 'lucide-react'
 
 const poppins = Poppins({ subsets: ['latin'], weight: '400' })
@@ -16,15 +16,11 @@ const poppins = Poppins({ subsets: ['latin'], weight: '400' })
 type Props = { familyName: string }
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => {
-  const parsed = cookie.parse(req.headers.cookie || '')
-  const fid = parsed.fid
-  if (!fid) {
-    return {
-      redirect: { destination: '/auth', permanent: false },
-    }
+  const fid = getFamilyIdFromReq(req)
+  const familyName = fid ? await getFamilyNameById(fid).catch(() => 'Familie') : null
+  if (!fid || !familyName) {
+    return { redirect: { destination: '/auth', permanent: false } }
   }
-
-  const familyName = (await getFamilyNameById(fid)) ?? 'Unbekannt'
   return { props: { familyName } }
 }
 
