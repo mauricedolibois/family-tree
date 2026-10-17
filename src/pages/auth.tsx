@@ -17,6 +17,10 @@ export default function AuthPage() {
       setError('Bitte Familienname und Passwort angeben.')
       return
     }
+    if (mode === 'register' && password.length < 8) {
+      setError('Das Passwort muss mindestens 8 Zeichen lang sein.')
+      return
+    }
 
     setLoading(true)
     try {
@@ -31,6 +35,9 @@ export default function AuthPage() {
       })
 
       if (!res.ok) {
+        if (res.status === 429) {
+          throw new Error('Zu viele Versuche. Bitte warte ein paar Minuten und versuche es dann erneut.')
+        }
         if (mode === 'login' && res.status === 401) {
           throw new Error('Falscher Familienname oder Passwort.')
         }
