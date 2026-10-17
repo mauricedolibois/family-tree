@@ -28,7 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const limited =
-      (await isLimited('login', [keys[0]], { max: FAILURES_PER_NAME, windowMinutes: WINDOW_MINUTES, onlyFailures: true })) ||
+      (await isLimited('login', [keys[0]], {
+        max: FAILURES_PER_NAME,
+        windowMinutes: WINDOW_MINUTES,
+        onlyFailures: true,
+      })) ||
       (await isLimited('login', [keys[1]], { max: FAILURES_PER_IP, windowMinutes: WINDOW_MINUTES, onlyFailures: true }))
     if (limited) return res.status(429).json({ error: 'too many attempts' })
 

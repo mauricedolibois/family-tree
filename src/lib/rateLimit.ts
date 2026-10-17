@@ -44,7 +44,7 @@ async function countAttempts(kind: AttemptKind, key: string, windowMinutes: numb
 export async function isLimited(
   kind: AttemptKind,
   keys: string[],
-  { max, windowMinutes, onlyFailures }: { max: number; windowMinutes: number; onlyFailures: boolean }
+  { max, windowMinutes, onlyFailures }: { max: number; windowMinutes: number; onlyFailures: boolean },
 ): Promise<boolean> {
   const counts = await Promise.all(keys.map((k) => countAttempts(kind, k, windowMinutes, onlyFailures)))
   return counts.some((c) => c >= max)

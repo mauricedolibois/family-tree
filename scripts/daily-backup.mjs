@@ -25,9 +25,15 @@ function fingerprint(value) {
     Array.isArray(v)
       ? v.map(stable)
       : v && typeof v === 'object'
-        ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, stable(v[k])]))
-        : v
-  return createHash('sha256').update(JSON.stringify(stable(value))).digest('hex')
+      ? Object.fromEntries(
+          Object.keys(v)
+            .sort()
+            .map((k) => [k, stable(v[k])]),
+        )
+      : v
+  return createHash('sha256')
+    .update(JSON.stringify(stable(value)))
+    .digest('hex')
 }
 
 async function main() {
@@ -60,7 +66,9 @@ async function main() {
     .lt('backed_up_at', cutoff)
   if (delErr) throw delErr
 
-  console.log(`✅ ${saved} von ${trees.length} Stammbäumen gesichert, ${count ?? 0} alte automatische Sicherungen entfernt`)
+  console.log(
+    `✅ ${saved} von ${trees.length} Stammbäumen gesichert, ${count ?? 0} alte automatische Sicherungen entfernt`,
+  )
 }
 
 main().catch((err) => {

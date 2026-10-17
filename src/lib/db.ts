@@ -58,7 +58,7 @@ export type SaveResult = { status: 'saved'; version: string } | { status: 'confl
 export async function saveFamilyTree(
   familyId: string,
   tree: StoredTree,
-  baseVersion: string | null
+  baseVersion: string | null,
 ): Promise<SaveResult> {
   const updated_at = new Date().toISOString()
 
@@ -104,6 +104,8 @@ export async function snapshotBeforeSave(familyId: string, current: StoredTree, 
     if (Date.now() - last < SNAPSHOT_EVERY_HOURS * 3600_000) return
   }
   const note = lost > 0 ? `automatisch: vor dem Entfernen von ${lost} Person(en)` : 'automatisch: vor dem Speichern'
-  const { error } = await supaAdmin.from('family_trees_backup').insert({ family_id: familyId, tree_json: current, note })
+  const { error } = await supaAdmin
+    .from('family_trees_backup')
+    .insert({ family_id: familyId, tree_json: current, note })
   if (error) throw error
 }
