@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronRight, FileText, GitBranch, Pencil, Plus, Trash2, UserRound } from 'lucide-react'
 import { childrenOf, parentsOf, siblingsOf, spouseOf, type Person } from '@/family/model'
-import { ageInYears, formatDate, isDeceased, lifeYears } from '@/family/format'
+import { ageOf, formatDate, isDeceased, lifeYears } from '@/family/format'
 import { describeKinship } from '@/family/kinship'
 import { canDelete, deletePerson, type Relation } from '@/family/edit'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
@@ -32,7 +32,8 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
   const isAdopted = (childId: string) => [person.id, spouse].some((p) => p && index.adopted.get(p)?.has(childId))
 
   const p = person.profile ?? {}
-  const age = ageInYears(person)
+  const age = ageOf(person)
+  const ageText = age ? `${age.approx ? 'etwa ' : ''}${age.years} Jahre` : null
   const media = p.media ?? []
 
   const remove = async () => {
@@ -98,11 +99,13 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
           label="Gestorben"
           value={
             isDeceased(person)
-              ? [formatDate(p.deathDate), age !== null && `mit ${age} Jahren`].filter(Boolean).join(', ')
+              ? [formatDate(p.deathDate), age && `mit ${age.approx ? 'etwa ' : ''}${age.years} Jahren`]
+                  .filter(Boolean)
+                  .join(', ')
               : ''
           }
         />
-        {!isDeceased(person) && age !== null && <Fact label="Alter" value={`${age} Jahre`} />}
+        {!isDeceased(person) && ageText && <Fact label="Alter" value={ageText} />}
         <Fact label="Wohnort" value={p.city ?? ''} />
         <Fact
           label="Land"

@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { parentsOf, spouseOf, type Gender, type Person } from '@/family/model'
 import { addRelative, EditError, updatePerson, type Relation } from '@/family/edit'
-import { splitName } from '@/family/format'
+import { parseDateInput, splitName } from '@/family/format'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { useToast } from '@/components/app/Toast'
@@ -64,6 +64,8 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
     setError(null)
     if (!name.trim()) return setError('Bitte einen Namen eingeben.')
     if (!gender) return setError('Bitte wähle Mann oder Frau.')
+    const born = parseDateInput(birthDate)
+    if (born === undefined) return setError('Bitte das Geburtsdatum als TT.MM.JJJJ eingeben – oder nur das Jahr.')
     try {
       const added = addRelative(tree, person.id, {
         relation,
@@ -73,7 +75,7 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
         alsoChildOfSpouse,
         marryExistingParent: marry,
       })
-      const next = birthDate ? updatePerson(added.tree, added.id, { profile: { birthDate } }) : added.tree
+      const next = born ? updatePerson(added.tree, added.id, { profile: { birthDate: born } }) : added.tree
       await commit(next)
       const newName = name.trim()
       onDone()
@@ -141,10 +143,11 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
         </label>
         <input
           id="rel-born"
-          type="date"
           className="field"
           value={birthDate}
           onChange={(e) => setBirthDate(e.target.value)}
+          placeholder="TT.MM.JJJJ oder nur das Jahr"
+          autoComplete="off"
         />
       </div>
 

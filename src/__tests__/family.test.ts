@@ -1,7 +1,7 @@
 import { buildIndex, lineageOf, siblingsOf, type Tree } from '@/family/model'
 import { describeKinship } from '@/family/kinship'
 import { addRelative, canDelete, deletePerson, normalize, updatePerson } from '@/family/edit'
-import { lifeYears, splitName } from '@/family/format'
+import { ageOf, formatDate, lifeYears, parseDateInput, splitName, toDateInput } from '@/family/format'
 
 /**
  * Testfamilie (erfunden):
@@ -161,5 +161,36 @@ describe('Hilfsfunktionen', () => {
     const p = family().members.kurt
     expect(lifeYears({ ...p, profile: { birthDate: '1919-12-29', deathDate: '1989-03-31' } })).toBe('1919–1989')
     expect(lifeYears({ ...p, profile: { birthDate: '1944-01-13', deathDate: '1944-01-13' } })).toBe('* † 1944')
+  })
+})
+
+describe('Ungenaue Daten', () => {
+  it.each([
+    ['25.12.1944', '1944-12-25'],
+    ['5.3.1910', '1910-03-05'],
+    ['12.1944', '1944-12'],
+    ['1822', '1822'],
+    ['1944-12-25', '1944-12-25'],
+    ['', null],
+    ['31.02.1950', undefined],
+    ['44', undefined],
+  ])('Eingabe %s → %s', (input, expected) => {
+    expect(parseDateInput(input)).toBe(expected)
+  })
+
+  it('Anzeige und Bearbeiten', () => {
+    expect(formatDate('1778')).toBe('1778')
+    expect(formatDate('1778-05')).toBe('Mai 1778')
+    expect(formatDate('1944-12-25')).toBe('25.12.1944')
+    expect(toDateInput('1778-05')).toBe('05.1778')
+  })
+
+  it('Alter wird bei Jahresangaben als ungefähr markiert', () => {
+    const p = family().members.kurt
+    expect(ageOf({ ...p, profile: { birthDate: '1778', deathDate: '1846' } })).toEqual({ years: 68, approx: true })
+    expect(ageOf({ ...p, profile: { birthDate: '1944-12-25', deathDate: '2024-04-04' } })).toEqual({
+      years: 79,
+      approx: false,
+    })
   })
 })

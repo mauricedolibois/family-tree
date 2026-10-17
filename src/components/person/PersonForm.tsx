@@ -6,6 +6,7 @@ import clsx from 'clsx'
 import { FileText, ImagePlus, Star, Trash2 } from 'lucide-react'
 import type { Gender, Person } from '@/family/model'
 import { updatePerson } from '@/family/edit'
+import { parseDateInput, toDateInput } from '@/family/format'
 import type { StoredMedia } from '@/storage/schema'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
 import { useToast } from '@/components/app/Toast'
@@ -21,8 +22,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
   const [name, setName] = useState(person.name)
   const [gender, setGender] = useState<Gender>(person.gender)
   const [form, setForm] = useState({
-    birthDate: p.birthDate ?? '',
-    deathDate: p.deathDate ?? '',
+    birthDate: toDateInput(p.birthDate),
+    deathDate: toDateInput(p.deathDate),
     city: p.city ?? '',
     country: p.country ?? '',
     job: p.job ?? '',
@@ -61,7 +62,14 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (form.birthDate && form.deathDate && form.deathDate < form.birthDate) {
+    const birthDate = parseDateInput(form.birthDate)
+    const deathDate = parseDateInput(form.deathDate)
+    if (birthDate === undefined || deathDate === undefined) {
+      return setError('Bitte Daten als TT.MM.JJJJ eingeben – oder nur Monat und Jahr (MM.JJJJ) oder nur das Jahr.')
+    }
+    // bei ungenauen Daten nur so genau vergleichen, wie beide bekannt sind
+    const precision = Math.min(birthDate?.length ?? 0, deathDate?.length ?? 0)
+    if (birthDate && deathDate && deathDate.slice(0, precision) < birthDate.slice(0, precision)) {
       return setError('Das Sterbedatum liegt vor dem Geburtsdatum.')
     }
     const removed = (p.media ?? []).filter((old) => !media.some((m) => m.id === old.id))
@@ -70,8 +78,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         name,
         gender,
         profile: {
-          birthDate: form.birthDate || null,
-          deathDate: form.deathDate || null,
+          birthDate,
+          deathDate,
           city: form.city.trim() || null,
           country: form.country.trim() || null,
           job: form.job.trim() || null,
@@ -124,18 +132,33 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         ]}
       />
 
+      <p className="-mb-2 text-sm text-ink-faint">Ist nur das Jahr bekannt, reicht z. B. „1822“.</p>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label htmlFor="pf-born" className="field-label">
             Geboren
           </label>
-          <input id="pf-born" type="date" className="field" value={form.birthDate} onChange={set('birthDate')} />
+          <input
+            id="pf-born"
+            className="field"
+            value={form.birthDate}
+            onChange={set('birthDate')}
+            placeholder="TT.MM.JJJJ"
+            autoComplete="off"
+          />
         </div>
         <div>
           <label htmlFor="pf-died" className="field-label">
             Gestorben
           </label>
-          <input id="pf-died" type="date" className="field" value={form.deathDate} onChange={set('deathDate')} />
+          <input
+            id="pf-died"
+            className="field"
+            value={form.deathDate}
+            onChange={set('deathDate')}
+            placeholder="TT.MM.JJJJ"
+            autoComplete="off"
+          />
         </div>
         <div>
           <label htmlFor="pf-city" className="field-label">
@@ -153,6 +176,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
               'Deutschland',
               'Frankreich',
               'Luxemburg',
+              'USA',
               'Österreich',
               'Schweiz',
               'Niederlande',

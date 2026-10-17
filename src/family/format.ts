@@ -29,26 +29,96 @@ export function lifeYears(p: Person): string {
 
 export const isDeceased = (p: Person) => !!p.profile?.deathDate
 
-/** ISO-Datum → „25.12.1944“ */
-export function formatDate(iso?: string | null): string {
-  if (!iso) return ''
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
-  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso
+const MONTHS = [
+  'Januar',
+  'Februar',
+  'März',
+  'April',
+  'Mai',
+  'Juni',
+  'Juli',
+  'August',
+  'September',
+  'Oktober',
+  'November',
+  'Dezember',
+]
+
+type DateParts = { year: number; month?: number; day?: number }
+
+function partsOf(iso?: string | null): DateParts | null {
+  const m = iso ? /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(iso) : null
+  if (!m) return null
+  return { year: +m[1], month: m[2] ? +m[2] : undefined, day: m[3] ? +m[3] : undefined }
 }
 
-/** Alter in Jahren (bis heute oder bis zum Tod) */
-export function ageInYears(p: Person, now = new Date()): number | null {
-  const b = p.profile?.birthDate
+/** Gespeichertes Datum zum Lesen: „25.12.1944“, „Mai 1778“ oder „1778“ */
+export function formatDate(iso?: string | null): string {
+  const d = partsOf(iso)
+  if (!d) return iso ?? ''
+  if (d.day && d.month) return `${String(d.day).padStart(2, '0')}.${String(d.month).padStart(2, '0')}.${d.year}`
+  if (d.month) return `${MONTHS[d.month - 1]} ${d.year}`
+  return String(d.year)
+}
+
+/** Gespeichertes Datum zum Bearbeiten: „25.12.1944“, „05.1778“ oder „1778“ */
+export function toDateInput(iso?: string | null): string {
+  const d = partsOf(iso)
+  if (!d) return iso ?? ''
+  if (d.day && d.month) return `${String(d.day).padStart(2, '0')}.${String(d.month).padStart(2, '0')}.${d.year}`
+  if (d.month) return `${String(d.month).padStart(2, '0')}.${d.year}`
+  return String(d.year)
+}
+
+/**
+ * Eingabe „25.12.1944“, „5.3.1910“, „12.1944“, „1944“ oder „1944-12-25“ → gespeichertes Format.
+ * Leer → null. Ungültig → undefined.
+ */
+export function parseDateInput(text: string): string | null | undefined {
+  const t = text.trim()
+  if (!t) return null
+  let m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(t)
+  if (m) return validParts(+m[3], +m[2], +m[1])
+  m = /^(\d{1,2})\.(\d{4})$/.exec(t)
+  if (m) return validParts(+m[2], +m[1])
+  m = /^(\d{4})$/.exec(t)
+  if (m) return validParts(+m[1])
+  m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(t)
+  if (m) return validParts(+m[1], +m[2], m[3] ? +m[3] : undefined)
+  return undefined
+}
+
+function validParts(year: number, month?: number, day?: number): string | undefined {
+  if (year < 1000 || year > 2200) return undefined
+  if (month === undefined) return String(year)
+  if (month < 1 || month > 12) return undefined
+  const mm = String(month).padStart(2, '0')
+  if (day === undefined) return `${year}-${mm}`
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  if (day < 1 || day > daysInMonth) return undefined
+  return `${year}-${mm}-${String(day).padStart(2, '0')}`
+}
+
+/** Alter in Jahren (bis heute oder bis zum Tod); ungefähr, wenn nur Jahre bekannt sind */
+export function ageOf(p: Person, now = new Date()): { years: number; approx: boolean } | null {
+  const b = partsOf(p.profile?.birthDate)
   if (!b) return null
-  const birth = new Date(b)
-  const end = p.profile?.deathDate ? new Date(p.profile.deathDate) : now
-  let age = end.getFullYear() - birth.getFullYear()
-  const m = end.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && end.getDate() < birth.getDate())) age--
-  return age >= 0 && age < 130 ? age : null
+  const deathRaw = p.profile?.deathDate
+  const d: DateParts | null = deathRaw
+    ? partsOf(deathRaw)
+    : { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }
+  if (!d) return null
+  let years = d.year - b.year
+  const exact = !!(b.month && b.day && d.month && d.day)
+  if (exact && (d.month! < b.month! || (d.month === b.month && d.day! < b.day!))) years--
+  return years >= 0 && years < 130 ? { years, approx: !exact } : null
 }
 
 /** Für die Suche: Groß/Klein und Akzente egal */
 export function normalizeForSearch(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss')
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/ß/g, 'ss')
 }
