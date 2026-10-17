@@ -22,11 +22,7 @@ export function CountryFlag({ country, className, size = 'sm' }: CountryFlagProp
   if (normalizedCountry === 'deutschland' || normalizedCountry === 'germany') {
     return (
       <div
-        className={clsx(
-          sizeClasses[size],
-          'rounded-[2px] shadow-sm border border-gray-300 overflow-hidden flex flex-col',
-          className
-        )}
+        className={clsx(sizeClasses[size], 'flex flex-col overflow-hidden rounded-[2px] ring-1 ring-ink/15', className)}
         title="Deutschland"
       >
         {/* Deutsche Flagge: Schwarz, Rot, Gold (horizontal) */}
@@ -40,11 +36,7 @@ export function CountryFlag({ country, className, size = 'sm' }: CountryFlagProp
   if (normalizedCountry === 'frankreich' || normalizedCountry === 'france') {
     return (
       <div
-        className={clsx(
-          sizeClasses[size],
-          'rounded-[2px] shadow-sm border border-gray-300 overflow-hidden flex flex-row',
-          className
-        )}
+        className={clsx(sizeClasses[size], 'flex flex-row overflow-hidden rounded-[2px] ring-1 ring-ink/15', className)}
         title="Frankreich"
       >
         {/* Französische Flagge: Blau, Weiß, Rot (vertikal) */}
