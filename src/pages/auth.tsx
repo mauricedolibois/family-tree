@@ -1,139 +1,145 @@
 import { useState } from 'react'
+import type { GetServerSideProps } from 'next'
+import Head from 'next/head'
 import { Eye, EyeOff } from 'lucide-react'
+import { getFamilyIdFromReq } from '@/lib/session'
+import { Button } from '@/components/ui/Button'
+import { Flourish } from '@/components/ui/Flourish'
+
+// Wer schon angemeldet ist, landet direkt im Stammbaum
+export const getServerSideProps: GetServerSideProps = async ({ req }) =>
+  getFamilyIdFromReq(req) ? { redirect: { destination: '/', permanent: false } } : { props: {} }
+
+type Mode = 'login' | 'register'
+
+const MESSAGES: Record<string, string> = {
+  401: 'Familienname oder Passwort stimmt nicht.',
+  409: 'Diesen Familiennamen gibt es schon. Wähle einen anderen oder melde dich an.',
+  429: 'Zu viele Versuche. Bitte warte ein paar Minuten und versuche es dann erneut.',
+}
 
 export default function AuthPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<Mode>('login')
   const [familyName, setFamilyName] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
-    if (!familyName.trim() || !password) {
-      setError('Bitte Familienname und Passwort angeben.')
-      return
-    }
-    if (mode === 'register' && password.length < 8) {
-      setError('Das Passwort muss mindestens 8 Zeichen lang sein.')
-      return
-    }
+    if (!familyName.trim() || !password) return setError('Bitte Familienname und Passwort eingeben.')
+    if (mode === 'register' && password.length < 8) return setError('Das Passwort braucht mindestens 8 Zeichen.')
 
     setLoading(true)
     try {
-      const url = mode === 'register' ? '/api/auth/register' : '/api/auth/login'
-      const res = await fetch(url, {
+      const res = await fetch(mode === 'register' ? '/api/auth/register' : '/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          familyName: familyName.trim(),
-          password,
-        }),
+        body: JSON.stringify({ familyName: familyName.trim(), password }),
       })
-
-      if (!res.ok) {
-        if (res.status === 429) {
-          throw new Error('Zu viele Versuche. Bitte warte ein paar Minuten und versuche es dann erneut.')
-        }
-        if (mode === 'login' && res.status === 401) {
-          throw new Error('Falscher Familienname oder Passwort.')
-        }
-        if (mode === 'register' && res.status === 409) {
-          throw new Error('Dieser Familienname ist bereits vergeben.')
-        }
-        const j = await res.json().catch(() => ({}))
-        throw new Error(j?.error || `Fehler: ${res.status}`)
+      if (res.ok) {
+        window.location.href = '/'
+        return
       }
-
-      window.location.href = '/'
-    } catch (err: any) {
-      setError(err.message || 'Unbekannter Fehler')
+      setError(MESSAGES[res.status] ?? 'Das hat nicht geklappt. Bitte versuche es noch einmal.')
+    } catch {
+      setError('Keine Verbindung. Prüfe das Internet und versuche es erneut.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[color:var(--color-surface-100)] p-4 sm:p-6">
-      <div className="w-full max-w-md">
-        <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
-          {/* Tabs */}
-          <div className="flex">
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className={`flex-1 py-3 text-center text-sm font-medium transition-colors border-0 ${
-                mode === 'login'
-                  ? 'bg-[color:var(--color-primary)] text-white'
-                  : 'bg-[color:var(--color-surface-50)] text-gray-600 hover:bg-[color:var(--color-surface-100)]'
-              }`}
-            >
-              Anmelden
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('register')}
-              className={`flex-1 py-3 text-center text-sm font-medium transition-colors border-0 ${
-                mode === 'register'
-                  ? 'bg-[color:var(--color-primary)] text-white'
-                  : 'bg-[color:var(--color-surface-50)] text-gray-600 hover:bg-[color:var(--color-surface-100)]'
-              }`}
-            >
-              Registrieren
-            </button>
+    <>
+      <Head>
+        <title>Stammbaum – Anmelden</title>
+      </Head>
+      <main className="book-cover grid min-h-dvh place-items-center p-4 sm:p-8">
+        <div className="w-full max-w-[26rem]">
+          <div className="gilt-frame px-6 pb-7 pt-9 text-center sm:px-10">
+            <p className="font-display text-[1.05rem] italic text-gilt/80">Unsere Familie</p>
+            <h1 className="gilt-text mt-1 font-display text-[3.4rem] leading-none">Stammbaum</h1>
+            <Flourish className="mx-auto mt-3 max-w-[14rem]" />
+            <p className="mx-auto mt-3 max-w-[18rem] font-serif text-[17px] text-card/70">
+              {mode === 'login'
+                ? 'Melde dich mit eurem Familiennamen an.'
+                : 'Lege einen neuen Stammbaum für deine Familie an.'}
+            </p>
           </div>
 
-          <form onSubmit={onSubmit} className="p-6 space-y-5">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Familienname</label>
-              <input
-                className="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-[color:var(--color-primary-100)]"
-                value={familyName}
-                onChange={(e) => setFamilyName(e.target.value)}
-                placeholder="z. B. Familie Müller"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-700">Passwort</label>
-              <div className="relative">
+          <form
+            onSubmit={submit}
+            className="parchment mt-5 rounded-panel border border-gilt/60 p-5 shadow-lifted sm:p-6"
+            noValidate
+          >
+            <div className="flex flex-col gap-4">
+              <div>
+                <label htmlFor="family" className="field-label">
+                  Familienname
+                </label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-[color:var(--color-primary-100)] pr-10"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  id="family"
+                  className="field"
+                  value={familyName}
+                  onChange={(e) => setFamilyName(e.target.value)}
+                  autoComplete="username"
+                  autoCapitalize="words"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
               </div>
+              <div>
+                <label htmlFor="password" className="field-label">
+                  Passwort
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    className="field pr-12"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                    className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-ink-muted hover:text-ink"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {mode === 'register' && <p className="mt-1.5 text-sm text-ink-faint">Mindestens 8 Zeichen.</p>}
+              </div>
+
+              {error && (
+                <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
+                  {error}
+                </p>
+              )}
+
+              <Button type="submit" variant="primary" disabled={loading} className="mt-1 w-full">
+                {loading ? 'Einen Moment …' : mode === 'login' ? 'Stammbaum öffnen' : 'Stammbaum anlegen'}
+              </Button>
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[color:var(--color-primary)] text-white rounded-lg py-2 text-sm sm:text-base font-medium hover:bg-[color:var(--color-primary-700)] transition disabled:opacity-60"
-            >
-              {loading ? 'Bitte warten…' : mode === 'register' ? 'Registrieren' : 'Anmelden'}
-            </button>
+            <p className="mt-5 text-center text-[15px] text-ink-muted">
+              {mode === 'login' ? 'Noch keinen Stammbaum?' : 'Schon einen Stammbaum?'}{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode(mode === 'login' ? 'register' : 'login')
+                  setError(null)
+                }}
+                className="font-medium text-linen underline decoration-gilt/70 underline-offset-4 hover:decoration-linen"
+              >
+                {mode === 'login' ? 'Neuen anlegen' : 'Anmelden'}
+              </button>
+            </p>
           </form>
         </div>
-
-        <p className="text-xs text-gray-500 mt-4 text-center max-w-sm mx-auto leading-relaxed">
-          Tipp: Du kannst jederzeit zwischen „Anmelden“ und „Registrieren“ oben wechseln.
-        </p>
-      </div>
-    </main>
+      </main>
+    </>
   )
 }
