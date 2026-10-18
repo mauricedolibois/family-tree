@@ -1,7 +1,7 @@
 // src/family/format.ts
 // Namen und Daten so aufbereiten, wie man sie im Stammbaum lesen möchte.
 
-import type { Person } from './model'
+import type { LineScope, Person } from './model'
 
 /** „Karl Friedrich Mustermann“ → Vornamen „Karl Friedrich“, Nachname „Mustermann“ */
 export function splitName(name: string): { given: string; surname: string } {
@@ -121,4 +121,24 @@ export function normalizeForSearch(s: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/ß/g, 'ss')
+}
+
+/** „keine“, „1 Generation“, „3 Generationen“ */
+export function generations(n: number): string {
+  if (n <= 0) return 'keine'
+  return n === 1 ? '1 Generation' : `${n} Generationen`
+}
+
+const SIDE_TEXT: Record<LineScope['side'], string> = {
+  0: 'ohne Seitenlinien',
+  1: 'mit Geschwistern',
+  2: 'mit Geschwistern und deren Kindern',
+  3: 'mit allen Blutsverwandten',
+}
+
+/** Umfang einer Linie in Worten: „Vorfahren: alle 9 Generationen, Nachkommen: keine, ohne Seitenlinien“ */
+export function describeLineScope(scope: LineScope, depth: { up: number; down: number }): string {
+  const part = (v: number | null, max: number) =>
+    max === 0 ? 'keine' : v === null || v >= max ? `alle ${generations(max)}` : generations(v)
+  return `Vorfahren: ${part(scope.up, depth.up)}, Nachkommen: ${part(scope.down, depth.down)}, ${SIDE_TEXT[scope.side]}`
 }

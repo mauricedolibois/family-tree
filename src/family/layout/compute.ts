@@ -3,7 +3,7 @@
 // Berechnet die Positionen aller Karten und Linien. ELK selbst wird von
 // außen hereingereicht (im Browser in einem Web Worker, in Tests direkt).
 
-import type { Tree } from '../model'
+import { buildIndex, type Tree, type TreeIndex } from '../model'
 import { buildLayoutGraph, type ElkGraph, type LayoutGraph } from './graph'
 import { CARD, type CardBox, type Connector, type MarriageLine, type Point, type TreeLayout } from './types'
 
@@ -142,16 +142,132 @@ function toLayout(lg: LayoutGraph, res: ElkResult, tree: Tree): TreeLayout {
   return layout
 }
 
-export async function computeTreeLayout(tree: Tree, runElk: RunElk): Promise<TreeLayout> {
+/** Kästen je Generationszeile, von links nach rechts */
+function rowsOf(res: ElkResult): string[][] {
+  const rows = new Map<number, Array<{ id: string; x: number }>>()
+  for (const n of res.children ?? []) {
+    const y = Math.round(n.y ?? 0)
+    rows.set(y, [...(rows.get(y) ?? []), { id: n.id, x: n.x ?? 0 }])
+  }
+  return [...rows.entries()].sort((a, b) => a[0] - b[0]).map(([, ns]) => ns.sort((a, b) => a.x - b.x).map((n) => n.id))
+}
+
+/**
+ * Geschwister nach Alter ordnen, samt ihren Familien darunter. Geht nur, wo die
+ * Familien abgeschlossen sind (niemand darin hat Eltern außerhalb) und in jeder
+ * Zeile nebeneinander stehen – dann entstehen durch das Umstellen keine Kreuzungen.
+ * Ändert `rows` direkt; liefert true, wenn sich etwas geändert hat.
+ */
+function sortSiblingFamilies(ix: TreeIndex, lg: LayoutGraph, rows: string[][]): boolean {
+  const born = (id: string) => ix.byId.get(id)?.profile?.birthDate ?? '9999'
+  const childUnits = (u: string) => {
+    const kids = [...new Set(lg.units.get(u)!.members.flatMap((m) => ix.children.get(m) ?? []))]
+    const out: string[] = []
+    for (const k of kids.sort((a, b) => born(a).localeCompare(born(b)))) {
+      const ku = lg.unitOf.get(k)
+      if (ku && ku !== u && !out.includes(ku)) out.push(ku)
+    }
+    return out
+  }
+
+  let changed = false
+  for (const parent of lg.units.keys()) {
+    const kids = childUnits(parent)
+    if (kids.length < 2) continue
+
+    // Jede Familie: Kind-Kasten und alle Kästen darunter
+    const owner = new Map<string, number>()
+    let closed = true
+    kids.forEach((k, i) => {
+      const stack = [k]
+      while (stack.length) {
+        const u = stack.pop()!
+        if (owner.has(u)) {
+          if (owner.get(u) !== i) closed = false
+          continue
+        }
+        owner.set(u, i)
+        stack.push(...childUnits(u))
+      }
+    })
+    for (const [u, i] of owner) {
+      for (const m of lg.units.get(u)!.members)
+        for (const p of ix.parents.get(m) ?? []) {
+          const pu = lg.unitOf.get(p)
+          if (pu !== parent && owner.get(pu!) !== i) closed = false
+        }
+    }
+    if (!closed) continue
+
+    // In jeder Zeile müssen die Familien einen zusammenhängenden Abschnitt bilden
+    const spans: Array<[number, number, number]> = []
+    let together = true
+    rows.forEach((row, r) => {
+      const idx = row.flatMap((u, k) => (owner.has(u) ? [k] : []))
+      if (!idx.length) return
+      if (idx[idx.length - 1] - idx[0] + 1 !== idx.length) together = false
+      spans.push([r, idx[0], idx.length])
+    })
+    if (!together) continue
+
+    for (const [r, start, len] of spans) {
+      const part = rows[r].slice(start, start + len)
+      const sorted = [...part].sort((a, b) => owner.get(a)! - owner.get(b)! || part.indexOf(a) - part.indexOf(b))
+      if (sorted.join() === part.join()) continue
+      rows[r].splice(start, len, ...sorted)
+      changed = true
+    }
+  }
+  return changed
+}
+
+/** Reihenfolge innerhalb der Zeilen genau so übernehmen, wie sie hereinkommt */
+const KEEP_ORDER = { 'elk.layered.crossingMinimization.forceNodeModelOrder': 'true' }
+
+/**
+ * Für Ausschnitte um eine Person (Linie, Beziehung): Eltern mittig über den
+ * Kindern, die Person mittig unter ihren Vorfahren – wie in einer Ahnentafel.
+ * Für die ganze Familie bleibt die kompaktere Standard-Anordnung.
+ */
+const CENTERED = {
+  'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+  'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED',
+}
+
+/**
+ * @param focusId Person, um die herum der Baum geordnet wird (z. B. bei „Linie von …“)
+ */
+export async function computeTreeLayout(
+  tree: Tree,
+  runElk: RunElk,
+  focusId: string | null = null,
+): Promise<TreeLayout> {
   if (Object.keys(tree.members).length === 0) return { cards: [], marriages: [], connectors: [], width: 0, height: 0 }
 
-  const first = buildLayoutGraph(tree)
-  const firstRes = await runElk(first.graph)
-  const flips = couplesToFlip(first, firstRes, tree, new Set())
-  if (flips.size === 0) return toLayout(first, firstRes, tree)
+  const placement = focusId ? CENTERED : {}
 
-  const second = buildLayoutGraph(tree, flips)
-  return toLayout(second, await runElk(second.graph), tree)
+  // 1. Grundlayout: ELK ordnet nach Stammbaum-Reihenfolge und vermeidet Kreuzungen
+  let lg = buildLayoutGraph(tree, { focusId, elk: placement })
+  let res = await runElk(lg.graph)
+
+  // 2. Paare umdrehen, deren Eltern auf der anderen Seite stehen
+  const flips = couplesToFlip(lg, res, tree, new Set())
+  if (flips.size) {
+    lg = buildLayoutGraph(tree, { flipped: flips, focusId, elk: placement })
+    res = await runElk(lg.graph)
+  }
+  const layout = toLayout(lg, res, tree)
+
+  // 3. Geschwister samt Familien nach Alter, wenn das keine neuen Kreuzungen bringt
+  const rows = rowsOf(res)
+  if (!sortSiblingFamilies(buildIndex(tree), lg, rows)) return layout
+  const sortedGraph = buildLayoutGraph(tree, {
+    flipped: flips,
+    order: rows.flat(),
+    elk: { ...placement, ...KEEP_ORDER },
+  })
+  const sorted = toLayout(sortedGraph, await runElk(sortedGraph.graph), tree)
+  return countCrossings(sorted) <= countCrossings(layout) ? sorted : layout
 }
 
 /** Anzahl echter Kreuzungen zwischen Verbindungslinien (für Tests) */
