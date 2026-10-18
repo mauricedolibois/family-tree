@@ -12,6 +12,7 @@ import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
 import { useToast } from '@/components/app/Toast'
 import { Button } from '@/components/ui/Button'
 import { Segmented } from '@/components/ui/Choice'
+import { MediaImage } from '@/components/ui/MediaImage'
 import { uploadFiles } from './upload'
 
 export function PersonForm({ person, onDone }: { person: Person; onDone: () => void }) {
@@ -72,7 +73,6 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
     if (birthDate && deathDate && deathDate.slice(0, precision) < birthDate.slice(0, precision)) {
       return setError('Das Sterbedatum liegt vor dem Geburtsdatum.')
     }
-    const removed = (p.media ?? []).filter((old) => !media.some((m) => m.id === old.id))
     try {
       const next = updatePerson(tree, person.id, {
         name,
@@ -89,14 +89,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         },
       })
       await commit(next)
-      // Entfernte Dateien erst löschen, wenn der neue Stand sicher gespeichert ist
-      if (removed.length) {
-        void fetch('/api/media/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ urls: removed.map((m) => m.url) }),
-        }).catch(() => {})
-      }
+      // Entfernte Dateien bleiben im Speicher, damit ältere gesicherte Stände ihre Bilder behalten.
+      // Aufgeräumt wird in der täglichen Sicherung (scripts/daily-backup.mjs).
       notify({ message: 'Änderungen gespeichert.' })
       onDone()
     } catch (err) {
@@ -224,8 +218,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
                   )}
                 >
                   {m.kind === 'image' ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.url} alt={m.title ?? ''} className="h-full w-full object-cover" />
+                    <MediaImage src={m.url} alt={m.title ?? ''} lazy={false} />
                   ) : (
                     <span className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-ink-muted">
                       <FileText className="h-6 w-6" />

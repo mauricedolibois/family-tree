@@ -2,6 +2,7 @@
 // Foto oder Initialen. Wie in klassischen Ahnentafeln: Männer eckig, Frauen rund.
 
 import clsx from 'clsx'
+import { useState } from 'react'
 import type { Person } from '@/family/model'
 import { initials, isDeceased } from '@/family/format'
 
@@ -21,6 +22,8 @@ export function Portrait({
   className?: string
 }) {
   const url = person.profile?.titleImageUrl
+  // Fehlt die Datei, lieber die Initialen zeigen als ein kaputtes Bild
+  const [broken, setBroken] = useState<string | null>(null)
   const shape = person.gender === 'FEMALE' ? 'rounded-full' : size === 'lg' ? 'rounded-[14px]' : 'rounded-[7px]'
   return (
     <span
@@ -32,12 +35,13 @@ export function Portrait({
       )}
       aria-hidden
     >
-      {url ? (
+      {url && broken !== url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={url}
           alt=""
           loading="lazy"
+          onError={() => setBroken(url)}
           className={clsx('h-full w-full object-cover', isDeceased(person) && 'grayscale-[35%]')}
         />
       ) : (

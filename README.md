@@ -28,9 +28,14 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 
   ```sql
   select * from verwaltung.staende limit 20;         -- letzte gesicherte Stände
-  select verwaltung.wiederherstellen(123);            -- Stand 123 zurückholen (der aktuelle wird vorher gesichert)
+  select verwaltung.wiederherstellen(NUMMER);         -- nur Vorschau: was würde passieren?
+  select verwaltung.wiederherstellen(NUMMER, true);   -- wirklich zurückholen (der aktuelle Stand wird vorher gesichert)
   select verwaltung.sichern('vor dem Familienfest');  -- jetzt von Hand sichern
   ```
+
+  `NUMMER` durch die `id` aus der Liste ersetzen – es steht absichtlich dort, damit sich die Zeilen nicht versehentlich unverändert ausführen lassen. Ohne `true` zeigt die Funktion nur eine Vorschau und ändert nichts.
+
+- Fotos und Dokumente werden nicht sofort gelöscht, wenn jemand sie entfernt: Die tägliche Sicherung löscht eine Datei erst, wenn weder der aktuelle Baum noch eine Sicherung sie kennt (und sie älter als eine Woche ist). Zurückgeholte Stände behalten so ihre Bilder. Fehlt doch einmal eine Datei, zeigt die App die Initialen bzw. „Bild fehlt“.
 
 - Die Datenbank (Supabase) wird nur serverseitig mit dem Service-Role-Key angesprochen; öffentliche Rollen haben keine Rechte.
 

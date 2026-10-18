@@ -15,6 +15,7 @@ import { Portrait } from '@/components/ui/Portrait'
 import { CountryFlag } from '@/components/ui/CountryFlag'
 import { Button } from '@/components/ui/Button'
 import { Flourish } from '@/components/ui/Flourish'
+import { MediaImage } from '@/components/ui/MediaImage'
 
 type Props = { person: Person; onEdit: () => void; onAdd: (r: Relation) => void }
 
@@ -157,8 +158,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
                   title={m.title ?? undefined}
                 >
                   {m.kind === 'image' ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.url} alt={m.title ?? ''} loading="lazy" className="h-full w-full object-cover" />
+                    <MediaImage src={m.url} alt={m.title ?? ''} />
                   ) : (
                     <span className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-ink-muted">
                       <FileText className="h-6 w-6" />
