@@ -3,7 +3,7 @@
 -- nutzbar nur im SQL-Editor von Supabase.
 --
 --   select * from verwaltung.staende limit 20;          -- letzte Stände
---   select verwaltung.wiederherstellen(123);             -- Stand 123 zurückholen
+--   select verwaltung.wiederherstellen(NUMMER);          -- Stand mit dieser Nummer zurückholen (siehe 20261018130000)
 --   select verwaltung.sichern('vor dem Familienfest');   -- jetzt von Hand sichern
 
 create schema if not exists verwaltung;
