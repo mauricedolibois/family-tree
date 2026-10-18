@@ -15,6 +15,8 @@ export type StoredMedia = {
 export type StoredProfile = {
   birthDate?: string | null
   deathDate?: string | null
+  /** verstorben – auch wenn das Sterbedatum unbekannt ist (nur gespeichert, wenn ja) */
+  deceased?: boolean
   country?: string | null
   job?: string | null
   city?: string | null

@@ -112,11 +112,13 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         <Fact
           label="Gestorben"
           value={
-            isDeceased(person)
+            !isDeceased(person)
+              ? ''
+              : p.deathDate
               ? [formatDate(p.deathDate), age && `mit ${age.approx ? 'etwa ' : ''}${age.years} Jahren`]
                   .filter(Boolean)
                   .join(', ')
-              : ''
+              : 'ja, Datum unbekannt'
           }
         />
         {!isDeceased(person) && ageText && <Fact label="Alter" value={ageText} />}

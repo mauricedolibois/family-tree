@@ -43,6 +43,13 @@ function optDate(v: unknown, field: string): string | null {
   return s
 }
 
+/** Ja/Nein; fehlt es, heißt das nein */
+function optFlag(v: unknown, field: string): boolean {
+  if (v === undefined || v === null) return false
+  if (typeof v !== 'boolean') throw new Invalid(`${field}: Ja oder Nein erwartet`)
+  return v
+}
+
 function url(v: unknown, field: string): string {
   const s = str(v, field, LIMITS.url)
   if (!/^https?:\/\//i.test(s)) throw new Invalid(`${field}: ungültige URL`)
@@ -86,6 +93,7 @@ function profile(v: unknown, field: string): StoredProfile {
   return {
     birthDate: optDate(v.birthDate, `${field}.birthDate`),
     deathDate: optDate(v.deathDate, `${field}.deathDate`),
+    ...(optFlag(v.deceased, `${field}.deceased`) ? { deceased: true } : {}),
     country: optStr(v.country, `${field}.country`, LIMITS.shortText),
     city: optStr(v.city, `${field}.city`, LIMITS.shortText),
     job: optStr(v.job, `${field}.job`, LIMITS.shortText),

@@ -6,12 +6,12 @@ import clsx from 'clsx'
 import { FileText, ImagePlus, Star, Trash2 } from 'lucide-react'
 import type { Gender, Person } from '@/family/model'
 import { updatePerson } from '@/family/edit'
-import { parseDateInput, toDateInput } from '@/family/format'
+import { isDeceased, parseDateInput, toDateInput } from '@/family/format'
 import type { StoredMedia } from '@/storage/schema'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
 import { useToast } from '@/components/app/Toast'
 import { Button } from '@/components/ui/Button'
-import { Segmented } from '@/components/ui/Choice'
+import { Segmented, Toggle } from '@/components/ui/Choice'
 import { MediaImage } from '@/components/ui/MediaImage'
 import { uploadFiles } from './upload'
 
@@ -22,6 +22,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
 
   const [name, setName] = useState(person.name)
   const [gender, setGender] = useState<Gender>(person.gender)
+  const [dead, setDead] = useState(isDeceased(person))
   const [form, setForm] = useState({
     birthDate: toDateInput(p.birthDate),
     deathDate: toDateInput(p.deathDate),
@@ -64,7 +65,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
     e.preventDefault()
     setError(null)
     const birthDate = parseDateInput(form.birthDate)
-    const deathDate = parseDateInput(form.deathDate)
+    // Ausgeschaltet: kein Sterbedatum (das Eingetippte bleibt nur bis zum Speichern im Feld)
+    const deathDate = dead ? parseDateInput(form.deathDate) : null
     if (birthDate === undefined || deathDate === undefined) {
       return setError('Bitte Daten als TT.MM.JJJJ eingeben – oder nur Monat und Jahr (MM.JJJJ) oder nur das Jahr.')
     }
@@ -80,6 +82,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         profile: {
           birthDate,
           deathDate,
+          deceased: dead || undefined,
           city: form.city.trim() || null,
           country: form.country.trim() || null,
           job: form.job.trim() || null,
@@ -126,9 +129,16 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         ]}
       />
 
-      <p className="-mb-2 text-sm text-ink-faint">Ist nur das Jahr bekannt, reicht z. B. „1822“.</p>
+      <Toggle checked={dead} onChange={setDead}>
+        Ist verstorben
+      </Toggle>
+
+      <p className="-mb-2 text-sm text-ink-faint">
+        Ist nur das Jahr bekannt, reicht z. B. „1822“.
+        {dead && ' Ist das Sterbedatum unbekannt, bleibt das Feld einfach leer.'}
+      </p>
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div className={clsx(!dead && 'col-span-2')}>
           <label htmlFor="pf-born" className="field-label">
             Geboren
           </label>
@@ -141,19 +151,21 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
             autoComplete="off"
           />
         </div>
-        <div>
-          <label htmlFor="pf-died" className="field-label">
-            Gestorben
-          </label>
-          <input
-            id="pf-died"
-            className="field"
-            value={form.deathDate}
-            onChange={set('deathDate')}
-            placeholder="TT.MM.JJJJ"
-            autoComplete="off"
-          />
-        </div>
+        {dead && (
+          <div>
+            <label htmlFor="pf-died" className="field-label">
+              Gestorben
+            </label>
+            <input
+              id="pf-died"
+              className="field"
+              value={form.deathDate}
+              onChange={set('deathDate')}
+              placeholder="unbekannt"
+              autoComplete="off"
+            />
+          </div>
+        )}
         <div>
           <label htmlFor="pf-city" className="field-label">
             Wohnort

@@ -2,6 +2,7 @@
 // Wer hat als Nächstes Geburtstag? Nur Lebende mit vollständigem Geburtsdatum.
 
 import type { Person, Tree } from './model'
+import { isDeceased } from './format'
 
 export type Birthday = {
   person: Person
@@ -33,7 +34,7 @@ export function upcomingBirthdays(tree: Tree, now = new Date(), occurrences = 1)
   const today = midnight(now)
   const out: Birthday[] = []
   for (const person of Object.values(tree.members)) {
-    if (person.profile?.deathDate) continue
+    if (isDeceased(person)) continue
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(person.profile?.birthDate ?? '')
     if (!m) continue
     const [year, month, day] = [+m[1], +m[2], +m[3]]
