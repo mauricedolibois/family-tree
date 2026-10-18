@@ -15,6 +15,7 @@ import { useTreeLayout } from './useTreeLayout'
 import { ViewModes } from './ViewModes'
 import { LineScopeCard } from './LineScopeCard'
 import { RelationCard } from '@/components/relation/RelationCard'
+import { BirthdaysCard } from '@/components/birthdays/BirthdaysCard'
 
 const MIN_SCALE = 0.05
 const MAX_SCALE = 2.2
@@ -28,7 +29,8 @@ const WIDE = 768
 
 export function TreeCanvas() {
   const { tree, index } = useFamily()
-  const { selectedId, select, lineId, lineScope, showLine, relation, showRelation, meId, focusRequest } = useView()
+  const { selectedId, select, lineId, lineScope, showLine, relation, showRelation, birthdays, meId, focusRequest } =
+    useView()
   const api = useRef<ReactZoomPanPinchRef | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
   const overlay = useRef<HTMLDivElement | null>(null)
@@ -302,6 +304,7 @@ export function TreeCanvas() {
       >
         <ViewModes count={count} scopeOpen={scopeOpen} onToggleScope={() => setScopeOpen((v) => !v)} />
         {relation && <RelationCard connection={connection} compact={!!selectedId} />}
+        {birthdays && <BirthdaysCard />}
         {lineId && scopeOpen && !relation && (
           <LineScopeCard personId={lineId} count={count} onClose={() => setScopeOpen(false)} />
         )}

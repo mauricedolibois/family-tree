@@ -15,6 +15,7 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 - **Personen hinzufügen** direkt aus dem Infoblatt: Kind, Ehepartner, Elternteil.
 - **Fotos und Dokumente** pro Person; Fotos werden vor dem Hochladen verkleinert.
 - **Tageslicht und Kerzenlicht** (heller und dunkler Modus).
+- **Nächste Geburtstage** im Menü: alle Lebenden mit vollständigem Geburtsdatum nach Monaten, mit Alter und – nach „Das bin ich“ – der Verwandtschaft; ein Tipp springt zur Person.
 - **Als PDF exportieren** über das Menü: eigene Linie, Beziehung oder ganze Familie, hoch oder quer, A4 bis A1. Druckfertiges Blatt mit Goldrahmen, Titel und Datum; gesichert wird über den Druckdialog („Als PDF sichern“), dadurch bleibt alles vektorscharf.
 - **Herkunftsflagge** bei jeder Person mit eingetragenem Land.
 - **Sicherung herunterladen** als JSON über das Menü.

@@ -26,6 +26,9 @@ type ViewCtx = {
   /** Die Person, aus deren Sicht Verwandtschaft beschrieben wird */
   meId: string | null
   setMe: (id: string | null) => void
+  /** Reiter „Nächste Geburtstage“ offen */
+  birthdays: boolean
+  showBirthdays: (open: boolean) => void
   /** Einführung läuft */
   tourOpen: boolean
   setTourOpen: (open: boolean) => void
@@ -53,6 +56,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [lineId, setLineId] = useState<string | null>(null)
   const [relation, setRelation] = useState<RelationPick | null>(null)
+  const [birthdays, setBirthdays] = useState(false)
   const [lineScope, setLineScopeState] = useState<LineScope>(DEFAULT_LINE_SCOPE)
   const [meId, setMeId] = useState<string | null>(null)
   const [focusRequest, setFocusRequest] = useState<ViewCtx['focusRequest']>(null)
@@ -101,14 +105,25 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     [familyName],
   )
 
-  // Linie und Beziehung schließen sich aus; showLine(null) heißt „ganze Familie“
+  // Linie, Beziehung und Geburtstage schließen sich aus; showLine(null) heißt „ganze Familie“
   const showLine = useCallback((id: string | null) => {
     setLineId(id)
     setRelation(null)
+    setBirthdays(false)
   }, [])
   const showRelation = useCallback((pick: RelationPick | null) => {
     setRelation(pick)
-    if (pick) setLineId(null)
+    if (pick) {
+      setLineId(null)
+      setBirthdays(false)
+    }
+  }, [])
+  const showBirthdays = useCallback((open: boolean) => {
+    setBirthdays(open)
+    if (open) {
+      setLineId(null)
+      setRelation(null)
+    }
   }, [])
 
   const focusOn = useCallback((id: string) => {
@@ -129,6 +144,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       setLineScope,
       relation: relation && { from: valid(relation.from), to: valid(relation.to) },
       showRelation,
+      birthdays,
+      showBirthdays,
       meId: valid(meId),
       setMe,
       exportOpen,
@@ -151,6 +168,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       focusOn,
       showLine,
       showRelation,
+      birthdays,
+      showBirthdays,
       exportOpen,
       tourOpen,
       index,
