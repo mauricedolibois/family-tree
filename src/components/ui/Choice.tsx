@@ -11,11 +11,14 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  dense,
 }: {
   label: string
   value: T
   options: Option<T>[]
   onChange: (v: T) => void
+  /** schmaler, für vier und mehr Möglichkeiten auf dem Handy */
+  dense?: boolean
 }) {
   const id = useId()
   return (
@@ -36,7 +39,9 @@ export function Segmented<T extends string>({
             aria-checked={value === o.value}
             onClick={() => onChange(o.value)}
             className={clsx(
-              'flex h-9 flex-1 items-center justify-center gap-2 rounded-[7px] text-[15px] transition-colors',
+              'flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] transition-colors',
+              // dicht: Breite nach Inhalt, damit lange Wörter nicht anstoßen
+              dense ? 'flex-auto px-2 text-sm' : 'flex-1 text-[15px]',
               value === o.value
                 ? 'bg-linen font-medium text-gilt-soft shadow-[inset_0_0_0_1px_rgb(var(--gilt)/0.5)]'
                 : 'text-ink-muted hover:text-ink',

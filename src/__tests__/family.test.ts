@@ -1,5 +1,5 @@
-import { buildIndex, lineageOf, siblingsOf, type Tree } from '@/family/model'
-import { describeKinship } from '@/family/kinship'
+import { buildIndex, lineageOf, lineageView, siblingsOf, type Tree } from '@/family/model'
+import { describeKinship, findConnection, kinshipLabel, kinshipSentence, kinshipTitle } from '@/family/kinship'
 import { addRelative, canDelete, deletePerson, normalize, updatePerson } from '@/family/edit'
 import { ageOf, formatDate, lifeYears, parseDateInput, splitName, toDateInput } from '@/family/format'
 
@@ -58,7 +58,7 @@ function family(): Tree {
 
 const kin = (tree: Tree, me: string, other: string) => {
   const k = describeKinship(buildIndex(tree), me, other)
-  return k ? `${k.possessive} ${k.term}` : null
+  return k ? kinshipLabel(k) : null
 }
 
 describe('Verwandtschaft aus Sicht von Kurt', () => {
@@ -88,6 +88,77 @@ describe('Verwandtschaft aus Sicht von Kurt', () => {
 
   it('niemand ist mit sich selbst verwandt', () => {
     expect(kin(t, 'kurt', 'kurt')).toBeNull()
+  })
+
+  it('über den Ehepartner: kein „Dein“ vor der Kette', () => {
+    expect(kin(t, 'hanna', 'mia')).toBe('Nichte deines Mannes')
+    expect(kin(t, 'erich', 'gustav')).toBe('Dein Schwiegersohn')
+  })
+})
+
+describe('Beziehung zwischen zwei Personen', () => {
+  const t = family()
+  const ix = buildIndex(t)
+  const names = (ids: string[]) => ids.map((id) => t.members[id].name.split(' ')[0])
+
+  it('Cousine: Weg über die gemeinsamen Großeltern', () => {
+    const c = findConnection(ix, 'kurt', 'mia')!
+    expect(names(c.path)).toEqual(['Kurt', 'Gustav', 'Carl', 'Ida', 'Mia'])
+    expect(names(c.common).sort()).toEqual(['Carl', 'Dora'])
+    expect(kinshipTitle(c.kinship)).toEqual({ title: 'Cousine', note: '' })
+    expect(kinshipSentence(c.kinship, { name: 'Mia' }, { name: 'Kurt' })).toBe('Mia ist die Cousine von Kurt.')
+    expect(kinshipSentence(c.reverse, { name: 'Kurt' }, { name: 'Mia' })).toBe('Kurt ist der Cousin von Mia.')
+  })
+
+  it('direkte Linie ohne gemeinsame Vorfahren', () => {
+    const c = findConnection(ix, 'kurt', 'anton')!
+    expect(names(c.path)).toEqual(['Kurt', 'Gustav', 'Carl', 'Anton'])
+    expect(c.common).toEqual([])
+    expect(kinshipSentence(c.kinship, { name: 'Anton' }, 'you')).toBe('Anton ist dein Urgroßvater.')
+    expect(kinshipSentence(c.reverse, 'you', { name: 'Anton' })).toBe('Du bist der Urenkel von Anton.')
+  })
+
+  it('Tante und Neffe in beide Richtungen', () => {
+    const c = findConnection(ix, 'kurt', 'ida')!
+    expect(kinshipSentence(c.kinship, { name: 'Ida' }, { name: 'Kurt' })).toBe('Ida ist die Tante von Kurt.')
+    expect(kinshipSentence(c.reverse, { name: 'Kurt' }, { name: 'Ida' })).toBe('Kurt ist der Neffe von Ida.')
+  })
+
+  it('angeheiratet: Weg führt über den Ehepartner', () => {
+    const c = findConnection(ix, 'hanna', 'mia')!
+    expect(names(c.path)).toEqual(['Hanna', 'Gustav', 'Carl', 'Ida', 'Mia'])
+    expect(kinshipSentence(c.kinship, { name: 'Mia' }, { name: 'Hanna' })).toBe(
+      'Mia ist die Nichte des Mannes von Hanna.',
+    )
+  })
+
+  it('ohne gängige Bezeichnung: Schritt für Schritt', () => {
+    const c = findConnection(ix, 'hanna', 'jonas')!
+    expect(c.detour).toBe(3)
+    expect(c.path[0]).toBe('hanna')
+    expect(c.path[c.path.length - 1]).toBe('jonas')
+    expect(kinshipTitle(c.kinship).title).toBe('Ehemann der Schwester des Ehemanns')
+    expect(kinshipSentence(c.kinship, { name: 'Jonas' }, 'you')).toBe(
+      'Jonas ist der Ehemann der Schwester deines Ehemanns.',
+    )
+  })
+
+  it('Zusatz nach dem Komma steht am Satzende', () => {
+    const tree = addRelative(t, 'mia', { relation: 'CHILD', name: 'Pia Weg', gender: 'FEMALE' }).tree
+    const pia = Object.values(tree.members).find((m) => m.name === 'Pia Weg')!.id
+    const c = findConnection(buildIndex(tree), 'kurt', pia)!
+    expect(kinshipSentence(c.kinship, { name: 'Pia' }, { name: 'Kurt' })).toBe(
+      'Pia ist die Cousine von Kurt, eine Generation versetzt.',
+    )
+    expect(kinshipLabel(c.kinship)).toBe('Deine Cousine, eine Generation versetzt')
+  })
+
+  it('keine Verbindung und dieselbe Person', () => {
+    const tree = addRelative(t, 'kurt', { relation: 'SPOUSE', name: 'Nora Fremd', gender: 'FEMALE' }).tree
+    const lone = { ...tree, members: { ...tree.members, solo: { ...tree.members.kurt, id: 'solo', spouseId: null } } }
+    const ix2 = buildIndex(lone)
+    expect(findConnection(ix2, 'kurt', 'solo')).toBeNull()
+    expect(findConnection(ix2, 'kurt', 'kurt')).toBeNull()
   })
 })
 
@@ -192,5 +263,35 @@ describe('Ungenaue Daten', () => {
       years: 79,
       approx: false,
     })
+  })
+})
+
+describe('Umfang der Linie', () => {
+  const t = family()
+  const ix = buildIndex(t)
+  const view = (scope: Parameters<typeof lineageView>[2]) => [...lineageView(ix, 'kurt', scope)].sort()
+
+  it('nur direkt: Vorfahren ohne Geschwister', () => {
+    expect(view({ up: null, down: null, side: 0 })).toEqual(
+      ['anton', 'berta', 'carl', 'dora', 'erich', 'frida', 'gustav', 'hanna', 'kurt'].sort(),
+    )
+  })
+
+  it('mit Geschwistern: Halbschwester und Tante, aber keine Cousine', () => {
+    const v = view({ up: null, down: null, side: 1 })
+    expect(v).toEqual(expect.arrayContaining(['lena', 'ida']))
+    expect(v).not.toContain('mia')
+    expect(v).not.toContain('jonas')
+  })
+
+  it('mit Cousins: die Cousine und ihr Vater kommen dazu', () => {
+    expect(view({ up: null, down: null, side: 2 })).toEqual(expect.arrayContaining(['mia', 'jonas']))
+  })
+
+  it('Generationen nach oben begrenzen', () => {
+    const v = view({ up: 1, down: null, side: 1 })
+    expect(v).toEqual(expect.arrayContaining(['gustav', 'hanna', 'lena']))
+    expect(v).not.toContain('carl')
+    expect(v).not.toContain('ida')
   })
 })

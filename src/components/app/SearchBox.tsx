@@ -6,7 +6,8 @@ import clsx from 'clsx'
 import { Search, X } from 'lucide-react'
 import { useFamily } from './FamilyProvider'
 import { useView } from './ViewProvider'
-import { lifeYears, normalizeForSearch } from '@/family/format'
+import { lifeYears } from '@/family/format'
+import { searchPeople } from '@/family/search'
 import { Portrait } from '@/components/ui/Portrait'
 
 const MAX_RESULTS = 8
@@ -24,23 +25,7 @@ export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?:
     if (autoFocus) input.current?.focus()
   }, [autoFocus])
 
-  const results = useMemo(() => {
-    const q = normalizeForSearch(query.trim())
-    if (!q) return []
-    const words = q.split(/\s+/)
-    return Object.values(tree.members)
-      .map((p) => {
-        const hay = normalizeForSearch(`${p.name} ${p.profile?.city ?? ''} ${p.profile?.birthDate?.slice(0, 4) ?? ''}`)
-        if (!words.every((w) => hay.includes(w))) return null
-        const name = normalizeForSearch(p.name)
-        const score = name.startsWith(q) ? 0 : name.split(' ').some((part) => part.startsWith(words[0])) ? 1 : 2
-        return { p, score }
-      })
-      .filter((x): x is NonNullable<typeof x> => !!x)
-      .sort((a, b) => a.score - b.score || a.p.name.localeCompare(b.p.name, 'de'))
-      .slice(0, MAX_RESULTS)
-      .map((x) => x.p)
-  }, [query, tree])
+  const results = useMemo(() => searchPeople(tree, query, MAX_RESULTS), [query, tree])
 
   const choose = (id: string) => {
     focusOn(id)

@@ -106,15 +106,53 @@ export function lineageOf(ix: TreeIndex, id: string): Set<string> {
 }
 
 /**
- * Personen für die Ansicht „Linie von …“: die direkte Linie, dazu Geschwister
- * der Person und die Partner aller Nachkommen, damit Paare vollständig bleiben.
+ * Wie weit die Ansicht „Linie von …“ reicht.
+ * `up`/`down`: Generationen nach oben/unten, null = alle.
+ * `side`: Seitenlinien – 0 keine, 1 Geschwister (auch Onkel, Tanten, Großonkel …),
+ * 2 zusätzlich deren Kinder (Neffen, Cousins …), 3 alle Blutsverwandten.
  */
-export function lineageView(ix: TreeIndex, id: string): Set<string> {
-  const set = lineageOf(ix, id)
-  for (const s of siblingsOf(ix, id)) set.add(s)
-  for (const d of descendantsOf(ix, id).keys()) {
-    const sp = spouseOf(ix, d)
+export type LineScope = { up: number | null; down: number | null; side: 0 | 1 | 2 | 3 }
+
+export const DEFAULT_LINE_SCOPE: LineScope = { up: null, down: null, side: 0 }
+
+/** Wie viele Generationen es über bzw. unter einer Person überhaupt gibt */
+export function lineDepth(ix: TreeIndex, id: string): { up: number; down: number } {
+  const max = (m: Map<string, number>) => Math.max(0, ...m.values())
+  return { up: max(ancestorsOf(ix, id)), down: max(descendantsOf(ix, id)) }
+}
+
+/**
+ * Personen für die Ansicht „Linie von …“: die direkte Linie im gewählten Umfang,
+ * Seitenlinien nach Wunsch, dazu die Partner, damit Paare vollständig bleiben.
+ */
+export function lineageView(ix: TreeIndex, id: string, scope: LineScope = DEFAULT_LINE_SCOPE): Set<string> {
+  const within = (d: number, max: number | null) => max === null || d <= max
+  const ancestors = [...ancestorsOf(ix, id)].filter(([, d]) => within(d, scope.up)).map(([a]) => a)
+  const descendants = [...descendantsOf(ix, id)].filter(([, d]) => within(d, scope.down)).map(([c]) => c)
+  const set = new Set<string>([id, ...ancestors, ...descendants])
+
+  // Seitenlinien zweigen bei den gezeigten Vorfahren ab: deren übrige Kinder sind
+  // die Geschwister der Linie, deren Kinder Neffen und Cousins usw.
+  if (scope.side > 0) {
+    const sideDepth = scope.side === 3 ? Infinity : scope.side
+    const line = new Set([id, ...ancestorsOf(ix, id).keys()])
+    for (const a of ancestors) {
+      let frontier = childrenOf(ix, a).filter((c) => !line.has(c))
+      for (let gen = 1; gen <= sideDepth && frontier.length; gen++) {
+        frontier.forEach((c) => set.add(c))
+        frontier = frontier.flatMap((f) => childrenOf(ix, f)).filter((c) => !set.has(c))
+      }
+    }
+  }
+
+  // Partner: der eigene, die der Nachkommen und die anderen Elternteile gezeigter Kinder
+  for (const x of [id, ...descendants]) {
+    const sp = spouseOf(ix, x)
     if (sp) set.add(sp)
+  }
+  for (const x of [...set]) {
+    const ps = parentsOf(ix, x)
+    if (ps.some((p) => set.has(p))) ps.forEach((p) => set.add(p))
   }
   return set
 }

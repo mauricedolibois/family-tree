@@ -3,10 +3,10 @@
 
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { ChevronRight, FileText, GitBranch, Pencil, Plus, Trash2, UserRound } from 'lucide-react'
+import { ChevronRight, FileText, GitBranch, Pencil, Plus, Route, Trash2, UserRound } from 'lucide-react'
 import { childrenOf, parentsOf, siblingsOf, spouseOf, type Person } from '@/family/model'
 import { ageOf, formatDate, isDeceased, lifeYears } from '@/family/format'
-import { describeKinship } from '@/family/kinship'
+import { describeKinship, kinshipLabel } from '@/family/kinship'
 import { canDelete, deletePerson, type Relation } from '@/family/edit'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
@@ -20,7 +20,7 @@ type Props = { person: Person; onEdit: () => void; onAdd: (r: Relation) => void 
 
 export function PersonDetails({ person, onEdit, onAdd }: Props) {
   const { tree, index, commit } = useFamily()
-  const { meId, setMe, focusOn, showLine, lineId, select } = useView()
+  const { meId, setMe, focusOn, showLine, lineId, select, showRelation, relation } = useView()
   const { notify } = useToast()
   const [deleting, setDeleting] = useState(false)
 
@@ -35,6 +35,12 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
   const age = ageOf(person)
   const ageText = age ? `${age.approx ? 'etwa ' : ''}${age.years} Jahre` : null
   const media = p.media ?? []
+
+  /** Beziehungsansicht: von dir zu dieser Person, sonst mit ihr beginnen */
+  const showRelationTo = () => {
+    showRelation(meId && meId !== person.id ? { from: meId, to: person.id } : { from: person.id, to: null })
+    select(null)
+  }
 
   const remove = async () => {
     if (!window.confirm(`${person.name} aus dem Stammbaum entfernen? Der Stand davor wird automatisch gesichert.`))
@@ -67,7 +73,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
                 kin.byMarriage ? 'text-ink-muted' : 'text-gilt-deep',
               )}
             >
-              {kin.possessive} {kin.term}
+              {kinshipLabel(kin)}
             </p>
           )}
           {meId === person.id && <p className="mt-1 font-serif text-[17px] italic text-gilt-deep">Das bist du</p>}
@@ -83,6 +89,11 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         {lineId !== person.id && (
           <Button size="sm" icon={<GitBranch className="h-4 w-4" />} onClick={() => showLine(person.id)}>
             Nur diese Linie
+          </Button>
+        )}
+        {(!relation || (relation.from !== person.id && relation.to !== person.id)) && (
+          <Button size="sm" icon={<Route className="h-4 w-4" />} onClick={showRelationTo}>
+            Beziehung zeigen
           </Button>
         )}
         {meId !== person.id && (
