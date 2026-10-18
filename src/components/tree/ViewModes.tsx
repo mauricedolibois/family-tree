@@ -19,7 +19,7 @@ export function ViewModes({
   onToggleScope: () => void
 }) {
   const { index } = useFamily()
-  const { lineId, showLine, meId, relation, showRelation, selectedId, select } = useView()
+  const { lineId, showLine, meId, relation, showRelation, selectedId, select, birthdays } = useView()
   const { notify } = useToast()
   const other = lineId && lineId !== meId ? index.byId.get(lineId) : null
 
@@ -87,7 +87,7 @@ export function ViewModes({
         </button>
       )}
 
-      {!relation && !scopeOpen && (
+      {!relation && !scopeOpen && !birthdays && (
         <span className="parchment pointer-events-auto hidden rounded-full border border-card-rule px-3 py-1 text-sm tabular-nums text-ink-muted shadow-card sm:inline-block">
           {count} Personen
         </span>
