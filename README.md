@@ -14,6 +14,8 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 - **Personen hinzufügen** direkt aus dem Infoblatt: Kind, Ehepartner, Elternteil.
 - **Fotos und Dokumente** pro Person; Fotos werden vor dem Hochladen verkleinert.
 - **Tageslicht und Kerzenlicht** (heller und dunkler Modus).
+- **Als PDF exportieren** über das Menü: eigene Linie, Beziehung oder ganze Familie, hoch oder quer, A4 bis A1. Druckfertiges Blatt mit Goldrahmen, Titel und Datum; gesichert wird über den Druckdialog („Als PDF sichern“), dadurch bleibt alles vektorscharf.
+- **Herkunftsflagge** bei jeder Person mit eingetragenem Land.
 - **Sicherung herunterladen** als JSON über das Menü.
 
 ## Sicherheit und Daten
@@ -48,6 +50,7 @@ SESSION_SECRET=…
 | `src/family/`              | Stammbaum-Logik ohne Oberfläche: Beziehungen, Verwandtschaftsnamen, Bearbeiten, Layout |
 | `src/components/tree/`     | Baum-Ansicht: Karten, Linien, Zoom                                                     |
 | `src/components/person/`   | Infoblatt, Bearbeiten, Personen hinzufügen                                             |
+| `src/components/print/`    | PDF-Export (Druckblatt)                                                                |
 | `src/components/relation/` | Beziehungsansicht: zwei Personen wählen, Bezeichnung                                   |
 | `src/components/app/`      | Datenzustand, Kopfzeile, Suche                                                         |
 | `src/components/ui/`       | Bausteine des Style-Systems                                                            |

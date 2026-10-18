@@ -8,6 +8,7 @@ import { ToastProvider } from '@/components/app/Toast'
 import { TopBar } from '@/components/app/TopBar'
 import { TreeCanvas } from '@/components/tree/TreeCanvas'
 import { PersonPanel } from '@/components/person/PersonPanel'
+import { ExportSheet } from '@/components/print/ExportSheet'
 
 type Props = { familyName: string }
 
@@ -29,13 +30,14 @@ export default function Home({ familyName }: Props) {
       <FamilyProvider familyName={familyName}>
         <ViewProvider>
           <ToastProvider>
-            <div className="flex h-dvh flex-col overflow-hidden">
+            <div className="flex h-dvh flex-col overflow-hidden print:hidden">
               <TopBar />
               <main className="relative min-h-0 flex-1">
                 <TreeCanvas />
                 <PersonPanel />
               </main>
             </div>
+            <ExportSheet />
           </ToastProvider>
         </ViewProvider>
       </FamilyProvider>

@@ -2,8 +2,9 @@
 // Wie weit die Linie reicht: Generationen nach oben und unten, Seitenlinien.
 
 import { useMemo } from 'react'
-import { Minus, Plus, X } from 'lucide-react'
+import { Minus, Plus, Printer, X } from 'lucide-react'
 import { lineDepth, type LineScope } from '@/family/model'
+import { generations } from '@/family/format'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { Segmented } from '@/components/ui/Choice'
@@ -24,7 +25,7 @@ const SIDE_HINT: Record<LineScope['side'], string> = {
 
 export function LineScopeCard({ personId, count, onClose }: { personId: string; count: number; onClose: () => void }) {
   const { index } = useFamily()
-  const { lineScope, setLineScope } = useView()
+  const { lineScope, setLineScope, setExportOpen } = useView()
   const depth = useMemo(() => lineDepth(index, personId), [index, personId])
 
   return (
@@ -71,6 +72,15 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
           {SIDE_HINT[lineScope.side]} <span className="tabular-nums">{count} Personen.</span>
         </p>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setExportOpen(true)}
+        className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-control border border-gilt/60 text-[15px] text-ink hover:bg-gilt-soft/40"
+      >
+        <Printer className="h-4 w-4 text-gilt-deep" />
+        Diese Linie als PDF
+      </button>
     </section>
   )
 }
@@ -105,11 +115,6 @@ function Stepper({
       </StepButton>
     </div>
   )
-}
-
-function generations(n: number) {
-  if (n === 0) return 'keine'
-  return n === 1 ? '1 Generation' : `${n} Generationen`
 }
 
 function StepButton({

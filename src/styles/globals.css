@@ -251,3 +251,25 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Druck (PDF-Export) ---------- */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  /* Vorschau-Verkleinerung aufheben: das Blatt kommt in Originalgröße aufs Papier */
+  .print-sheet-holder {
+    transform: none !important;
+  }
+  .print-sheet {
+    box-shadow: none !important;
+    /* knapp unter Blatthöhe, damit keine leere zweite Seite entsteht */
+    height: calc(var(--sheet-h) - 0.6mm) !important;
+    break-after: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

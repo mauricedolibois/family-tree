@@ -2,8 +2,9 @@
 // Kopfzeile wie ein Bucheinband: dunkles Leinen, Titel in Blattgold.
 
 import { useEffect, useRef, useState } from 'react'
-import { Download, Flame, LogOut, Menu, Search, Sun, X } from 'lucide-react'
+import { Download, Flame, LogOut, Menu, Printer, Search, Sun, X } from 'lucide-react'
 import { useFamily } from './FamilyProvider'
+import { useView } from './ViewProvider'
 import { SearchBox } from './SearchBox'
 import { useTheme } from './useTheme'
 
@@ -75,6 +76,7 @@ function ThemeButton() {
 
 function AppMenu() {
   const { tree, familyName } = useFamily()
+  const { setExportOpen } = useView()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -126,6 +128,15 @@ function AppMenu() {
           role="menu"
           className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-card border border-card-rule bg-card p-1 text-ink shadow-lifted"
         >
+          <MenuItem
+            icon={<Printer className="h-4 w-4" />}
+            onClick={() => {
+              setOpen(false)
+              setExportOpen(true)
+            }}
+          >
+            Als PDF exportieren
+          </MenuItem>
           <MenuItem icon={<Download className="h-4 w-4" />} onClick={downloadBackup}>
             Sicherung herunterladen
           </MenuItem>

@@ -1,7 +1,16 @@
 import { buildIndex, lineageOf, lineageView, siblingsOf, type Tree } from '@/family/model'
 import { describeKinship, findConnection, kinshipLabel, kinshipSentence, kinshipTitle } from '@/family/kinship'
 import { addRelative, canDelete, deletePerson, normalize, updatePerson } from '@/family/edit'
-import { ageOf, formatDate, lifeYears, parseDateInput, splitName, toDateInput } from '@/family/format'
+import {
+  ageOf,
+  describeLineScope,
+  formatDate,
+  generations,
+  lifeYears,
+  parseDateInput,
+  splitName,
+  toDateInput,
+} from '@/family/format'
 
 /**
  * Testfamilie (erfunden):
@@ -293,5 +302,20 @@ describe('Umfang der Linie', () => {
     expect(v).toEqual(expect.arrayContaining(['gustav', 'hanna', 'lena']))
     expect(v).not.toContain('carl')
     expect(v).not.toContain('ida')
+  })
+})
+
+describe('Umfang in Worten (für den Druck)', () => {
+  it('Generationen', () => {
+    expect([0, 1, 3].map(generations)).toEqual(['keine', '1 Generation', '3 Generationen'])
+  })
+
+  it('Linie', () => {
+    expect(describeLineScope({ up: null, down: 0, side: 0 }, { up: 9, down: 2 })).toBe(
+      'Vorfahren: alle 9 Generationen, Nachkommen: keine, ohne Seitenlinien',
+    )
+    expect(describeLineScope({ up: 2, down: null, side: 2 }, { up: 9, down: 0 })).toBe(
+      'Vorfahren: 2 Generationen, Nachkommen: keine, mit Geschwistern und deren Kindern',
+    )
   })
 })

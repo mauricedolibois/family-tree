@@ -3,9 +3,9 @@
 
 import clsx from 'clsx'
 
-export function Flourish({ className }: { className?: string }) {
+export function Flourish({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 240 16" className={clsx('h-4 w-full text-gilt', className)} aria-hidden>
+    <svg viewBox="0 0 240 16" className={clsx('h-4 w-full text-gilt', className)} style={style} aria-hidden>
       <g fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
         <path d="M4 8 H92" opacity="0.55" />
         <path d="M148 8 H236" opacity="0.55" />

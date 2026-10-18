@@ -32,7 +32,7 @@ export function RelationCard({ connection, compact }: { connection: Connection |
     setEditing(null)
   }
 
-  const text = from && to && connection ? describe(index, connection, from, to, meId) : null
+  const text = from && to && connection ? describeRelation(index, connection, from, to, meId) : null
 
   return (
     <section
@@ -106,7 +106,8 @@ function shortName(p: Person, other: Person): string {
   return a === b ? p.name : a
 }
 
-function describe(ix: TreeIndex, c: Connection, from: Person, to: Person, meId: string | null) {
+/** Überschrift, Sätze in beide Richtungen und gemeinsame Vorfahren; mit `meId` aus deiner Sicht („dein Cousin“) */
+export function describeRelation(ix: TreeIndex, c: Connection, from: Person, to: Person, meId: string | null) {
   const party = (p: Person, other: Person): Party => (p.id === meId ? 'you' : { name: shortName(p, other) })
   const { title, note } = c.detour !== null ? { title: detourTitle(c.detour), note: '' } : kinshipTitle(c.kinship)
   const forward = kinshipSentence(c.kinship, party(to, from), party(from, to))

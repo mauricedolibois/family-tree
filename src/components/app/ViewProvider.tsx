@@ -26,6 +26,9 @@ type ViewCtx = {
   /** Die Person, aus deren Sicht Verwandtschaft beschrieben wird */
   meId: string | null
   setMe: (id: string | null) => void
+  /** PDF-Export geöffnet */
+  exportOpen: boolean
+  setExportOpen: (open: boolean) => void
   /** Bitte an den Baum, zu einer Person zu springen */
   focusRequest: { id: string; nonce: number } | null
   focusOn: (id: string) => void
@@ -50,6 +53,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const [lineScope, setLineScopeState] = useState<LineScope>(DEFAULT_LINE_SCOPE)
   const [meId, setMeId] = useState<string | null>(null)
   const [focusRequest, setFocusRequest] = useState<ViewCtx['focusRequest']>(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   // „Ich“ wird nur auf diesem Gerät gemerkt
   useEffect(() => {
@@ -123,6 +127,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       showRelation,
       meId: valid(meId),
       setMe,
+      exportOpen,
+      setExportOpen,
       focusRequest,
       focusOn,
     }),
@@ -139,6 +145,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       focusOn,
       showLine,
       showRelation,
+      exportOpen,
       index,
     ],
   )

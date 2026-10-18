@@ -56,9 +56,19 @@ type Props = {
   lineage: Set<string> | null
   /** ändert sich bei jeder neuen Auswahl → Goldlinie zeichnet sich neu */
   drawKey: string
+  /** Für den Druck: keine Bewegung, nichts abgedunkelt */
+  still?: boolean
 }
 
-export const Connectors = memo(function Connectors({ width, height, connectors, marriages, lineage, drawKey }: Props) {
+export const Connectors = memo(function Connectors({
+  width,
+  height,
+  connectors,
+  marriages,
+  lineage,
+  drawKey,
+  still = false,
+}: Props) {
   const inLine = (c: Connector) => !!lineage && lineage.has(c.child) && c.parents.some((p) => lineage.has(p))
   const marriageInLine = (m: MarriageLine) => !!lineage && lineage.has(m.a) && lineage.has(m.b)
 
@@ -79,7 +89,7 @@ export const Connectors = memo(function Connectors({ width, height, connectors, 
       <g fill="none" style={{ stroke: 'rgb(var(--line))' }} strokeLinecap="round" strokeLinejoin="round">
         {connectors.map((c) => {
           const d = roundedPath(c.points)
-          const dim = lineage && !inLine(c)
+          const dim = !still && lineage && !inLine(c)
           return (
             <g key={c.id} className={clsx('transition-opacity duration-300', dim && 'opacity-25')}>
               <path d={d} strokeWidth={3.4} opacity={0.16} strokeDasharray={c.adopted ? '5 6' : undefined} />
@@ -94,7 +104,7 @@ export const Connectors = memo(function Connectors({ width, height, connectors, 
         const gold = marriageInLine(m)
         const cx = (m.from.x + m.to.x) / 2
         return (
-          <g key={m.id} className={clsx('transition-opacity duration-300', lineage && !gold && 'opacity-30')}>
+          <g key={m.id} className={clsx('transition-opacity duration-300', !still && lineage && !gold && 'opacity-30')}>
             <g style={{ stroke: gold ? 'rgb(var(--gilt))' : 'rgb(var(--line))' }} strokeWidth={1.2}>
               <line x1={m.from.x} y1={m.from.y - 2} x2={m.to.x} y2={m.to.y - 2} />
               <line x1={m.from.x} y1={m.from.y + 2} x2={m.to.x} y2={m.to.y + 2} />
@@ -128,22 +138,30 @@ export const Connectors = memo(function Connectors({ width, height, connectors, 
             strokeWidth={2.8}
             strokeLinecap="round"
             strokeLinejoin="round"
-            filter="url(#gilt-glow)"
+            filter={still ? undefined : 'url(#gilt-glow)'}
           >
             {connectors.filter(inLine).map((c) => (
-              <path key={c.id} d={roundedPath(c.points)} pathLength={1} className="ink-draw" />
-            ))}
-          </g>
-          <g style={{ fill: 'rgb(var(--gilt-light))' }}>
-            {sparklePoints(connectors.filter(inLine)).map((p, i) => (
               <path
-                key={i}
-                d={star(p.x, p.y, i % 3 === 0 ? 7 : 5)}
-                className="sparkle"
-                style={{ animationDelay: `${1.1 + (i % 7) * 0.37}s` }}
+                key={c.id}
+                d={roundedPath(c.points)}
+                pathLength={1}
+                className={still ? undefined : 'ink-draw'}
+                strokeWidth={still ? 2.2 : undefined}
               />
             ))}
           </g>
+          {!still && (
+            <g style={{ fill: 'rgb(var(--gilt-light))' }}>
+              {sparklePoints(connectors.filter(inLine)).map((p, i) => (
+                <path
+                  key={i}
+                  d={star(p.x, p.y, i % 3 === 0 ? 7 : 5)}
+                  className="sparkle"
+                  style={{ animationDelay: `${1.1 + (i % 7) * 0.37}s` }}
+                />
+              ))}
+            </g>
+          )}
         </g>
       )}
     </svg>
