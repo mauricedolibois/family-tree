@@ -1,5 +1,5 @@
 // src/components/tree/PersonCard.tsx
-// Eine Person im Baum: Bild, Vornamen, Nachname, Lebensjahre.
+// Eine Person im Baum: Bild, Vornamen, Nachname, Herkunftsflagge und Lebensjahre.
 
 import clsx from 'clsx'
 import { memo } from 'react'
@@ -16,15 +16,14 @@ type Props = {
   box: CardBox
   state: CardState
   isMe: boolean
-  /** Land nur zeigen, wenn es vom üblichen Land der Familie abweicht */
-  showCountry: boolean
   onSelect: (id: string) => void
 }
 
-export const PersonCard = memo(function PersonCard({ person, box, state, isMe, showCountry, onSelect }: Props) {
+export const PersonCard = memo(function PersonCard({ person, box, state, isMe, onSelect }: Props) {
   const { given, surname } = splitName(person.name)
   const years = lifeYears(person)
   const past = isDeceased(person)
+  const country = person.profile?.country?.trim()
 
   return (
     <button
@@ -44,12 +43,7 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, s
       )}
       style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
     >
-      <span className="relative">
-        <Portrait person={person} />
-        {showCountry && person.profile?.country && (
-          <CountryFlag country={person.profile.country} className="absolute -bottom-0.5 -right-1" />
-        )}
-      </span>
+      <Portrait person={person} />
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate font-serif text-[16.5px] font-semibold text-ink">{given || surname}</span>
         {given && surname && (
@@ -58,6 +52,7 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, s
           </span>
         )}
         <span className="mt-px flex items-center gap-1.5 font-serif text-[13.5px] text-ink-faint">
+          {country && <CountryFlag country={country} />}
           {years && <span>{years}</span>}
           {isMe && <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">Du</span>}
         </span>

@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { Maximize, Minus, Plus } from 'lucide-react'
-import { lineageOf, lineageView, mostCommonCountry, subTree } from '@/family/model'
+import { lineageOf, lineageView, subTree } from '@/family/model'
 import { findConnection } from '@/family/kinship'
 import type { CardBox, TreeLayout } from '@/family/layout/types'
 import { useFamily } from '@/components/app/FamilyProvider'
@@ -65,7 +65,6 @@ export function TreeCanvas() {
     if (relationIds) return relationIds
     return selectedId ? lineageOf(index, selectedId) : null
   }, [index, selectedId, relationIds])
-  const homeCountry = useMemo(() => mostCommonCountry(tree), [tree])
   const cardById = useMemo(() => new Map(layout?.cards.map((c) => [c.id, c]) ?? []), [layout])
 
   /**
@@ -292,7 +291,6 @@ export function TreeCanvas() {
                 {layout.cards.map((c) => {
                   const person = index.byId.get(c.id)
                   if (!person) return null
-                  const country = person.profile?.country?.trim().toLowerCase()
                   return (
                     <PersonCard
                       key={c.id}
@@ -300,7 +298,6 @@ export function TreeCanvas() {
                       box={c}
                       state={stateOf(c.id)}
                       isMe={c.id === meId}
-                      showCountry={!!country && country !== homeCountry}
                       onSelect={onSelectCard}
                     />
                   )

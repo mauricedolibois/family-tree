@@ -175,16 +175,3 @@ export function subTree(tree: Tree, keep: Set<string>): Tree {
   const rootId = keep.has(tree.rootId) ? tree.rootId : Object.keys(members)[0]
   return { version: 3, rootId, members }
 }
-
-/** Häufigstes Land im Baum (um Abweichungen hervorzuheben) */
-export function mostCommonCountry(tree: Tree): string | null {
-  const counts = new Map<string, number>()
-  for (const p of Object.values(tree.members)) {
-    const c = p.profile?.country?.trim()
-    if (c) counts.set(c.toLowerCase(), (counts.get(c.toLowerCase()) ?? 0) + 1)
-  }
-  let best: string | null = null
-  let max = 0
-  for (const [c, n] of counts) if (n > max) [best, max] = [c, n]
-  return best
-}
