@@ -1,0 +1,65 @@
+/*
+ * Style-System „Pergament & Tinte“
+ *
+ * Eine alte Familienbibliothek: Pergament, Eisengallustinte, ein Einband aus
+ * dunkelgrünem Leinen und Blattgold. Zwei Stimmungen:
+ *   - Tageslicht: Pergament auf hellem Lesetisch
+ *   - Kerzenlicht: dieselben Pergamentkarten auf dunklem Holz, Linien in Gold
+ *
+ * Farben als RGB-Tripel, damit Tailwind Transparenz ergänzen kann
+ * (z. B. bg-linen/10).
+ */
+:root {
+  /* Einband – Hauptfarbe */
+  --linen: 30 52 40; /* #1E3428 */
+  --linen-hover: 41 70 54; /* #294636 */
+  --linen-deep: 18 31 24; /* #121F18 */
+  --linen-tint: 222 228 212; /* #DEE4D4 */
+
+  /* Pergament – Flächen */
+  --paper: 234 222 194; /* #EADEC2 Tisch / Hintergrund */
+  --paper-raised: 245 237 216; /* #F5EDD8 */
+  --card: 250 244 228; /* #FAF4E4 */
+  --card-edge: 233 218 184; /* #E9DAB8 gealterter Kartenrand */
+  --card-rule: 196 172 128; /* #C4AC80 */
+  --card-past: 240 231 208; /* verstorbene Personen */
+
+  /* Tinte – Text */
+  --ink: 43 30 20; /* #2B1E14 */
+  --ink-muted: 105 86 66; /* #695642 */
+  --ink-faint: 138 119 96; /* #8A7760 */
+
+  /* Sepia-Linien im Baum */
+  --line: 128 102 66; /* #806642 */
+
+  /* Blattgold – Akzent */
+  --gilt: 186 142 52; /* #BA8E34 */
+  --gilt-light: 240 214 140; /* #F0D68C */
+  --gilt-soft: 245 230 190; /* #F5E6BE */
+  --gilt-deep: 118 84 22; /* #765416 */
+
+  /* Hintergrund der Initialen */
+  --portrait: 226 210 174; /* #E2D2AE */
+
+  --danger: 140 45 36; /* #8C2D24 */
+  --danger-soft: 246 225 216;
+
+  /* Rand-Abdunklung des Pergaments */
+  --vignette: 110 78 36;
+  --vignette-strength: 0.22;
+
+  /* Feine Papierstruktur (Rauschen), sehr zurückhaltend */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.12 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  color-scheme: light;
+}
+
+/* Kerzenlicht: dunkle Bibliothek, Pergament und Gold leuchten */
+:root[data-theme='night'] {
+  --paper: 24 28 22; /* #181C16 dunkler Tisch */
+  --line: 196 160 92; /* goldbraune Tinte */
+  --vignette: 0 0 0;
+  --vignette-strength: 0.55;
+  --linen-tint: 52 70 56;
+  color-scheme: dark;
+}
