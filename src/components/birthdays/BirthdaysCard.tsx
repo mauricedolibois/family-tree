@@ -1,9 +1,10 @@
 // src/components/birthdays/BirthdaysCard.tsx
 // „Nächste Geburtstage“ (über das Menü): wer als Nächstes feiert, nach Monaten; ein Tipp springt zur Person.
+// Der Kalender-Knopf blättert auf eine eigene Seite zum Abonnieren – egal, wie weit man gescrollt hat.
 
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { Cake, CalendarPlus, X } from 'lucide-react'
+import { ArrowLeft, Cake, CalendarPlus, X } from 'lucide-react'
 import { daysText, upcomingBirthdays, type Birthday } from '@/family/birthdays'
 import { describeKinship, kinshipLabel } from '@/family/kinship'
 import { useFamily } from '@/components/app/FamilyProvider'
@@ -51,22 +52,35 @@ export function BirthdaysCard() {
       aria-label="Nächste Geburtstage"
       className="parchment pointer-events-auto flex max-h-[calc(100dvh-150px)] w-full flex-col rounded-card border border-gilt/60 shadow-card md:w-[380px]"
     >
-      <header className="flex shrink-0 items-center justify-between px-4 pb-1 pt-3">
-        <h2 className="font-display text-[1.35rem] leading-tight text-ink">Nächste Geburtstage</h2>
-        <span className="-mr-1 flex items-center">
-          <button
-            type="button"
-            onClick={() => setSubscribe((v) => !v)}
-            aria-expanded={subscribe}
-            aria-label="Im Kalender abonnieren"
-            title="Im Kalender abonnieren"
-            className={clsx(
-              'grid h-9 w-9 place-items-center rounded-full hover:bg-paper-raised',
-              subscribe ? 'bg-gilt-soft/70 text-gilt-deep' : 'text-ink-muted hover:text-ink',
-            )}
-          >
-            <CalendarPlus className="h-[18px] w-[18px]" />
-          </button>
+      <header className="flex shrink-0 items-center justify-between gap-2 px-4 pb-1 pt-3">
+        {subscribe ? (
+          <span className="-ml-2 flex min-w-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setSubscribe(false)}
+              aria-label="Zurück zu den Geburtstagen"
+              title="Zurück zu den Geburtstagen"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+            >
+              <ArrowLeft className="h-[18px] w-[18px]" />
+            </button>
+            <h2 className="truncate font-display text-[1.35rem] leading-tight text-ink">Im Kalender abonnieren</h2>
+          </span>
+        ) : (
+          <h2 className="font-display text-[1.35rem] leading-tight text-ink">Nächste Geburtstage</h2>
+        )}
+        <span className="-mr-1 flex shrink-0 items-center">
+          {!subscribe && (
+            <button
+              type="button"
+              onClick={() => setSubscribe(true)}
+              aria-label="Im Kalender abonnieren"
+              title="Im Kalender abonnieren"
+              className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+            >
+              <CalendarPlus className="h-[18px] w-[18px]" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => showLine(null)}
@@ -77,12 +91,14 @@ export function BirthdaysCard() {
           </button>
         </span>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2">
-        {subscribe && (
-          <div className="mx-1 mb-2 rounded-control border border-gilt/50 bg-card/70 p-3">
-            <CalendarSubscribe personId={meId} allowRenew />
-          </div>
-        )}
+      {subscribe && (
+        <div className="panel-enter min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-1">
+          <CalendarSubscribe personId={meId} allowRenew />
+        </div>
+      )}
+
+      {/* Liste bleibt stehen (versteckt), damit man nach dem Zurück wieder an derselben Stelle ist */}
+      <div className={clsx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2', subscribe && 'hidden')}>
         {groups.length === 0 && (
           <p className="px-2 py-4 font-serif text-[16px] leading-snug text-ink-muted">
             Noch keine Geburtstage eingetragen. Im Infoblatt unter „Bearbeiten“ lässt sich das Geburtsdatum ergänzen.
@@ -107,9 +123,11 @@ export function BirthdaysCard() {
         ))}
       </div>
 
-      <p className="shrink-0 border-t border-card-rule px-4 py-2 text-[13px] text-ink-faint">
-        Alle Lebenden mit vollständigem Geburtsdatum.
-      </p>
+      {!subscribe && (
+        <p className="shrink-0 border-t border-card-rule px-4 py-2 text-[13px] text-ink-faint">
+          Alle Lebenden mit vollständigem Geburtsdatum.
+        </p>
+      )}
     </section>
   )
 }
