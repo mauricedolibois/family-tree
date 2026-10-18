@@ -106,7 +106,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
+    <form onSubmit={submit} className="flex flex-col gap-5" data-tour="edit-form">
       <h2 className="font-display text-[1.5rem] leading-tight text-ink">{person.name} bearbeiten</h2>
 
       <div>
@@ -216,7 +216,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
           {media.map((m) => {
             const isTitle = m.url === titleUrl
             return (
-              <li key={m.id} className="relative">
+              <li key={m.id} className="relative" data-tour="media-item">
                 <div
                   className={clsx(
                     'aspect-square overflow-hidden rounded-control border bg-paper-raised',
@@ -267,6 +267,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
+              data-tour="add-photo"
               disabled={uploading}
               className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line/70 text-sm text-ink-muted hover:border-linen hover:text-linen"
             >
@@ -295,11 +296,14 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         </p>
       )}
 
-      <div className="sticky bottom-0 -mx-5 flex gap-2 border-t border-card-rule bg-card/95 px-5 py-3 backdrop-blur">
+      <div
+        className="sticky bottom-0 -mx-5 flex gap-2 border-t border-card-rule bg-card/95 px-5 py-3 backdrop-blur"
+        data-tour="form-actions"
+      >
         <Button type="submit" variant="primary" disabled={saving || uploading} className="flex-1">
           {saving ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
-        <Button variant="quiet" onClick={onDone}>
+        <Button variant="quiet" onClick={onDone} data-tour="form-cancel">
           Abbrechen
         </Button>
       </div>

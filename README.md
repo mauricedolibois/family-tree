@@ -11,6 +11,7 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 - **Beziehung:** zwei Personen wählen, der Baum zeigt nur noch den Weg zwischen ihnen, dazu die Bezeichnung in beide Richtungen und die gemeinsamen Vorfahren.
 - **„Wie sind wir verwandt?“** Mit „Das bin ich“ zeigt jede Person, wer sie für dich ist, z. B. „Dein Urgroßvater“ oder „Deine Cousine 2. Grades“. Das wird nur auf dem eigenen Gerät gemerkt und live berechnet, nicht in den Daten gespeichert.
 - **Suche**, die direkt zur Person springt.
+- **Einführung beim ersten Besuch:** „Wer bist du?“, dann Schritt für Schritt am eigenen Eintrag – Angaben ergänzen, Foto, Kind hinzufügen, die eigene Linie, die Beziehungsansicht. Jeder Schritt lässt sich ausprobieren oder überspringen; neu starten über das Menü.
 - **Personen hinzufügen** direkt aus dem Infoblatt: Kind, Ehepartner, Elternteil.
 - **Fotos und Dokumente** pro Person; Fotos werden vor dem Hochladen verkleinert.
 - **Tageslicht und Kerzenlicht** (heller und dunkler Modus).
@@ -22,7 +23,15 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 
 - Anmeldung mit signiertem Sitzungs-Cookie (HMAC), Bremse gegen Passwort-Raten.
 - Der Server prüft jeden Baum vor dem Speichern. Gespeichert wird nur, wenn niemand den Baum zwischendurch auf einem anderen Gerät geändert hat.
-- Automatische Sicherungen: vor dem Speichern (alle 6 Stunden und immer, wenn Personen wegfallen) und täglich über den Workflow `.github/workflows/keep-alive.yml`.
+- Automatische Sicherungen: vor **jeder** Änderung (mit Notiz, was danach geändert wurde, z. B. „bearbeitet: Karl Niehren“) und täglich über den Workflow `.github/workflows/keep-alive.yml`. Die Sicherungen vor Änderungen bleiben 90 Tage, die täglichen ein Jahr, von Hand angelegte für immer.
+- Zurückholen im Notfall, im SQL-Editor von Supabase (Schema `verwaltung`, nicht über die API erreichbar):
+
+  ```sql
+  select * from verwaltung.staende limit 20;         -- letzte gesicherte Stände
+  select verwaltung.wiederherstellen(123);            -- Stand 123 zurückholen (der aktuelle wird vorher gesichert)
+  select verwaltung.sichern('vor dem Familienfest');  -- jetzt von Hand sichern
+  ```
+
 - Die Datenbank (Supabase) wird nur serverseitig mit dem Service-Role-Key angesprochen; öffentliche Rollen haben keine Rechte.
 
 ## Entwicklung

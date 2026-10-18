@@ -56,6 +56,7 @@ export function PersonPanel() {
 
   return (
     <aside
+      data-tour="sheet"
       aria-label={`Angaben zu ${person.name}`}
       className={
         'parchment panel-enter fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-panel border-t border-gilt/60 shadow-sheet transition-[max-height] duration-300 ease-settle ' +
@@ -99,6 +100,7 @@ export function PersonPanel() {
 
       <div
         ref={scroller}
+        data-tour-scroll
         className="relative overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
       >
         {mode.kind === 'details' && (

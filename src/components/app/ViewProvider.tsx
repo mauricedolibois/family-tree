@@ -26,6 +26,9 @@ type ViewCtx = {
   /** Die Person, aus deren Sicht Verwandtschaft beschrieben wird */
   meId: string | null
   setMe: (id: string | null) => void
+  /** Einführung läuft */
+  tourOpen: boolean
+  setTourOpen: (open: boolean) => void
   /** PDF-Export geöffnet */
   exportOpen: boolean
   setExportOpen: (open: boolean) => void
@@ -54,6 +57,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const [meId, setMeId] = useState<string | null>(null)
   const [focusRequest, setFocusRequest] = useState<ViewCtx['focusRequest']>(null)
   const [exportOpen, setExportOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
 
   // „Ich“ wird nur auf diesem Gerät gemerkt
   useEffect(() => {
@@ -129,6 +133,8 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       setMe,
       exportOpen,
       setExportOpen,
+      tourOpen,
+      setTourOpen,
       focusRequest,
       focusOn,
     }),
@@ -146,6 +152,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       showLine,
       showRelation,
       exportOpen,
+      tourOpen,
       index,
     ],
   )

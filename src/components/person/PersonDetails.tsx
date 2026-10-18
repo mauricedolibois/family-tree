@@ -62,7 +62,9 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
     <div className="flex flex-col gap-6">
       {/* Kopf */}
       <div className="flex items-center gap-4">
-        <Portrait person={person} size="lg" />
+        <span data-tour="portrait">
+          <Portrait person={person} size="lg" />
+        </span>
         <div className="min-w-0">
           <h2 className="font-display text-[1.75rem] leading-[1.1] text-ink">{person.name}</h2>
           {lifeYears(person) && <p className="mt-0.5 font-serif text-[18px] text-ink-muted">{lifeYears(person)}</p>}
@@ -83,7 +85,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
       <Flourish className="-my-2" />
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={onEdit}>
+        <Button variant="primary" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={onEdit} data-tour="edit">
           Bearbeiten
         </Button>
         {lineId !== person.id && (
@@ -190,7 +192,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
           ids={kids}
           onOpen={focusOn}
           tag={(id) => (isAdopted(id) ? 'adoptiert' : null)}
-          add={{ label: 'Kind hinzufügen', run: () => onAdd('CHILD') }}
+          add={{ label: 'Kind hinzufügen', run: () => onAdd('CHILD'), tour: 'add-child' }}
         />
         {siblings.length > 0 && <Relatives title="Geschwister" ids={siblings} onOpen={focusOn} />}
       </section>
@@ -232,7 +234,7 @@ function Relatives({
   title: string
   ids: string[]
   onOpen: (id: string) => void
-  add?: { label: string; run: () => void }
+  add?: { label: string; run: () => void; tour?: string }
   tag?: (id: string) => string | null
 }) {
   const { index } = useFamily()
@@ -268,6 +270,7 @@ function Relatives({
             <button
               type="button"
               onClick={add.run}
+              data-tour={add.tour}
               className="flex w-full items-center gap-3 rounded-control border border-dashed border-gilt/60 px-2.5 py-2 text-left text-[15px] text-ink-muted transition-colors hover:border-gilt hover:bg-gilt-soft/40 hover:text-ink"
             >
               <span className="grid h-8 w-8 place-items-center rounded-full border border-gilt/50 text-gilt-deep">

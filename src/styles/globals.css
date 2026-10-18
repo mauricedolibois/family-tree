@@ -232,7 +232,36 @@
   touch-action: none;
 }
 
+/* ---------- Einführung: leuchtender Ausschnitt und Goldring ---------- */
+.tour-hole {
+  box-shadow:
+    0 0 0 200vmax rgb(var(--linen-deep) / 0.62),
+    0 0 0 1.5px rgb(var(--gilt)),
+    0 0 22px 4px rgb(var(--gilt) / 0.55);
+  transition:
+    left 150ms ease,
+    top 150ms ease,
+    width 150ms ease,
+    height 150ms ease;
+}
+.tour-ring {
+  box-shadow:
+    0 0 0 2px rgb(var(--gilt)),
+    0 0 14px 3px rgb(var(--gilt) / 0.55);
+  animation: tour-ring 1.8s ease-in-out infinite;
+}
+@keyframes tour-ring {
+  50% {
+    box-shadow:
+      0 0 0 2px rgb(var(--gilt-light)),
+      0 0 26px 8px rgb(var(--gilt) / 0.7);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    animation: none;
+  }
   .ink-draw {
     stroke-dashoffset: 0;
     animation: none;

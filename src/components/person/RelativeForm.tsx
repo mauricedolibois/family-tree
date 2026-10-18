@@ -96,7 +96,7 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
+    <form onSubmit={submit} className="flex flex-col gap-5" data-tour="relative-form">
       <div>
         <h2 className="font-display text-[1.5rem] leading-tight text-ink">{TITLES[relation]}</h2>
         <p className="mt-1 text-[15px] text-ink-muted">
@@ -179,7 +179,7 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
         <Button type="submit" variant="primary" disabled={saving} className="flex-1">
           {saving ? 'Wird gespeichert …' : 'Hinzufügen'}
         </Button>
-        <Button variant="quiet" onClick={onDone}>
+        <Button variant="quiet" onClick={onDone} data-tour="form-cancel">
           Abbrechen
         </Button>
       </div>
