@@ -3,6 +3,7 @@
  */
 import { daysText, upcomingBirthdays } from '@/family/birthdays'
 import { birthdayCalendar } from '@/family/ical'
+import { calendarQuery, calendarSubset, parseCalendarQuery } from '@/family/calendarLink'
 import type { Tree } from '@/family/model'
 
 function tree(people: Array<[name: string, birthDate: string | null, deathDate?: string | null]>): Tree {
@@ -99,5 +100,54 @@ describe('Kalender-Abo', () => {
   it('maskiert Sonderzeichen und lässt unvollständige Daten weg', () => {
     expect(unfolded).toContain('SUMMARY:🎂 Komma\\, Semikolon; Name (37)')
     expect(unfolded).not.toContain('Nur Jahr')
+  })
+})
+
+describe('Abo nur für eine Linie', () => {
+  // Oma ─ Mama ─ Ich ─ Kind; Mamas Schwester Tante mit Cousine
+  const t = tree([
+    ['Oma', '1940-01-01'],
+    ['Mama', '1965-02-02'],
+    ['Tante', '1968-03-03'],
+    ['Ich', '1990-04-04'],
+    ['Cousine', '1995-05-05'],
+    ['Kind', '2020-06-06'],
+  ])
+  const link = (parent: string, child: string) => {
+    t.members[parent].childrenIds.push(child)
+    t.members[child].parentIds!.push(parent)
+  }
+  link('Oma', 'Mama')
+  link('Oma', 'Tante')
+  link('Mama', 'Ich')
+  link('Tante', 'Cousine')
+  link('Ich', 'Kind')
+
+  const names = (q: string) => {
+    const params = Object.fromEntries(new URLSearchParams(q))
+    return Object.keys(calendarSubset(t, parseCalendarQuery(params)).tree.members).sort()
+  }
+
+  it('Person und Umfang stehen lesbar im Link', () => {
+    expect(calendarQuery({ personId: 'Ich', scope: { up: 1, down: null, side: 2 } })).toBe(
+      '?linie=Ich&vorfahren=1&nachkommen=alle&seiten=cousins',
+    )
+    expect(calendarQuery(null)).toBe('')
+  })
+
+  it('wählt die Linie im gewünschten Umfang', () => {
+    expect(names('')).toHaveLength(6)
+    expect(names('linie=Ich')).toEqual(['Ich', 'Kind', 'Mama', 'Oma'])
+    expect(names('linie=Ich&vorfahren=1&nachkommen=0')).toEqual(['Ich', 'Mama'])
+    expect(names('linie=Ich&seiten=geschwister')).toEqual(['Ich', 'Kind', 'Mama', 'Oma', 'Tante'])
+    expect(names('linie=Ich&seiten=cousins')).toEqual(['Cousine', 'Ich', 'Kind', 'Mama', 'Oma', 'Tante'])
+    expect(names('linie=Ich&seiten=2&vorfahren=unsinn')).toEqual(names('linie=Ich&seiten=cousins'))
+  })
+
+  it('unbekannte Person: leerer Kalender statt der ganzen Familie', () => {
+    expect(names('linie=gibtsnicht')).toEqual([])
+    const sub = calendarSubset(t, { personId: 'Ich', scope: { up: null, down: null, side: 0 } })
+    expect(sub.personName).toBe('Ich')
+    expect(birthdayCalendar(sub.tree, { calendarName: 'x', now: today }).match(/BEGIN:VEVENT/g)).toHaveLength(8)
   })
 })

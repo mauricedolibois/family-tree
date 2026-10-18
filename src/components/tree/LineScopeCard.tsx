@@ -9,7 +9,7 @@ import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { Segmented } from '@/components/ui/Choice'
 
-const SIDE_OPTIONS: Array<{ value: `${LineScope['side']}`; label: string }> = [
+export const SIDE_OPTIONS: Array<{ value: `${LineScope['side']}`; label: string }> = [
   { value: '0', label: 'Keine' },
   { value: '1', label: 'Geschwister' },
   { value: '2', label: 'Cousins' },

@@ -32,6 +32,8 @@ export type Step = {
   /** Ist die Aufgabe erledigt? Dann geht es zu `doneTo` */
   doneWhen?: () => boolean
   doneTo?: string
+  /** Kalender-Abo der Geburtstage anbieten (für die Linie dieser Person, sonst die ganze Familie) */
+  calendar?: { personId: string | null }
   /** Knopf „Weiter“ (für reine Erklärungen) */
   nextLabel?: string
   /** Beim Überspringen: aufräumen (z. B. Formular schließen) und wohin */
@@ -152,6 +154,7 @@ export function personalSteps(me: string, given: string, a: TourActions): Step[]
       nextLabel: 'Weiter',
     },
     menuStep(a),
+    calendarStep(me),
     {
       id: 'done',
       mode: 'modal',
@@ -194,6 +197,7 @@ export function guestSteps(a: TourActions): Step[] {
       nextLabel: 'Weiter',
     },
     menuStep(a),
+    calendarStep(null),
     {
       id: 'done',
       mode: 'modal',
@@ -211,7 +215,21 @@ function menuStep(a: TourActions): Step {
     target: '[data-tour="menu"]',
     enter: () => a.showLine(null),
     title: 'Suche und Menü',
-    text: 'Oben findest du jede Person über die Suche. Im Menü druckst du Linien als PDF – und kannst diese Einführung neu beginnen.',
+    text: 'Oben findest du jede Person über die Suche. Im Menü stehen die nächsten Geburtstage, Linien lassen sich als PDF drucken – und diese Einführung neu beginnen.',
+    nextLabel: 'Weiter',
+  }
+}
+
+/** Zum Schluss: Geburtstage in den eigenen Kalender – Linie und Umfang stehen im Link */
+function calendarStep(me: string | null): Step {
+  return {
+    id: 'calendar',
+    mode: 'modal',
+    calendar: { personId: me },
+    title: 'Kein Geburtstag mehr vergessen',
+    text: me
+      ? 'Abonniere die Geburtstage deiner Linie in deinem Kalender – mit Erinnerung am Morgen. Neue Einträge kommen von selbst dazu.'
+      : 'Abonniere die Geburtstage der Familie in deinem Kalender – mit Erinnerung am Morgen. Neue Einträge kommen von selbst dazu.',
     nextLabel: 'Weiter',
   }
 }
