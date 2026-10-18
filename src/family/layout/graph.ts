@@ -8,6 +8,7 @@
 // möglichst wenige Linien kreuzen.
 
 import { buildIndex, parentsOf, type Tree } from '../model'
+import { genealogicalOrder } from './order'
 import { CARD } from './types'
 
 export type Unit = {
@@ -44,6 +45,8 @@ const LAYOUT_OPTIONS: Record<string, string> = {
   'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
   'elk.layered.thoroughness': '40',
   'elk.layered.mergeEdges': 'true',
+  // Die übergebene Reihenfolge (order.ts) als Vorliebe nehmen
+  'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
   'elk.layered.spacing.nodeNodeBetweenLayers': '84',
   'elk.spacing.nodeNode': '36',
   'elk.layered.spacing.edgeNodeBetweenLayers': '24',
@@ -53,15 +56,19 @@ const LAYOUT_OPTIONS: Record<string, string> = {
 
 const birthKey = (tree: Tree, id: string) => tree.members[id]?.profile?.birthDate ?? '9999'
 
-/**
- * @param flipped Paare, bei denen die Seiten getauscht werden sollen
- *   (Standard: Mann links, Frau rechts)
- */
-export function buildLayoutGraph(
-  tree: Tree,
-  flipped: Set<string> = new Set(),
-  options: Record<string, string> = {},
-): LayoutGraph {
+export type GraphOptions = {
+  /** Paare, bei denen die Seiten getauscht werden (Standard: Mann links, Frau rechts) */
+  flipped?: Set<string>
+  /** Zusätzliche ELK-Einstellungen */
+  elk?: Record<string, string>
+  /** Person, um die herum der Baum geordnet wird (sonst automatisch) */
+  focusId?: string | null
+  /** Feste Reihenfolge der Kästen; ohne Angabe die Stammbaum-Reihenfolge */
+  order?: string[]
+}
+
+export function buildLayoutGraph(tree: Tree, opts: GraphOptions = {}): LayoutGraph {
+  const flipped = opts.flipped ?? new Set<string>()
   const ix = buildIndex(tree)
   const units = new Map<string, Unit>()
   const unitOf = new Map<string, string>()
@@ -88,8 +95,11 @@ export function buildLayoutGraph(
     for (const m of members) unitOf.set(m, unitId)
   }
 
+  // Kästen in Stammbaum-Reihenfolge an ELK geben (siehe order.ts)
+  const known = opts.order?.filter((id) => units.has(id)) ?? []
+  const order = known.length === units.size ? known : genealogicalOrder(ix, units, unitOf, opts.focusId ?? null)
   const children: ElkNode[] = []
-  for (const u of units.values()) {
+  for (const u of order.map((id) => units.get(id)!)) {
     const width = u.members.length * CARD.w + (u.members.length - 1) * CARD.coupleGap
     const ports: ElkPort[] = []
     u.members.forEach((pid, k) => {
@@ -107,7 +117,9 @@ export function buildLayoutGraph(
   const edges: ElkEdge[] = []
   const edgeMeta = new Map<string, EdgeMeta>()
   const seen = new Set<string>()
-  for (const child of people) {
+  const rank = new Map(order.map((id, i) => [id, i]))
+  const byOrder = [...people].sort((a, b) => rank.get(unitOf.get(a)!)! - rank.get(unitOf.get(b)!)!)
+  for (const child of byOrder) {
     const parents = parentsOf(ix, child)
     if (parents.length === 0) continue
     // Nach Eltern-Kasten gruppieren: Eltern im selben Paar → eine Linie aus der Mitte
@@ -129,7 +141,7 @@ export function buildLayoutGraph(
   }
 
   return {
-    graph: { id: 'root', layoutOptions: { ...LAYOUT_OPTIONS, ...options }, children, edges },
+    graph: { id: 'root', layoutOptions: { ...LAYOUT_OPTIONS, ...opts.elk }, children, edges },
     units,
     unitOf,
     edgeMeta,
