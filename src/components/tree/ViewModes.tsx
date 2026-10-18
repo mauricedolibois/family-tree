@@ -75,6 +75,7 @@ export function ViewModes({
           aria-expanded={scopeOpen}
           aria-label="Linie anpassen"
           title="Linie anpassen"
+          data-tour="scope"
           className={clsx(
             'pointer-events-auto grid h-10 w-10 place-items-center rounded-full border shadow-card',
             scopeOpen

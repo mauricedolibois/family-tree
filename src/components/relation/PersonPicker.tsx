@@ -15,17 +15,21 @@ export function PersonChip({
   person,
   label,
   onClick,
+  tour,
 }: {
   person: Person | null
   /** Für Screenreader: „Erste Person“, „Zweite Person“ */
   label: string
   onClick: () => void
+  /** Markierung für die Einführung */
+  tour?: string
 }) {
   if (!person) {
     return (
       <button
         type="button"
         onClick={onClick}
+        data-tour={tour}
         aria-label={`${label} wählen`}
         className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-control border border-dashed border-gilt/70 px-2 text-[15px] text-ink-muted hover:border-gilt hover:bg-gilt-soft/40 hover:text-ink"
       >
@@ -40,6 +44,7 @@ export function PersonChip({
     <button
       type="button"
       onClick={onClick}
+      data-tour={tour}
       aria-label={`${label}: ${person.name}. Ändern`}
       className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-control border border-gilt/60 bg-card/80 px-2 text-left hover:border-gilt hover:bg-card"
     >

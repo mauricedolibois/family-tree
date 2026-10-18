@@ -15,7 +15,6 @@ import { useTreeLayout } from './useTreeLayout'
 import { ViewModes } from './ViewModes'
 import { LineScopeCard } from './LineScopeCard'
 import { RelationCard } from '@/components/relation/RelationCard'
-import { useToast } from '@/components/app/Toast'
 
 const MIN_SCALE = 0.05
 const MAX_SCALE = 2.2
@@ -30,7 +29,6 @@ const WIDE = 768
 export function TreeCanvas() {
   const { tree, index } = useFamily()
   const { selectedId, select, lineId, lineScope, showLine, relation, showRelation, meId, focusRequest } = useView()
-  const { notify } = useToast()
   const api = useRef<ReactZoomPanPinchRef | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
   const overlay = useRef<HTMLDivElement | null>(null)
@@ -150,18 +148,7 @@ export function TreeCanvas() {
     didInitialView.current = true
     const me = meId ? cardById.get(meId) : undefined
     requestAnimationFrame(() => (me ? centerOn(me, 0) : fitAll(layout, 0)))
-    if (!meId) {
-      // Einmaliger Tipp: mit „Das bin ich“ startet der Baum künftig bei dir
-      try {
-        if (!localStorage.getItem('stammbaum:tipp-ich')) {
-          localStorage.setItem('stammbaum:tipp-ich', '1')
-          notify({ message: 'Tipp: Tippe auf dich selbst und wähle „Das bin ich“. Dann startet der Baum bei dir.' })
-        }
-      } catch {
-        /* egal */
-      }
-    }
-  }, [layout, meId, cardById, centerOn, fitAll, notify])
+  }, [layout, meId, cardById, centerOn, fitAll])
 
   // Nach Wechsel der Ansicht (ganze Familie, Linie, Umfang, Beziehung) neu einpassen,
   // sobald das neue Layout fertig berechnet ist
@@ -310,6 +297,7 @@ export function TreeCanvas() {
 
       <div
         ref={overlay}
+        data-tour="overlay"
         className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col items-start gap-2 md:right-auto"
       >
         <ViewModes count={count} scopeOpen={scopeOpen} onToggleScope={() => setScopeOpen((v) => !v)} />

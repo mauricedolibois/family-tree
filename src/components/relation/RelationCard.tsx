@@ -71,21 +71,21 @@ export function RelationCard({ connection, compact }: { connection: Connection |
             >
               <ArrowLeftRight className="h-[18px] w-[18px]" />
             </button>
-            <PersonChip person={to} label={SLOT_LABEL.to} onClick={() => setEditing('to')} />
+            <PersonChip person={to} label={SLOT_LABEL.to} onClick={() => setEditing('to')} tour="relation-to" />
           </div>
         )}
 
         <div aria-live="polite" className="mt-3 border-t border-card-rule pt-2.5">
           {text ? (
-            <>
+            <div data-tour="relation-result">
               <p className="font-display text-[1.45rem] leading-[1.15] text-ink">{text.title}</p>
               {text.note && <p className="font-serif text-[16px] italic leading-snug text-ink-muted">{text.note}</p>}
               <p className="mt-1.5 font-serif text-[16px] leading-snug text-ink">{text.forward}</p>
               {text.backward && <p className="font-serif text-[16px] leading-snug text-ink-muted">{text.backward}</p>}
               {text.common && <p className="mt-1.5 text-sm leading-snug text-ink-muted">{text.common}</p>}
-            </>
+            </div>
           ) : from && to ? (
-            <p className="font-serif text-[16px] leading-snug text-ink-muted">
+            <p className="font-serif text-[16px] leading-snug text-ink-muted" data-tour="relation-result">
               Im Stammbaum gibt es keine Verbindung zwischen {from.name} und {to.name}.
             </p>
           ) : (

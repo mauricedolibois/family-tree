@@ -2,7 +2,7 @@
 // Kopfzeile wie ein Bucheinband: dunkles Leinen, Titel in Blattgold.
 
 import { useEffect, useRef, useState } from 'react'
-import { Download, Flame, LogOut, Menu, Printer, Search, Sun, X } from 'lucide-react'
+import { BookOpen, Download, Flame, LogOut, Menu, Printer, Search, Sun, X } from 'lucide-react'
 import { useFamily } from './FamilyProvider'
 import { useView } from './ViewProvider'
 import { SearchBox } from './SearchBox'
@@ -76,7 +76,7 @@ function ThemeButton() {
 
 function AppMenu() {
   const { tree, familyName } = useFamily()
-  const { setExportOpen } = useView()
+  const { setExportOpen, setTourOpen } = useView()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -119,6 +119,7 @@ function AppMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Menü"
+        data-tour="menu"
         className="grid h-10 w-10 place-items-center rounded-full text-card/85 hover:bg-white/10"
       >
         <Menu className="h-5 w-5" />
@@ -136,6 +137,15 @@ function AppMenu() {
             }}
           >
             Als PDF exportieren
+          </MenuItem>
+          <MenuItem
+            icon={<BookOpen className="h-4 w-4" />}
+            onClick={() => {
+              setOpen(false)
+              setTourOpen(true)
+            }}
+          >
+            Einführung starten
           </MenuItem>
           <MenuItem icon={<Download className="h-4 w-4" />} onClick={downloadBackup}>
             Sicherung herunterladen

@@ -9,6 +9,7 @@ import { TopBar } from '@/components/app/TopBar'
 import { TreeCanvas } from '@/components/tree/TreeCanvas'
 import { PersonPanel } from '@/components/person/PersonPanel'
 import { ExportSheet } from '@/components/print/ExportSheet'
+import { Tour } from '@/components/intro/Tour'
 
 type Props = { familyName: string }
 
@@ -38,6 +39,7 @@ export default function Home({ familyName }: Props) {
               </main>
             </div>
             <ExportSheet />
+            <Tour />
           </ToastProvider>
         </ViewProvider>
       </FamilyProvider>
