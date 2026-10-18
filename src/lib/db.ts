@@ -3,6 +3,7 @@
 
 import { supaAdmin } from './supabaseServer'
 import type { StoredTree } from '@/storage/schema'
+import { describeChange } from '@/storage/changes'
 
 export type FamilyRow = { id: string; name: string; pass_hash: string; created_at: string }
 
@@ -84,26 +85,15 @@ export async function saveFamilyTree(
   return { status: 'saved', version: data[0].updated_at }
 }
 
-const SNAPSHOT_EVERY_HOURS = 6
-
 /**
- * Legt vor dem Überschreiben eine Sicherung des bisherigen Stands an,
- * höchstens alle paar Stunden – oder sofort, wenn Personen verschwinden.
+ * Sichert vor jeder Änderung den bisherigen Stand – mit einer Notiz, was danach
+ * geändert wurde, damit man im Notfall gezielt zurückgehen kann.
+ * Automatische Sicherungen räumt die tägliche Sicherung nach einiger Zeit auf.
  */
 export async function snapshotBeforeSave(familyId: string, current: StoredTree, next: StoredTree) {
-  const lost = Object.keys(current.members ?? {}).filter((id) => !next.members[id]).length
-  if (lost === 0) {
-    const { data, error } = await supaAdmin
-      .from('family_trees_backup')
-      .select('backed_up_at')
-      .eq('family_id', familyId)
-      .order('backed_up_at', { ascending: false })
-      .limit(1)
-    if (error) throw error
-    const last = data?.[0]?.backed_up_at ? Date.parse(data[0].backed_up_at) : 0
-    if (Date.now() - last < SNAPSHOT_EVERY_HOURS * 3600_000) return
-  }
-  const note = lost > 0 ? `automatisch: vor dem Entfernen von ${lost} Person(en)` : 'automatisch: vor dem Speichern'
+  const change = describeChange(current, next)
+  if (!change) return // nichts geändert, nichts zu sichern
+  const note = `automatisch: vor Änderung (${change})`.slice(0, 500)
   const { error } = await supaAdmin
     .from('family_trees_backup')
     .insert({ family_id: familyId, tree_json: current, note })
