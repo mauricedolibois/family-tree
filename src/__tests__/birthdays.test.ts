@@ -1,4 +1,8 @@
+/**
+ * @jest-environment node
+ */
 import { daysText, upcomingBirthdays } from '@/family/birthdays'
+import { birthdayCalendar } from '@/family/ical'
 import type { Tree } from '@/family/model'
 
 function tree(people: Array<[name: string, birthDate: string | null, deathDate?: string | null]>): Tree {
@@ -62,5 +66,38 @@ describe('Nächste Geburtstage', () => {
 
   it('in Worten', () => {
     expect([0, 1, 5].map(daysText)).toEqual(['heute', 'morgen', 'in 5 Tagen'])
+  })
+})
+
+describe('Kalender-Abo', () => {
+  const t = tree([
+    ['Frank Beispiel', '1970-11-27'],
+    ['Komma, Semikolon; Name', '1990-01-02'],
+    ['Nur Jahr', '1950'],
+  ])
+  const ics = birthdayCalendar(t, { calendarName: 'Geburtstage Familie Test', now: today })
+  const unfolded = ics.replace(/\r\n /g, '')
+
+  it('ist ein gültiger Kalender mit CRLF-Zeilen', () => {
+    expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true)
+    expect(ics.endsWith('END:VCALENDAR\r\n')).toBe(true)
+    expect(ics.split('\r\n').every((l) => new TextEncoder().encode(l).length <= 75)).toBe(true)
+    expect(unfolded).toContain('X-WR-CALNAME:Geburtstage Familie Test')
+  })
+
+  it('zwei Termine pro Person, ganztägig, mit Alter im Titel', () => {
+    expect(unfolded.match(/BEGIN:VEVENT/g)).toHaveLength(4)
+    expect(unfolded).toContain('DTSTART;VALUE=DATE:20261127')
+    expect(unfolded).toContain('DTEND;VALUE=DATE:20261128')
+    expect(unfolded).toContain('SUMMARY:🎂 Frank Beispiel (56)')
+    expect(unfolded).toContain('DTSTART;VALUE=DATE:20271127')
+    expect(unfolded).toContain('SUMMARY:🎂 Frank Beispiel (57)')
+    expect(unfolded).toContain('UID:Frank Beispiel-2026@stammbaum')
+    expect(unfolded).toContain('TRIGGER:PT9H')
+  })
+
+  it('maskiert Sonderzeichen und lässt unvollständige Daten weg', () => {
+    expect(unfolded).toContain('SUMMARY:🎂 Komma\\, Semikolon; Name (37)')
+    expect(unfolded).not.toContain('Nur Jahr')
   })
 })

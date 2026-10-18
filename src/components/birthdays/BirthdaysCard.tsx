@@ -1,13 +1,14 @@
 // src/components/birthdays/BirthdaysCard.tsx
 // „Nächste Geburtstage“ (über das Menü): wer als Nächstes feiert, nach Monaten; ein Tipp springt zur Person.
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { Cake, X } from 'lucide-react'
+import { Cake, CalendarPlus, Copy, X } from 'lucide-react'
 import { daysText, upcomingBirthdays, type Birthday } from '@/family/birthdays'
 import { describeKinship, kinshipLabel } from '@/family/kinship'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
+import { useToast } from '@/components/app/Toast'
 import { Portrait } from '@/components/ui/Portrait'
 
 const WEEKDAY = new Intl.DateTimeFormat('de-DE', { weekday: 'short' })
@@ -17,6 +18,7 @@ const MONTH_YEAR = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'nume
 export function BirthdaysCard() {
   const { tree, index } = useFamily()
   const { meId, showLine, focusOn } = useView()
+  const [subscribe, setSubscribe] = useState(false)
 
   // Gruppen nach Monat, in Reihenfolge der nächsten Geburtstage
   const groups = useMemo(() => {
@@ -51,15 +53,31 @@ export function BirthdaysCard() {
     >
       <header className="flex shrink-0 items-center justify-between px-4 pb-1 pt-3">
         <h2 className="font-display text-[1.35rem] leading-tight text-ink">Nächste Geburtstage</h2>
-        <button
-          type="button"
-          onClick={() => showLine(null)}
-          aria-label="Schließen"
-          className="-mr-1 grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <span className="-mr-1 flex items-center">
+          <button
+            type="button"
+            onClick={() => setSubscribe((v) => !v)}
+            aria-expanded={subscribe}
+            aria-label="Im Kalender abonnieren"
+            title="Im Kalender abonnieren"
+            className={clsx(
+              'grid h-9 w-9 place-items-center rounded-full hover:bg-paper-raised',
+              subscribe ? 'bg-gilt-soft/70 text-gilt-deep' : 'text-ink-muted hover:text-ink',
+            )}
+          >
+            <CalendarPlus className="h-[18px] w-[18px]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => showLine(null)}
+            aria-label="Schließen"
+            className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </span>
       </header>
+      {subscribe && <Subscribe />}
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2">
         {groups.length === 0 && (
@@ -128,5 +146,83 @@ function BirthdayRow({ b, relation, onOpen }: { b: Birthday; relation: string | 
         </span>
       </button>
     </li>
+  )
+}
+
+/** Abo-Link für Kalender-Apps: iPhone/Mac, Google oder zum Kopieren */
+function Subscribe() {
+  const { notify } = useToast()
+  const [path, setPath] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/kalender/link', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { path: string }) => setPath(d.path))
+      .catch(() => setFailed(true))
+  }, [])
+
+  const renew = async () => {
+    if (!window.confirm('Neuen Link erzeugen? Wer den alten abonniert hat, bekommt danach keine Geburtstage mehr.'))
+      return
+    const r = await fetch('/api/kalender/link', { method: 'POST' })
+    if (!r.ok) return notify({ message: 'Der neue Link konnte nicht erzeugt werden.' })
+    setPath(((await r.json()) as { path: string }).path)
+    notify({ message: 'Neuer Link erzeugt. Der alte funktioniert nicht mehr.' })
+  }
+
+  if (failed) {
+    return (
+      <p className="mx-3 mb-2 rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
+        Der Kalender-Link konnte nicht geladen werden.
+      </p>
+    )
+  }
+  if (!path) return <p className="mx-4 mb-2 font-serif text-[15px] italic text-ink-muted">Link wird geholt …</p>
+
+  const host = window.location.host
+  const https = `https://${host}${path}`
+  const webcal = `webcal://${host}${path}`
+  const google = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`
+  const linkButton =
+    'inline-flex h-10 items-center justify-center gap-2 rounded-control border border-card-rule bg-card px-3 text-sm font-medium text-ink hover:border-gilt'
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(https)
+      notify({ message: 'Link kopiert.' })
+    } catch {
+      window.prompt('Link zum Kopieren:', https)
+    }
+  }
+
+  return (
+    <div className="mx-3 mb-2 shrink-0 rounded-control border border-gilt/50 bg-card/70 p-3">
+      <p className="font-serif text-[15px] leading-snug text-ink">
+        Alle Geburtstage in deinem Kalender, mit Erinnerung am Morgen. Neue Einträge kommen von selbst dazu.
+      </p>
+      <div className="mt-2.5 grid grid-cols-2 gap-2">
+        <a href={webcal} className={linkButton}>
+          iPhone &amp; Mac
+        </a>
+        <a href={google} target="_blank" rel="noreferrer" className={linkButton}>
+          Google Kalender
+        </a>
+      </div>
+      <button type="button" onClick={copy} className={clsx(linkButton, 'mt-2 w-full')}>
+        <Copy className="h-4 w-4" aria-hidden />
+        Link kopieren (Outlook und andere)
+      </button>
+      <p className="mt-2 text-[13px] leading-snug text-ink-faint">
+        Wer den Link hat, sieht Namen und Geburtstage.{' '}
+        <button
+          type="button"
+          onClick={renew}
+          className="underline decoration-gilt/60 underline-offset-2 hover:text-ink"
+        >
+          Neuen Link erzeugen
+        </button>
+      </p>
+    </div>
   )
 }

@@ -25,7 +25,11 @@ function birthdayIn(year: number, month: number, day: number): Date {
   return d.getMonth() === month - 1 ? d : new Date(year, month - 1, 28)
 }
 
-export function upcomingBirthdays(tree: Tree, now = new Date()): Birthday[] {
+/**
+ * Nächste Geburtstage, sortiert. Mit `occurrences` > 1 auch die der Folgejahre
+ * (z. B. für den Kalender: dieses und nächstes Mal).
+ */
+export function upcomingBirthdays(tree: Tree, now = new Date(), occurrences = 1): Birthday[] {
   const today = midnight(now)
   const out: Birthday[] = []
   for (const person of Object.values(tree.members)) {
@@ -33,11 +37,14 @@ export function upcomingBirthdays(tree: Tree, now = new Date()): Birthday[] {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(person.profile?.birthDate ?? '')
     if (!m) continue
     const [year, month, day] = [+m[1], +m[2], +m[3]]
-    let date = birthdayIn(today.getFullYear(), month, day)
-    if (date < today) date = birthdayIn(today.getFullYear() + 1, month, day)
-    const age = date.getFullYear() - year
-    if (age <= 0 || age > MAX_AGE) continue
-    out.push({ person, date, days: Math.round((date.getTime() - today.getTime()) / DAY), age })
+    let next = today.getFullYear()
+    if (birthdayIn(next, month, day) < today) next++
+    for (let i = 0; i < occurrences; i++) {
+      const date = birthdayIn(next + i, month, day)
+      const age = date.getFullYear() - year
+      if (age <= 0 || age > MAX_AGE) continue
+      out.push({ person, date, days: Math.round((date.getTime() - today.getTime()) / DAY), age })
+    }
   }
   return out.sort((a, b) => a.days - b.days || a.person.name.localeCompare(b.person.name, 'de'))
 }

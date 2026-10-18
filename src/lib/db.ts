@@ -1,6 +1,7 @@
 // src/lib/db.ts
 // Alle Datenbankzugriffe des Servers an einer Stelle.
 
+import { randomBytes } from 'crypto'
 import { supaAdmin } from './supabaseServer'
 import type { StoredTree } from '@/storage/schema'
 import { describeChange } from '@/storage/changes'
@@ -98,4 +99,41 @@ export async function snapshotBeforeSave(familyId: string, current: StoredTree, 
     .from('family_trees_backup')
     .insert({ family_id: familyId, tree_json: current, note })
   if (error) throw error
+}
+
+// ── Kalender-Abo ──────────────────────────────────────────────────────────────
+
+const newCalendarToken = () => randomBytes(24).toString('base64url')
+
+/** Schlüssel für das Kalender-Abo der Familie; wird beim ersten Mal angelegt */
+export async function getCalendarToken(familyId: string): Promise<string> {
+  const read = async () => {
+    const { data, error } = await supaAdmin.from('families').select('calendar_token').eq('id', familyId).single()
+    if (error) throw error
+    return data.calendar_token as string | null
+  }
+  const existing = await read()
+  if (existing) return existing
+  // Nur setzen, wenn noch keiner da ist – bei zwei gleichzeitigen Aufrufen gewinnt der erste
+  const { error } = await supaAdmin
+    .from('families')
+    .update({ calendar_token: newCalendarToken() })
+    .eq('id', familyId)
+    .is('calendar_token', null)
+  if (error) throw error
+  return (await read())!
+}
+
+/** Neuer Schlüssel; der alte Abo-Link funktioniert danach nicht mehr */
+export async function renewCalendarToken(familyId: string): Promise<string> {
+  const token = newCalendarToken()
+  const { error } = await supaAdmin.from('families').update({ calendar_token: token }).eq('id', familyId)
+  if (error) throw error
+  return token
+}
+
+export async function getFamilyByCalendarToken(token: string): Promise<{ id: string; name: string } | null> {
+  const { data, error } = await supaAdmin.from('families').select('id,name').eq('calendar_token', token).maybeSingle()
+  if (error) throw error
+  return data
 }
