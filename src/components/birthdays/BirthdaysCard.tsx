@@ -1,14 +1,15 @@
 // src/components/birthdays/BirthdaysCard.tsx
 // „Nächste Geburtstage“ (über das Menü): wer als Nächstes feiert, nach Monaten; ein Tipp springt zur Person.
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { Cake, X } from 'lucide-react'
+import { Cake, CalendarPlus, X } from 'lucide-react'
 import { daysText, upcomingBirthdays, type Birthday } from '@/family/birthdays'
 import { describeKinship, kinshipLabel } from '@/family/kinship'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { Portrait } from '@/components/ui/Portrait'
+import { CalendarSubscribe } from './CalendarSubscribe'
 
 const WEEKDAY = new Intl.DateTimeFormat('de-DE', { weekday: 'short' })
 const MONTH = new Intl.DateTimeFormat('de-DE', { month: 'long' })
@@ -17,6 +18,7 @@ const MONTH_YEAR = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'nume
 export function BirthdaysCard() {
   const { tree, index } = useFamily()
   const { meId, showLine, focusOn } = useView()
+  const [subscribe, setSubscribe] = useState(false)
 
   // Gruppen nach Monat, in Reihenfolge der nächsten Geburtstage
   const groups = useMemo(() => {
@@ -51,17 +53,36 @@ export function BirthdaysCard() {
     >
       <header className="flex shrink-0 items-center justify-between px-4 pb-1 pt-3">
         <h2 className="font-display text-[1.35rem] leading-tight text-ink">Nächste Geburtstage</h2>
-        <button
-          type="button"
-          onClick={() => showLine(null)}
-          aria-label="Schließen"
-          className="-mr-1 grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <span className="-mr-1 flex items-center">
+          <button
+            type="button"
+            onClick={() => setSubscribe((v) => !v)}
+            aria-expanded={subscribe}
+            aria-label="Im Kalender abonnieren"
+            title="Im Kalender abonnieren"
+            className={clsx(
+              'grid h-9 w-9 place-items-center rounded-full hover:bg-paper-raised',
+              subscribe ? 'bg-gilt-soft/70 text-gilt-deep' : 'text-ink-muted hover:text-ink',
+            )}
+          >
+            <CalendarPlus className="h-[18px] w-[18px]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => showLine(null)}
+            aria-label="Schließen"
+            className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </span>
       </header>
-
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2">
+        {subscribe && (
+          <div className="mx-1 mb-2 rounded-control border border-gilt/50 bg-card/70 p-3">
+            <CalendarSubscribe personId={meId} allowRenew />
+          </div>
+        )}
         {groups.length === 0 && (
           <p className="px-2 py-4 font-serif text-[16px] leading-snug text-ink-muted">
             Noch keine Geburtstage eingetragen. Im Infoblatt unter „Bearbeiten“ lässt sich das Geburtsdatum ergänzen.

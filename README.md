@@ -16,6 +16,15 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 - **Fotos und Dokumente** pro Person; Fotos werden vor dem Hochladen verkleinert.
 - **Tageslicht und Kerzenlicht** (heller und dunkler Modus).
 - **Nächste Geburtstage** im Menü: alle Lebenden mit vollständigem Geburtsdatum nach Monaten, mit Alter und – nach „Das bin ich“ – der Verwandtschaft; ein Tipp springt zur Person.
+- **Geburtstage als Kalender-Abo** (Kalender-Knopf bei „Nächste Geburtstage“ und am Ende der Einführung): für iPhone/Mac, Google Kalender oder als Link für Outlook u. a. Ganztägige Termine „🎂 Name (Alter)“ mit Erinnerung um 9 Uhr; neue Einträge kommen von selbst dazu. Wahlweise die ganze Familie oder nur die eigene Linie – Person und Umfang stehen im Link:
+
+  ```
+  /api/kalender/<schlüssel>.ics?linie=<id>&vorfahren=alle&nachkommen=2&seiten=cousins
+  ```
+
+  `vorfahren`/`nachkommen`: Anzahl Generationen oder `alle`; `seiten`: `keine`, `geschwister`, `cousins` oder `alle`. Ohne `linie` die ganze Familie.
+
+- **Verstorben, Datum unbekannt:** Schalter „Ist verstorben“ beim Bearbeiten (bzw. „Bereits verstorben“ beim Hinzufügen); das Sterbedatum ist dann freiwillig. Auf der Karte steht z. B. „1888–†“, die Person fällt aus Geburtstagen und Kalender heraus.
 - **Als PDF exportieren** über das Menü: eigene Linie, Beziehung oder ganze Familie, hoch oder quer, A4 bis A1. Druckfertiges Blatt mit Goldrahmen, Titel und Datum; gesichert wird über den Druckdialog („Als PDF sichern“), dadurch bleibt alles vektorscharf.
 - **Herkunftsflagge** bei jeder Person mit eingetragenem Land.
 - **Sicherung herunterladen** als JSON über das Menü.
@@ -37,6 +46,8 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
   `NUMMER` durch die `id` aus der Liste ersetzen – es steht absichtlich dort, damit sich die Zeilen nicht versehentlich unverändert ausführen lassen. Ohne `true` zeigt die Funktion nur eine Vorschau und ändert nichts.
 
 - Fotos und Dokumente werden nicht sofort gelöscht, wenn jemand sie entfernt: Die tägliche Sicherung löscht eine Datei erst, wenn weder der aktuelle Baum noch eine Sicherung sie kennt (und sie älter als eine Woche ist). Zurückgeholte Stände behalten so ihre Bilder. Fehlt doch einmal eine Datei, zeigt die App die Initialen bzw. „Bild fehlt“.
+
+- Kalender-Apps können sich nicht anmelden, deshalb ist das Abo nur durch einen geheimen Schlüssel im Link geschützt (`families.calendar_token`). Wer den Link hat, sieht Namen und Geburtstage; „Neuen Link erzeugen“ macht den alten ungültig.
 
 - Die Datenbank (Supabase) wird nur serverseitig mit dem Service-Role-Key angesprochen; öffentliche Rollen haben keine Rechte.
 

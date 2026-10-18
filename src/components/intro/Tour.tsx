@@ -14,6 +14,7 @@ import { useView } from '@/components/app/ViewProvider'
 import { Portrait } from '@/components/ui/Portrait'
 import { Button } from '@/components/ui/Button'
 import { Flourish } from '@/components/ui/Flourish'
+import { CalendarSubscribe } from '@/components/birthdays/CalendarSubscribe'
 import { guestSteps, personalSteps, type Step } from './steps'
 
 const SEEN_KEY = 'stammbaum:einfuehrung'
@@ -297,8 +298,8 @@ function StepView({
 
   if (step.mode === 'modal') {
     return (
-      <div className="fixed inset-0 z-[90] grid place-items-center bg-linen-deep/70 p-4 backdrop-blur-[2px]">
-        {bubble}
+      <div className="fixed inset-0 z-[90] overflow-y-auto bg-linen-deep/70 backdrop-blur-[2px]">
+        <div className="grid min-h-full place-items-center p-4">{bubble}</div>
       </div>
     )
   }
@@ -430,6 +431,11 @@ function Bubble({
       <p className={clsx('mt-1 font-serif leading-snug text-ink', compact ? 'text-[15px]' : 'text-[16.5px]')}>
         {step.text}
       </p>
+      {step.calendar && (
+        <div className="mt-3 border-t border-card-rule pt-3">
+          <CalendarSubscribe personId={step.calendar.personId} intro={false} />
+        </div>
+      )}
 
       <div
         className={clsx(

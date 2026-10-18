@@ -47,6 +47,7 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
     relation === 'SPOUSE' ? (person.gender === 'MALE' ? 'FEMALE' : 'MALE') : '',
   )
   const [birthDate, setBirthDate] = useState('')
+  const [dead, setDead] = useState(false)
   const [alsoChildOfSpouse, setAlsoChildOfSpouse] = useState(true)
   const [adopted, setAdopted] = useState(false)
   const [marry, setMarry] = useState(true)
@@ -75,7 +76,10 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
         alsoChildOfSpouse,
         marryExistingParent: marry,
       })
-      const next = born ? updatePerson(added.tree, added.id, { profile: { birthDate: born } }) : added.tree
+      const next =
+        born || dead
+          ? updatePerson(added.tree, added.id, { profile: { birthDate: born, deceased: dead || undefined } })
+          : added.tree
       await commit(next)
       const newName = name.trim()
       onDone()
@@ -150,6 +154,10 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
           autoComplete="off"
         />
       </div>
+
+      <Toggle checked={dead} onChange={setDead}>
+        Bereits verstorben
+      </Toggle>
 
       {relation === 'CHILD' && (
         <div className="flex flex-col gap-2">

@@ -17,17 +17,19 @@ export function initials(name: string): string {
 
 const yearOf = (iso?: string | null) => (iso && /^\d{4}/.test(iso) ? iso.slice(0, 4) : null)
 
-/** „1919–1989“, „* 1944“, „† 1944“ oder leer */
+/** Verstorben – mit Sterbedatum oder als „verstorben, Datum unbekannt“ eingetragen */
+export const isDeceased = (p: Person) => !!p.profile?.deathDate || p.profile?.deceased === true
+
+/** „1919–1989“, „* 1944“, „† 1944“, ohne bekanntes Sterbejahr „1888–†“ bzw. „†“, oder leer */
 export function lifeYears(p: Person): string {
   const b = yearOf(p.profile?.birthDate)
   const d = yearOf(p.profile?.deathDate)
   if (b && d) return b === d ? `* † ${b}` : `${b}–${d}`
-  if (b) return `* ${b}`
   if (d) return `† ${d}`
+  if (isDeceased(p)) return b ? `${b}–†` : '†'
+  if (b) return `* ${b}`
   return ''
 }
-
-export const isDeceased = (p: Person) => !!p.profile?.deathDate
 
 const MONTHS = [
   'Januar',
@@ -104,6 +106,7 @@ export function ageOf(p: Person, now = new Date()): { years: number; approx: boo
   const b = partsOf(p.profile?.birthDate)
   if (!b) return null
   const deathRaw = p.profile?.deathDate
+  if (!deathRaw && isDeceased(p)) return null // Sterbedatum unbekannt
   const d: DateParts | null = deathRaw
     ? partsOf(deathRaw)
     : { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }
