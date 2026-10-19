@@ -43,6 +43,10 @@
     background-clip: text;
     color: transparent;
     text-shadow: 0 1px 0 rgb(0 0 0 / 0.04);
+    /* The gradient only paints inside the box: give accents (Á, É) and descenders room
+       without changing the layout */
+    padding-block: 0.15em;
+    margin-block: -0.15em;
   }
 
   /* ---------- Parchment surface with darkened edges ---------- */

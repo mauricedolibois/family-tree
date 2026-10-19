@@ -9,12 +9,14 @@ import { useView } from '@/components/app/ViewProvider'
 import { PersonDetails } from './PersonDetails'
 import { PersonForm } from './PersonForm'
 import { RelativeForm } from './RelativeForm'
+import { useI18n } from '@/i18n/I18nProvider'
 
 type Mode = { kind: 'details' } | { kind: 'edit' } | { kind: 'add'; relation: Relation }
 
 export function PersonPanel() {
   const { index } = useFamily()
   const { selectedId, select } = useView()
+  const { t } = useI18n()
   const [mode, setMode] = useState<Mode>({ kind: 'details' })
   /** On phones: half open (tree stays visible) or fully open */
   const [expanded, setExpanded] = useState(false)
@@ -57,7 +59,7 @@ export function PersonPanel() {
   return (
     <aside
       data-tour="sheet"
-      aria-label={`Angaben zu ${person.name}`}
+      aria-label={t.sheet.aboutPerson(person.name)}
       className={
         'parchment panel-enter fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-panel border-t border-gilt/60 shadow-sheet transition-[max-height] duration-300 ease-settle ' +
         (expanded ? 'max-h-[88dvh] ' : 'max-h-[46dvh] ') +
@@ -76,13 +78,13 @@ export function PersonPanel() {
             onClick={back}
             className="flex h-10 items-center gap-1 rounded-full px-2 text-[15px] text-ink-muted hover:bg-paper-raised hover:text-ink"
           >
-            <ArrowLeft className="h-4 w-4" /> Zurück
+            <ArrowLeft className="h-4 w-4" /> {t.sheet.back}
           </button>
         ) : (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            aria-label={expanded ? 'Infoblatt verkleinern' : 'Infoblatt vergrößern'}
+            aria-label={expanded ? t.sheet.shrink : t.sheet.expand}
             className="absolute left-1/2 top-1 grid h-8 w-20 -translate-x-1/2 place-items-center md:hidden"
           >
             <span className="h-1.5 w-10 rounded-full bg-card-rule" />
@@ -91,7 +93,7 @@ export function PersonPanel() {
         <button
           type="button"
           onClick={() => select(null)}
-          aria-label="Schließen"
+          aria-label={t.sheet.close}
           className="ml-auto grid h-10 w-10 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
         >
           <X className="h-5 w-5" />

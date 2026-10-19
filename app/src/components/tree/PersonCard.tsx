@@ -8,6 +8,7 @@ import { isDeceased, lifeYears, splitName } from '@/family/format'
 import type { CardBox } from '@/family/layout/types'
 import { Portrait } from '@/components/ui/Portrait'
 import { CountryFlag } from '@/components/ui/CountryFlag'
+import { useI18n } from '@/i18n/I18nProvider'
 
 export type CardState = 'normal' | 'selected' | 'line' | 'dimmed'
 
@@ -21,6 +22,7 @@ type Props = {
 
 export const PersonCard = memo(function PersonCard({ person, box, state, isMe, onSelect }: Props) {
   const { given, surname } = splitName(person.name)
+  const { t } = useI18n()
   const years = lifeYears(person)
   const past = isDeceased(person)
   const country = person.profile?.country?.trim()
@@ -54,7 +56,7 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, o
         <span className="mt-px flex items-center gap-1.5 font-serif text-[13.5px] text-ink-faint">
           {country && <CountryFlag country={country} />}
           {years && <span>{years}</span>}
-          {isMe && <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">Du</span>}
+          {isMe && <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">{t.person.youBadge}</span>}
         </span>
       </span>
     </button>

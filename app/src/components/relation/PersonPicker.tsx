@@ -9,6 +9,7 @@ import { lifeYears, splitName } from '@/family/format'
 import { searchPeople } from '@/family/search'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { Portrait } from '@/components/ui/Portrait'
+import { useI18n } from '@/i18n/I18nProvider'
 
 /** Selected person as a compact card; empty as a dashed placeholder */
 export function PersonChip({
@@ -24,17 +25,18 @@ export function PersonChip({
   /** Anchor for the guided tour */
   tour?: string
 }) {
+  const { t } = useI18n()
   if (!person) {
     return (
       <button
         type="button"
         onClick={onClick}
         data-tour={tour}
-        aria-label={`${label} wählen`}
+        aria-label={t.relation.choose(label)}
         className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-control border border-dashed border-gilt/70 px-2 text-[15px] text-ink-muted hover:border-gilt hover:bg-gilt-soft/40 hover:text-ink"
       >
         <UserSearch className="h-4 w-4 shrink-0" />
-        <span className="truncate">Person wählen</span>
+        <span className="truncate">{t.relation.pickPerson}</span>
       </button>
     )
   }
@@ -45,7 +47,7 @@ export function PersonChip({
       type="button"
       onClick={onClick}
       data-tour={tour}
-      aria-label={`${label}: ${person.name}. Ändern`}
+      aria-label={t.relation.change(label, person.name)}
       className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-control border border-gilt/60 bg-card/80 px-2 text-left hover:border-gilt hover:bg-card"
     >
       <Portrait person={person} size="sm" className="hidden min-[400px]:inline-grid" />
@@ -72,6 +74,7 @@ export function PersonSearchField({
   onCancel: () => void
 }) {
   const { tree } = useFamily()
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const input = useRef<HTMLInputElement>(null)
@@ -101,7 +104,7 @@ export function PersonSearchField({
   return (
     <div className="relative">
       <label className="relative block">
-        <span className="sr-only">{label} suchen</span>
+        <span className="sr-only">{t.relation.searchFor(label)}</span>
         <UserSearch className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-faint" />
         <input
           ref={input}
@@ -112,7 +115,7 @@ export function PersonSearchField({
           aria-autocomplete="list"
           autoComplete="off"
           enterKeyHint="search"
-          placeholder="Name, Ort oder Geburtsjahr"
+          placeholder={t.relation.searchPlaceholder}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -124,7 +127,7 @@ export function PersonSearchField({
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Abbrechen"
+          aria-label={t.relation.cancel}
           className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-ink-muted hover:text-ink"
         >
           <X className="h-4 w-4" />
@@ -137,7 +140,7 @@ export function PersonSearchField({
           role="listbox"
           className="absolute inset-x-0 top-[3.25rem] z-50 max-h-[min(22rem,45dvh)] overflow-auto rounded-card border border-card-rule bg-card p-1 shadow-lifted"
         >
-          {results.length === 0 && <li className="px-3 py-3 text-sm text-ink-muted">Niemand gefunden.</li>}
+          {results.length === 0 && <li className="px-3 py-3 text-sm text-ink-muted">{t.relation.nobody}</li>}
           {results.map((p, i) => (
             <li key={p.id} role="option" aria-selected={i === active}>
               <button

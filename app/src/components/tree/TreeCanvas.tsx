@@ -16,6 +16,7 @@ import { ViewModes } from './ViewModes'
 import { LineScopeCard } from './LineScopeCard'
 import { RelationCard } from '@/components/relation/RelationCard'
 import { BirthdaysCard } from '@/components/birthdays/BirthdaysCard'
+import { useI18n } from '@/i18n/I18nProvider'
 
 const MIN_SCALE = 0.05
 const MAX_SCALE = 2.2
@@ -29,6 +30,7 @@ const WIDE = 768
 
 export function TreeCanvas() {
   const { tree, index } = useFamily()
+  const { t } = useI18n()
   const { selectedId, select, lineId, lineScope, showLine, relation, showRelation, birthdays, meId, focusRequest } =
     useView()
   const api = useRef<ReactZoomPanPinchRef | null>(null)
@@ -315,26 +317,26 @@ export function TreeCanvas() {
           role="alert"
           className="absolute inset-x-3 top-14 mx-auto max-w-md rounded-card bg-danger-soft px-4 py-3 text-sm text-danger"
         >
-          {error}
+          {t.tree.layoutFailed}
         </p>
       )}
       {!layout && !error && (
         <div className="absolute inset-0 grid place-items-center" role="status">
           <p className="parchment rounded-full border border-card-rule px-5 py-2 font-display text-lg text-ink-muted shadow-card">
-            Der Baum wird gezeichnet …
+            {t.tree.drawing}
           </p>
         </div>
       )}
 
       {/* Zoom */}
       <div className="parchment absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 flex flex-col overflow-hidden rounded-control border border-gilt/50 shadow-card">
-        <ZoomButton label="Vergrößern" onClick={() => api.current?.zoomIn(0.35)}>
+        <ZoomButton label={t.tree.zoomIn} onClick={() => api.current?.zoomIn(0.35)}>
           <Plus className="h-5 w-5" />
         </ZoomButton>
-        <ZoomButton label="Verkleinern" onClick={() => api.current?.zoomOut(0.35)}>
+        <ZoomButton label={t.tree.zoomOut} onClick={() => api.current?.zoomOut(0.35)}>
           <Minus className="h-5 w-5" />
         </ZoomButton>
-        <ZoomButton label="Ganzen Baum zeigen" onClick={() => fitAll()}>
+        <ZoomButton label={t.tree.fitAll} onClick={() => fitAll()}>
           <Maximize className="h-[18px] w-[18px]" />
         </ZoomButton>
       </div>

@@ -3,14 +3,16 @@
 
 import { useState } from 'react'
 import { ImageOff } from 'lucide-react'
+import { useI18n } from '@/i18n/I18nProvider'
 
 export function MediaImage({ src, alt, lazy = true }: { src: string; alt: string; lazy?: boolean }) {
   const [broken, setBroken] = useState<string | null>(null)
+  const { t } = useI18n()
   if (broken === src) {
     return (
       <span className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-ink-muted">
         <ImageOff className="h-6 w-6" aria-hidden />
-        Bild fehlt
+        {t.tree.imageMissing}
       </span>
     )
   }

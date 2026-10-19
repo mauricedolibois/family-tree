@@ -16,7 +16,8 @@ import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { useToast } from '@/components/app/Toast'
 import { Segmented } from '@/components/ui/Choice'
-import { SIDE_OPTIONS } from '@/components/tree/LineScopeCard'
+import { sideOptions } from '@/components/tree/LineScopeCard'
+import { useI18n } from '@/i18n/I18nProvider'
 
 type Whom = 'line' | 'all'
 
@@ -35,6 +36,7 @@ export function CalendarSubscribe({
   const { tree, index } = useFamily()
   const { lineScope } = useView()
   const { notify } = useToast()
+  const { t, locale } = useI18n()
   const person = personId ? index.byId.get(personId) : undefined
 
   const [whom, setWhom] = useState<Whom>(person ? 'line' : 'all')
@@ -56,20 +58,19 @@ export function CalendarSubscribe({
   )
   const count = useMemo(() => upcomingBirthdays(calendarSubset(tree, selection).tree).length, [tree, selection])
   const scopeText = useMemo(
-    () => (selection ? describeLineScope(selection.scope, lineDepth(index, selection.personId)) : null),
-    [selection, index],
+    () => (selection ? describeLineScope(selection.scope, lineDepth(index, selection.personId), locale) : null),
+    [selection, index, locale],
   )
 
   const renew = async () => {
-    if (!window.confirm('Neuen Link erzeugen? Wer den alten abonniert hat, bekommt danach keine Geburtstage mehr.'))
-      return
+    if (!window.confirm(t.subscribe.confirmRenew)) return
     const r = await fetch('/api/kalender/link', { method: 'POST' })
-    if (!r.ok) return notify({ message: 'Der neue Link konnte nicht erzeugt werden.' })
+    if (!r.ok) return notify({ message: t.subscribe.renewFailed })
     setPath(((await r.json()) as { path: string }).path)
-    notify({ message: 'Neuer Link erzeugt. Der alte funktioniert nicht mehr.' })
+    notify({ message: t.subscribe.renewed })
   }
 
-  const href = path ? `${path}${calendarQuery(selection)}` : null
+  const href = path ? `${path}${calendarQuery(selection, locale)}` : null
   const host = typeof window !== 'undefined' ? window.location.host : ''
   const https = `https://${host}${href ?? ''}`
   const webcal = `webcal://${host}${href ?? ''}`
@@ -78,9 +79,9 @@ export function CalendarSubscribe({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(https)
-      notify({ message: 'Link kopiert.' })
+      notify({ message: t.subscribe.copied })
     } catch {
-      window.prompt('Link zum Kopieren:', https)
+      window.prompt(t.subscribe.copyPrompt, https)
     }
   }
 
@@ -90,61 +91,55 @@ export function CalendarSubscribe({
 
   return (
     <div className="flex flex-col gap-2.5 text-left">
-      {intro && (
-        <p className="font-serif text-[15px] leading-snug text-ink">
-          Die Geburtstage in deinem Kalender, mit Erinnerung am Morgen. Neue Einträge kommen von selbst dazu.
-        </p>
-      )}
+      {intro && <p className="font-serif text-[15px] leading-snug text-ink">{t.subscribe.intro}</p>}
 
       {person && (
         <Segmented<Whom>
           dense
-          label="Welche Geburtstage?"
+          label={t.subscribe.which}
           value={whom}
           onChange={setWhom}
           options={[
-            { value: 'line', label: 'Meine Linie' },
-            { value: 'all', label: 'Ganze Familie' },
+            { value: 'line', label: t.subscribe.myLine },
+            { value: 'all', label: t.subscribe.wholeFamily },
           ]}
         />
       )}
       {selection && (
         <Segmented
           dense
-          label="Seitenlinien"
+          label={t.subscribe.sideLines}
           value={`${side}`}
-          options={SIDE_OPTIONS}
+          options={sideOptions(t)}
           onChange={(v) => setSide(Number(v) as LineScope['side'])}
         />
       )}
       <p className="text-[13px] leading-snug text-ink-muted">
-        {scopeText ? `${scopeText} – ` : 'Aus der ganzen Familie: '}
-        <span className="tabular-nums">{count === 1 ? '1 Geburtstag' : `${count} Geburtstage`}</span>.
+        {scopeText ? `${scopeText} – ` : t.subscribe.fromWholeFamily}
+        <span className="tabular-nums">{t.subscribe.count(count)}</span>.
       </p>
 
       {failed ? (
-        <p className="rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
-          Der Kalender-Link konnte nicht geladen werden.
-        </p>
+        <p className="rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">{t.subscribe.loadFailed}</p>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-2">
             <a href={webcal} className={clsx(linkButton, disabled)}>
-              iPhone &amp; Mac
+              {t.subscribe.apple}
             </a>
             <a href={google} target="_blank" rel="noreferrer" className={clsx(linkButton, disabled)}>
-              Google Kalender
+              {t.subscribe.google}
             </a>
           </div>
           <button type="button" onClick={copy} disabled={!href} className={clsx(linkButton, 'w-full', disabled)}>
             <Copy className="h-4 w-4" aria-hidden />
-            Link kopieren (Outlook und andere)
+            {t.subscribe.copy}
           </button>
         </div>
       )}
 
       <p className="text-[13px] leading-snug text-ink-faint">
-        Wer den Link hat, sieht Namen und Geburtstage.
+        {t.subscribe.privacy}
         {allowRenew && path && (
           <>
             {' '}
@@ -153,7 +148,7 @@ export function CalendarSubscribe({
               onClick={renew}
               className="underline decoration-gilt/60 underline-offset-2 hover:text-ink"
             >
-              Neuen Link erzeugen
+              {t.subscribe.renew}
             </button>
           </>
         )}

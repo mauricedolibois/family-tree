@@ -95,6 +95,7 @@ export async function saveFamilyTree(
 export async function snapshotBeforeSave(familyId: string, current: StoredTree, next: StoredTree) {
   const change = describeChange(current, next)
   if (!change) return // nothing changed, nothing to back up
+  // German on purpose: scripts/daily-backup.mjs prunes automatic backups by this prefix
   const note = `automatisch: vor Änderung (${change})`.slice(0, 500)
   const { error } = await getSupaAdmin()
     .from('family_trees_backup')

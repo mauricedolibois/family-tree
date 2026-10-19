@@ -1,5 +1,7 @@
 // src/storage/changes.ts
 // What changed between two versions? A short summary used as the note of a backup.
+// The notes are stored with the backups and read in the Supabase SQL editor, so they
+// stay German like the rest of the `verwaltung` tools.
 
 import type { StoredMemberV3, StoredTree } from './schema'
 

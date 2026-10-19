@@ -8,9 +8,11 @@
 //
 // vorfahren/nachkommen (ancestors/descendants): number of generations or "alle" (default)
 // seiten (collateral lines): keine (default) | geschwister | cousins | alle, as in "Meine Linie"
+// lang (optional): language of the event texts; missing means German.
 // The parameter names are German on purpose: existing subscriptions use them.
 
 import { buildIndex, lineageView, subTree, type LineScope, type Tree } from './model'
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@/i18n/locales'
 
 export type CalendarSelection = { personId: string; scope: LineScope }
 
@@ -18,17 +20,25 @@ const SIDE_WORDS = ['keine', 'geschwister', 'cousins', 'alle'] as const
 
 const MAX_GENERATIONS = 99
 
-/** Query string for the link, with leading "?"; empty for the whole family */
-export function calendarQuery(sel: CalendarSelection | null): string {
-  if (!sel) return ''
-  const gen = (n: number | null) => (n === null ? 'alle' : String(n))
-  const q = new URLSearchParams({
-    linie: sel.personId,
-    vorfahren: gen(sel.scope.up),
-    nachkommen: gen(sel.scope.down),
-    seiten: SIDE_WORDS[sel.scope.side],
-  })
-  return `?${q.toString()}`
+/** Query string for the link, with leading "?"; empty for the whole family in German */
+export function calendarQuery(sel: CalendarSelection | null, locale: Locale = DEFAULT_LOCALE): string {
+  const q = new URLSearchParams()
+  if (sel) {
+    const gen = (n: number | null) => (n === null ? 'alle' : String(n))
+    q.set('linie', sel.personId)
+    q.set('vorfahren', gen(sel.scope.up))
+    q.set('nachkommen', gen(sel.scope.down))
+    q.set('seiten', SIDE_WORDS[sel.scope.side])
+  }
+  if (locale !== DEFAULT_LOCALE) q.set('lang', locale)
+  const s = q.toString()
+  return s ? `?${s}` : ''
+}
+
+/** Language of the subscription; links without `lang` stay German */
+export function calendarLocale(query: Query): Locale {
+  const lang = first(query.lang)
+  return isLocale(lang) ? lang : DEFAULT_LOCALE
 }
 
 type Query = Record<string, string | string[] | undefined>

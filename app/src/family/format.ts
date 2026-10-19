@@ -2,6 +2,8 @@
 // Names and dates prepared the way people expect to read them in a family tree.
 
 import type { LineScope, Person } from './model'
+import { DEFAULT_LOCALE, INTL_TAG, type Locale } from '@/i18n/locales'
+import { MESSAGES } from '@/i18n/messages'
 
 /** "Karl Friedrich Mustermann" → given names "Karl Friedrich", surname "Mustermann" */
 export function splitName(name: string): { given: string; surname: string } {
@@ -31,21 +33,6 @@ export function lifeYears(p: Person): string {
   return ''
 }
 
-const MONTHS = [
-  'Januar',
-  'Februar',
-  'März',
-  'April',
-  'Mai',
-  'Juni',
-  'Juli',
-  'August',
-  'September',
-  'Oktober',
-  'November',
-  'Dezember',
-]
-
 type DateParts = { year: number; month?: number; day?: number }
 
 function partsOf(iso?: string | null): DateParts | null {
@@ -54,34 +41,58 @@ function partsOf(iso?: string | null): DateParts | null {
   return { year: +m[1], month: m[2] ? +m[2] : undefined, day: m[3] ? +m[3] : undefined }
 }
 
-/** Stored date for display: "25.12.1944", "Mai 1778" or "1778" */
-export function formatDate(iso?: string | null): string {
+/** A calendar date at UTC midnight; also works for years before 100 */
+function utcDate(year: number, month: number, day: number): Date {
+  const d = new Date(Date.UTC(2000, month - 1, day))
+  d.setUTCFullYear(year)
+  return d
+}
+
+const formatters = new Map<string, Intl.DateTimeFormat>()
+function dateFormat(locale: Locale, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = locale + JSON.stringify(options)
+  let f = formatters.get(key)
+  if (!f) formatters.set(key, (f = new Intl.DateTimeFormat(INTL_TAG[locale], { ...options, timeZone: 'UTC' })))
+  return f
+}
+
+/** Stored date for display: "25.12.1944", "Mai 1778" or "1778" (in German) */
+export function formatDate(iso?: string | null, locale: Locale = DEFAULT_LOCALE): string {
   const d = partsOf(iso)
   if (!d) return iso ?? ''
-  if (d.day && d.month) return `${String(d.day).padStart(2, '0')}.${String(d.month).padStart(2, '0')}.${d.year}`
-  if (d.month) return `${MONTHS[d.month - 1]} ${d.year}`
+  if (d.day && d.month) {
+    return dateFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(
+      utcDate(d.year, d.month, d.day),
+    )
+  }
+  if (d.month) return dateFormat(locale, { month: 'long', year: 'numeric' }).format(utcDate(d.year, d.month, 1))
   return String(d.year)
 }
 
-/** Stored date for the edit field: "25.12.1944", "05.1778" or "1778" */
-export function toDateInput(iso?: string | null): string {
+/** Separator in typed dates: 25.12.1944 in German, 25/12/1944 elsewhere */
+const dateSeparator = (locale: Locale) => (locale === 'de' ? '.' : '/')
+
+/** Stored date for the edit field: "25.12.1944", "05.1778" or "1778" (in German) */
+export function toDateInput(iso?: string | null, locale: Locale = DEFAULT_LOCALE): string {
   const d = partsOf(iso)
   if (!d) return iso ?? ''
-  if (d.day && d.month) return `${String(d.day).padStart(2, '0')}.${String(d.month).padStart(2, '0')}.${d.year}`
-  if (d.month) return `${String(d.month).padStart(2, '0')}.${d.year}`
+  const sep = dateSeparator(locale)
+  const two = (n: number) => String(n).padStart(2, '0')
+  if (d.day && d.month) return `${two(d.day)}${sep}${two(d.month)}${sep}${d.year}`
+  if (d.month) return `${two(d.month)}${sep}${d.year}`
   return String(d.year)
 }
 
 /**
- * Input "25.12.1944", "5.3.1910", "12.1944", "1944" or "1944-12-25" → stored format.
- * Empty → null. Invalid → undefined.
+ * Input "25.12.1944", "25/12/1944", "5.3.1910", "12.1944", "1944" or "1944-12-25"
+ * → stored format. Day always comes first. Empty → null. Invalid → undefined.
  */
 export function parseDateInput(text: string): string | null | undefined {
   const t = text.trim()
   if (!t) return null
-  let m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(t)
+  let m = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec(t)
   if (m) return validParts(+m[3], +m[2], +m[1])
-  m = /^(\d{1,2})\.(\d{4})$/.exec(t)
+  m = /^(\d{1,2})[./](\d{4})$/.exec(t)
   if (m) return validParts(+m[2], +m[1])
   m = /^(\d{4})$/.exec(t)
   if (m) return validParts(+m[1])
@@ -126,22 +137,19 @@ export function normalizeForSearch(s: string): string {
     .replace(/ß/g, 'ss')
 }
 
-/** "keine", "1 Generation", "3 Generationen" */
-export function generations(n: number): string {
-  if (n <= 0) return 'keine'
-  return n === 1 ? '1 Generation' : `${n} Generationen`
-}
-
-const SIDE_TEXT: Record<LineScope['side'], string> = {
-  0: 'ohne Seitenlinien',
-  1: 'mit Geschwistern',
-  2: 'mit Geschwistern und deren Kindern',
-  3: 'mit allen Blutsverwandten',
+/** "keine", "1 Generation", "3 Generationen" (in German) */
+export function generations(n: number, locale: Locale = DEFAULT_LOCALE): string {
+  return MESSAGES[locale].format.generations(n)
 }
 
 /** Line scope in words: "Vorfahren: alle 9 Generationen, Nachkommen: keine, ohne Seitenlinien" */
-export function describeLineScope(scope: LineScope, depth: { up: number; down: number }): string {
+export function describeLineScope(
+  scope: LineScope,
+  depth: { up: number; down: number },
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  const t = MESSAGES[locale].format
   const part = (v: number | null, max: number) =>
-    max === 0 ? 'keine' : v === null || v >= max ? `alle ${generations(max)}` : generations(v)
-  return `Vorfahren: ${part(scope.up, depth.up)}, Nachkommen: ${part(scope.down, depth.down)}, ${SIDE_TEXT[scope.side]}`
+    max === 0 ? t.generations(0) : v === null || v >= max ? t.allGenerations(t.generations(max)) : t.generations(v)
+  return t.scope(part(scope.up, depth.up), part(scope.down, depth.down), t.side[scope.side])
 }

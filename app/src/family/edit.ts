@@ -5,6 +5,8 @@
 
 import type { StoredProfile } from '@/storage/schema'
 import { buildIndex, descendantsOf, parentsOf, type Gender, type Person, type Tree } from './model'
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales'
+import { MESSAGES, type Messages } from '@/i18n/messages'
 
 export type Relation = 'CHILD' | 'SPOUSE' | 'PARENT'
 
@@ -20,7 +22,21 @@ export type NewRelative = {
   marryExistingParent?: boolean
 }
 
-export class EditError extends Error {}
+export type EditErrorCode = keyof Messages['errors']['edit']
+
+/** Error with a code the UI translates; `names` fill in the people it is about */
+export class EditError extends Error {
+  constructor(
+    readonly code: EditErrorCode,
+    readonly names: string[] = [],
+  ) {
+    super(describeEditError(code, names, DEFAULT_LOCALE))
+  }
+}
+
+export function describeEditError(code: EditErrorCode, names: string[], locale: Locale): string {
+  return (MESSAGES[locale].errors.edit[code] as (...n: string[]) => string)(...names)
+}
 
 const ID_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
 
@@ -83,11 +99,11 @@ function link(parent: Person, child: Person, adopted = false) {
 /** Create a new person related to `refId` */
 export function addRelative(tree: Tree, refId: string, input: NewRelative): { tree: Tree; id: string } {
   const name = input.name.trim()
-  if (!name) throw new EditError('Bitte einen Namen eingeben.')
+  if (!name) throw new EditError('nameRequired')
 
   const next = clone(tree)
   const ref = next.members[refId]
-  if (!ref) throw new EditError('Die Bezugsperson wurde nicht gefunden.')
+  if (!ref) throw new EditError('refNotFound')
   const person = newPerson(name, input.gender)
   const ix = buildIndex(next)
 
@@ -101,7 +117,7 @@ export function addRelative(tree: Tree, refId: string, input: NewRelative): { tr
     }
     case 'SPOUSE': {
       if (ref.spouseId && next.members[ref.spouseId]) {
-        throw new EditError(`${ref.name} ist bereits mit ${next.members[ref.spouseId].name} verheiratet.`)
+        throw new EditError('alreadyMarried', [ref.name, next.members[ref.spouseId].name])
       }
       next.members[person.id] = person
       ref.spouseId = person.id
@@ -110,7 +126,7 @@ export function addRelative(tree: Tree, refId: string, input: NewRelative): { tr
     }
     case 'PARENT': {
       const existing = parentsOf(ix, ref.id)
-      if (existing.length >= 2) throw new EditError(`${ref.name} hat bereits zwei Eltern.`)
+      if (existing.length >= 2) throw new EditError('twoParents', [ref.name])
       next.members[person.id] = person
       link(person, ref)
       if (input.marryExistingParent && existing.length === 1) {
@@ -136,10 +152,10 @@ export type PersonPatch = {
 export function updatePerson(tree: Tree, id: string, patch: PersonPatch): Tree {
   const next = clone(tree)
   const p = next.members[id]
-  if (!p) throw new EditError('Die Person wurde nicht gefunden.')
+  if (!p) throw new EditError('personNotFound')
   if (patch.name !== undefined) {
     const name = patch.name.trim()
-    if (!name) throw new EditError('Der Name darf nicht leer sein.')
+    if (!name) throw new EditError('emptyName')
     p.name = name
   }
   if (patch.gender) p.gender = patch.gender
@@ -163,13 +179,13 @@ export function addExistingParent(tree: Tree, childId: string, parentId: string)
   const next = clone(tree)
   const child = next.members[childId]
   const parent = next.members[parentId]
-  if (!child || !parent) throw new EditError('Die Person wurde nicht gefunden.')
+  if (!child || !parent) throw new EditError('personNotFound')
   const ix = buildIndex(next)
   const parents = parentsOf(ix, childId)
   if (parents.includes(parentId)) return next
-  if (parents.length >= 2) throw new EditError(`${child.name} hat bereits zwei Eltern.`)
+  if (parents.length >= 2) throw new EditError('twoParents', [child.name])
   if (parentId === childId || descendantsOf(ix, childId).has(parentId)) {
-    throw new EditError(`${parent.name} kann nicht Elternteil von ${child.name} sein.`)
+    throw new EditError('notAParent', [parent.name, child.name])
   }
   link(parent, child)
   return normalize(next)
@@ -188,7 +204,7 @@ export function canDelete(tree: Tree, id: string): boolean {
 
 export function deletePerson(tree: Tree, id: string): Tree {
   if (!canDelete(tree, id)) {
-    throw new EditError('Diese Person hat Eltern und Kinder im Baum und kann deshalb nicht gelöscht werden.')
+    throw new EditError('cannotDelete')
   }
   const next = clone(tree)
   const target = next.members[id]
@@ -215,11 +231,12 @@ export function deletePerson(tree: Tree, id: string): Tree {
   return normalize(next)
 }
 
-/** Starter tree for a new family */
-export function starterTree(): Tree {
-  const father = newPerson('Vater', 'MALE')
-  const mother = newPerson('Mutter', 'FEMALE')
-  const child = newPerson('Kind', 'FEMALE')
+/** Starter tree for a new family, with placeholder names in the family's language */
+export function starterTree(locale: Locale = DEFAULT_LOCALE): Tree {
+  const names = MESSAGES[locale].starter
+  const father = newPerson(names.father, 'MALE')
+  const mother = newPerson(names.mother, 'FEMALE')
+  const child = newPerson(names.child, 'FEMALE')
   father.spouseId = mother.id
   mother.spouseId = father.id
   father.childrenIds = [child.id]

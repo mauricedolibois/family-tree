@@ -7,9 +7,12 @@ import { useFamily } from './FamilyProvider'
 import { useView } from './ViewProvider'
 import { SearchBox } from './SearchBox'
 import { useTheme } from './useTheme'
+import { useI18n } from '@/i18n/I18nProvider'
+import { LanguagePicker } from '@/components/ui/LanguagePicker'
 
 export function TopBar() {
   const { familyName } = useFamily()
+  const { t } = useI18n()
   const [mobileSearch, setMobileSearch] = useState(false)
 
   return (
@@ -24,14 +27,14 @@ export function TopBar() {
               type="button"
               onClick={() => setMobileSearch(false)}
               className="grid h-10 w-10 place-items-center rounded-full text-card/80 hover:bg-white/10"
-              aria-label="Suche schließen"
+              aria-label={t.topBar.closeSearch}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         ) : (
           <h1 className="min-w-0 flex-1 truncate font-display text-[1.6rem] leading-none">
-            <span className="mr-2 text-[1.05rem] italic text-gilt-soft/60">Stammbaum</span>
+            <span className="mr-2 text-[1.05rem] italic text-gilt-soft/60">{t.app.title}</span>
             <span className="gilt-text">{familyName}</span>
           </h1>
         )}
@@ -46,7 +49,7 @@ export function TopBar() {
             type="button"
             onClick={() => setMobileSearch(true)}
             className="grid h-10 w-10 place-items-center rounded-full text-card/85 hover:bg-white/10 md:hidden"
-            aria-label="Person suchen"
+            aria-label={t.topBar.searchPerson}
           >
             <Search className="h-5 w-5" />
           </button>
@@ -59,14 +62,15 @@ export function TopBar() {
 
 function ThemeButton() {
   const { theme, toggle } = useTheme()
+  const { t } = useI18n()
   const night = theme === 'night'
   return (
     <button
       type="button"
       onClick={toggle}
       aria-pressed={night}
-      aria-label={night ? 'Tageslicht' : 'Kerzenlicht'}
-      title={night ? 'Tageslicht' : 'Kerzenlicht'}
+      aria-label={night ? t.topBar.daylight : t.topBar.candlelight}
+      title={night ? t.topBar.daylight : t.topBar.candlelight}
       className="grid h-10 w-10 place-items-center rounded-full text-gilt-soft/85 hover:bg-white/10"
     >
       {night ? <Sun className="h-5 w-5" /> : <Flame className="h-5 w-5" />}
@@ -77,6 +81,7 @@ function ThemeButton() {
 function AppMenu() {
   const { tree, familyName } = useFamily()
   const { setExportOpen, setTourOpen, showBirthdays, select } = useView()
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -98,7 +103,7 @@ function AppMenu() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `stammbaum-${familyName.toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-')}-${new Date()
+    a.download = `${t.topBar.backupFile}-${familyName.toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-')}-${new Date()
       .toISOString()
       .slice(0, 10)}.json`
     a.click()
@@ -118,7 +123,7 @@ function AppMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Menü"
+        aria-label={t.topBar.menu}
         data-tour="menu"
         className="grid h-10 w-10 place-items-center rounded-full text-card/85 hover:bg-white/10"
       >
@@ -137,7 +142,7 @@ function AppMenu() {
               showBirthdays(true)
             }}
           >
-            Nächste Geburtstage
+            {t.topBar.birthdays}
           </MenuItem>
           <MenuItem
             icon={<Printer className="h-4 w-4" />}
@@ -146,7 +151,7 @@ function AppMenu() {
               setExportOpen(true)
             }}
           >
-            Als PDF exportieren
+            {t.topBar.exportPdf}
           </MenuItem>
           <MenuItem
             icon={<BookOpen className="h-4 w-4" />}
@@ -155,14 +160,17 @@ function AppMenu() {
               setTourOpen(true)
             }}
           >
-            Einführung starten
+            {t.topBar.startTour}
           </MenuItem>
           <MenuItem icon={<Download className="h-4 w-4" />} onClick={downloadBackup}>
-            Sicherung herunterladen
+            {t.topBar.downloadBackup}
           </MenuItem>
           <MenuItem icon={<LogOut className="h-4 w-4" />} onClick={logout}>
-            Abmelden
+            {t.topBar.logout}
           </MenuItem>
+          <div className="mt-1 border-t border-card-rule px-3 pb-1.5 pt-2.5">
+            <LanguagePicker className="w-full justify-between" />
+          </div>
         </div>
       )}
     </div>

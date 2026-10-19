@@ -3,6 +3,7 @@ import { getFamilyIdFromReq } from '@/lib/session'
 import { loadFamilyTree, saveFamilyTree, snapshotBeforeSave } from '@/lib/db'
 import { logError } from '@/lib/log'
 import { starterTree } from '@/family/edit'
+import { localeFromRequest } from '@/i18n/server'
 import { validateStoredTree } from '@/storage/validate'
 import { TREE_VERSION_HEADER as VERSION_HEADER } from '@/storage/version'
 
@@ -21,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json(loaded.tree)
       }
       // New family: start with a small starter tree
-      const starter = starterTree()
+      const starter = starterTree(localeFromRequest(req))
       const saved = await saveFamilyTree(fid, starter, null)
       if (saved.status === 'conflict') return res.status(409).json({ error: 'conflict' })
       res.setHeader(VERSION_HEADER, saved.version)
