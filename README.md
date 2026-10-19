@@ -15,6 +15,7 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 - **Personen hinzufügen** direkt aus dem Infoblatt: Kind, Ehepartner, Elternteil.
 - **Fotos und Dokumente** pro Person; Fotos werden vor dem Hochladen verkleinert.
 - **Tageslicht und Kerzenlicht** (heller und dunkler Modus).
+- **Deutsch und Englisch:** Ohne eigene Wahl gilt die Sprache des Browsers (Deutsch, sonst Englisch); umschalten im Menü oder auf der Anmeldeseite. Texte stehen zweisprachig im Code (`t('Speichern', 'Save')`, `src/i18n/lang.tsx`), Verwandtschaftsbezeichnungen werden sprachunabhängig berechnet und dann benannt („Urgroßvater“ / „great-grandfather“).
 - **Nächste Geburtstage** im Menü: alle Lebenden mit vollständigem Geburtsdatum nach Monaten, mit Alter und – nach „Das bin ich“ – der Verwandtschaft; ein Tipp springt zur Person.
 - **Geburtstage als Kalender-Abo** (Kalender-Knopf bei „Nächste Geburtstage“ und am Ende der Einführung): für iPhone/Mac, Google Kalender oder als Link für Outlook u. a. Ganztägige Termine „🎂 Name (Alter)“ mit Erinnerung um 9 Uhr; neue Einträge kommen von selbst dazu. Wahlweise die ganze Familie oder nur die eigene Linie – Person und Umfang stehen im Link:
 
