@@ -1,5 +1,5 @@
 // src/components/app/TopBar.tsx
-// Kopfzeile wie ein Bucheinband: dunkles Leinen, Titel in Blattgold.
+// Header styled like a book cover: dark linen, title in gold leaf.
 
 import { useEffect, useRef, useState } from 'react'
 import { BookOpen, Cake, Download, Flame, LogOut, Menu, Printer, Search, Sun, X } from 'lucide-react'

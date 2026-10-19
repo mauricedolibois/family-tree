@@ -1,11 +1,10 @@
 // src/family/layout/graph.ts
 //
-// Übersetzt den Stammbaum in einen Graphen für das Layout-Programm ELK.
+// Turns the family tree into a graph for the ELK layout engine.
 //
-// Idee: Jedes Paar (oder jede Einzelperson) ist ein Kasten. Von seiner
-// Unterkante führen Linien zu den Kindern, die oben an ihrer eigenen Karte
-// andocken. ELK verteilt die Kästen dann so auf Generationen-Zeilen, dass sich
-// möglichst wenige Linien kreuzen.
+// Each couple (or single person) is one box. Lines run from the bottom of the
+// box to the children, docking at the top of each child's own card. ELK then
+// spreads the boxes over generation rows with as few crossings as possible.
 
 import { buildIndex, parentsOf, type Tree } from '../model'
 import { genealogicalOrder } from './order'
@@ -13,7 +12,7 @@ import { CARD } from './types'
 
 export type Unit = {
   id: string
-  /** 1 oder 2 Personen, von links nach rechts */
+  /** 1 or 2 people, left to right */
   members: string[]
 }
 
@@ -45,7 +44,7 @@ const LAYOUT_OPTIONS: Record<string, string> = {
   'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
   'elk.layered.thoroughness': '40',
   'elk.layered.mergeEdges': 'true',
-  // Die übergebene Reihenfolge (order.ts) als Vorliebe nehmen
+  // Use the given order (order.ts) as a preference
   'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
   'elk.layered.spacing.nodeNodeBetweenLayers': '84',
   'elk.spacing.nodeNode': '36',
@@ -57,13 +56,13 @@ const LAYOUT_OPTIONS: Record<string, string> = {
 const birthKey = (tree: Tree, id: string) => tree.members[id]?.profile?.birthDate ?? '9999'
 
 export type GraphOptions = {
-  /** Paare, bei denen die Seiten getauscht werden (Standard: Mann links, Frau rechts) */
+  /** Couples whose sides are swapped (default: man left, woman right) */
   flipped?: Set<string>
-  /** Zusätzliche ELK-Einstellungen */
+  /** Extra ELK options */
   elk?: Record<string, string>
-  /** Person, um die herum der Baum geordnet wird (sonst automatisch) */
+  /** Person the tree is arranged around (automatic otherwise) */
   focusId?: string | null
-  /** Feste Reihenfolge der Kästen; ohne Angabe die Stammbaum-Reihenfolge */
+  /** Fixed box order; defaults to the family-tree order */
   order?: string[]
 }
 
@@ -73,8 +72,8 @@ export function buildLayoutGraph(tree: Tree, opts: GraphOptions = {}): LayoutGra
   const units = new Map<string, Unit>()
   const unitOf = new Map<string, string>()
 
-  // Personen nach Geburtsjahr sortiert: ELK nutzt die Reihenfolge als Vorliebe,
-  // dadurch stehen Geschwister möglichst nach Alter.
+  // People sorted by year of birth. ELK treats the order as a preference, so
+  // siblings end up in age order where possible.
   const people = Object.keys(tree.members).sort(
     (a, b) => birthKey(tree, a).localeCompare(birthKey(tree, b)) || a.localeCompare(b),
   )
@@ -95,7 +94,7 @@ export function buildLayoutGraph(tree: Tree, opts: GraphOptions = {}): LayoutGra
     for (const m of members) unitOf.set(m, unitId)
   }
 
-  // Kästen in Stammbaum-Reihenfolge an ELK geben (siehe order.ts)
+  // Hand boxes to ELK in family-tree order (see order.ts)
   const known = opts.order?.filter((id) => units.has(id)) ?? []
   const order = known.length === units.size ? known : genealogicalOrder(ix, units, unitOf, opts.focusId ?? null)
   const children: ElkNode[] = []
@@ -106,7 +105,7 @@ export function buildLayoutGraph(tree: Tree, opts: GraphOptions = {}): LayoutGra
       const cx = k * (CARD.w + CARD.coupleGap) + CARD.w / 2
       ports.push({ id: `${u.id}|in|${pid}`, x: cx, y: 0, layoutOptions: { 'elk.port.side': 'NORTH' } })
       if (u.members.length === 2) {
-        // Kinder nur dieses Elternteils docken unter der eigenen Karte an
+        // Children of only this parent dock below that parent's own card
         ports.push({ id: `${u.id}|out|${pid}`, x: cx, y: CARD.h, layoutOptions: { 'elk.port.side': 'SOUTH' } })
       }
     })
@@ -122,7 +121,7 @@ export function buildLayoutGraph(tree: Tree, opts: GraphOptions = {}): LayoutGra
   for (const child of byOrder) {
     const parents = parentsOf(ix, child)
     if (parents.length === 0) continue
-    // Nach Eltern-Kasten gruppieren: Eltern im selben Paar → eine Linie aus der Mitte
+    // Group by parent box: both parents in one couple → a single line from the middle
     const byUnit = new Map<string, string[]>()
     for (const p of parents) {
       const u = unitOf.get(p)!

@@ -1,5 +1,5 @@
 // src/components/app/Toast.tsx
-// Kurze Rückmeldung nach einer Aktion, optional mit einer Folgeaktion.
+// Short feedback after an action, optionally with a follow-up action.
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 

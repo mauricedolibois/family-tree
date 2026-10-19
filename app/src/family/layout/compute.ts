@@ -1,7 +1,7 @@
 // src/family/layout/compute.ts
 //
-// Berechnet die Positionen aller Karten und Linien. ELK selbst wird von
-// außen hereingereicht (im Browser in einem Web Worker, in Tests direkt).
+// Computes the positions of all cards and lines. ELK itself is passed in from
+// outside (a web worker in the browser, called directly in tests).
 
 import { buildIndex, type Tree, type TreeIndex } from '../model'
 import { buildLayoutGraph, type ElkGraph, type LayoutGraph } from './graph'
@@ -25,8 +25,8 @@ function centerOfUnit(res: ElkResult, unitId: string): number | null {
 }
 
 /**
- * Paare, bei denen Mann und Frau die Seiten tauschen sollten, weil die Eltern
- * der rechten Person weiter links stehen (oder umgekehrt). Spart Kreuzungen.
+ * Couples whose partners should swap sides because the right partner's parents
+ * sit further left (or the other way round). Saves crossings.
  */
 function couplesToFlip(lg: LayoutGraph, res: ElkResult, tree: Tree, already: Set<string>): Set<string> {
   const out = new Set(already)
@@ -53,9 +53,9 @@ function couplesToFlip(lg: LayoutGraph, res: ElkResult, tree: Tree, already: Set
 }
 
 /**
- * Geschwister ohne Partner und Kinder sind austauschbar: Sie hängen an
- * derselben Linie und haben sonst keine Verbindungen. Ihre Plätze werden
- * nach Geburtsdatum vergeben, ohne neue Kreuzungen zu erzeugen.
+ * Siblings without a spouse or children are interchangeable: they hang off the
+ * same line and have no other connections. Their slots are assigned by date of
+ * birth without introducing new crossings.
  */
 function sortLooseSiblings(tree: Tree, layout: TreeLayout) {
   const loose = (id: string) => {
@@ -142,7 +142,7 @@ function toLayout(lg: LayoutGraph, res: ElkResult, tree: Tree): TreeLayout {
   return layout
 }
 
-/** Kästen je Generationszeile, von links nach rechts */
+/** Boxes per generation row, left to right */
 function rowsOf(res: ElkResult): string[][] {
   const rows = new Map<number, Array<{ id: string; x: number }>>()
   for (const n of res.children ?? []) {
@@ -153,10 +153,10 @@ function rowsOf(res: ElkResult): string[][] {
 }
 
 /**
- * Geschwister nach Alter ordnen, samt ihren Familien darunter. Geht nur, wo die
- * Familien abgeschlossen sind (niemand darin hat Eltern außerhalb) und in jeder
- * Zeile nebeneinander stehen – dann entstehen durch das Umstellen keine Kreuzungen.
- * Ändert `rows` direkt; liefert true, wenn sich etwas geändert hat.
+ * Order siblings by age, together with their families below. Only possible where
+ * the families are self-contained (nobody in them has parents outside) and sit
+ * next to each other in every row, so reordering cannot add crossings.
+ * Mutates `rows`; returns true if anything changed.
  */
 function sortSiblingFamilies(ix: TreeIndex, lg: LayoutGraph, rows: string[][]): boolean {
   const born = (id: string) => ix.byId.get(id)?.profile?.birthDate ?? '9999'
@@ -175,7 +175,7 @@ function sortSiblingFamilies(ix: TreeIndex, lg: LayoutGraph, rows: string[][]): 
     const kids = childUnits(parent)
     if (kids.length < 2) continue
 
-    // Jede Familie: Kind-Kasten und alle Kästen darunter
+    // Each family: the child's box and every box below it
     const owner = new Map<string, number>()
     let closed = true
     kids.forEach((k, i) => {
@@ -199,7 +199,7 @@ function sortSiblingFamilies(ix: TreeIndex, lg: LayoutGraph, rows: string[][]): 
     }
     if (!closed) continue
 
-    // In jeder Zeile müssen die Familien einen zusammenhängenden Abschnitt bilden
+    // In every row the families must form one contiguous block
     const spans: Array<[number, number, number]> = []
     let together = true
     rows.forEach((row, r) => {
@@ -221,13 +221,13 @@ function sortSiblingFamilies(ix: TreeIndex, lg: LayoutGraph, rows: string[][]): 
   return changed
 }
 
-/** Reihenfolge innerhalb der Zeilen genau so übernehmen, wie sie hereinkommt */
+/** Keep the in-row order exactly as given */
 const KEEP_ORDER = { 'elk.layered.crossingMinimization.forceNodeModelOrder': 'true' }
 
 /**
- * Für Ausschnitte um eine Person (Linie, Beziehung): Eltern mittig über den
- * Kindern, die Person mittig unter ihren Vorfahren – wie in einer Ahnentafel.
- * Für die ganze Familie bleibt die kompaktere Standard-Anordnung.
+ * For views around one person (line, relation): parents centred above their
+ * children and the person centred below their ancestors, like a pedigree chart.
+ * The whole-family view keeps the more compact default placement.
  */
 const CENTERED = {
   'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
@@ -235,7 +235,7 @@ const CENTERED = {
 }
 
 /**
- * @param focusId Person, um die herum der Baum geordnet wird (z. B. bei „Linie von …“)
+ * @param focusId person the tree is arranged around (e.g. for "line of …")
  */
 export async function computeTreeLayout(
   tree: Tree,
@@ -246,11 +246,11 @@ export async function computeTreeLayout(
 
   const placement = focusId ? CENTERED : {}
 
-  // 1. Grundlayout: ELK ordnet nach Stammbaum-Reihenfolge und vermeidet Kreuzungen
+  // 1. Base layout: ELK follows the family-tree order and avoids crossings
   let lg = buildLayoutGraph(tree, { focusId, elk: placement })
   let res = await runElk(lg.graph)
 
-  // 2. Paare umdrehen, deren Eltern auf der anderen Seite stehen
+  // 2. Flip couples whose parents sit on the other side
   const flips = couplesToFlip(lg, res, tree, new Set())
   if (flips.size) {
     lg = buildLayoutGraph(tree, { flipped: flips, focusId, elk: placement })
@@ -258,7 +258,7 @@ export async function computeTreeLayout(
   }
   const layout = toLayout(lg, res, tree)
 
-  // 3. Geschwister samt Familien nach Alter, wenn das keine neuen Kreuzungen bringt
+  // 3. Siblings and their families by age, unless that adds crossings
   const rows = rowsOf(res)
   if (!sortSiblingFamilies(buildIndex(tree), lg, rows)) return layout
   const sortedGraph = buildLayoutGraph(tree, {
@@ -270,7 +270,7 @@ export async function computeTreeLayout(
   return countCrossings(sorted) <= countCrossings(layout) ? sorted : layout
 }
 
-/** Anzahl echter Kreuzungen zwischen Verbindungslinien (für Tests) */
+/** Number of real crossings between connector lines (used by tests) */
 export function countCrossings(layout: TreeLayout): number {
   type Seg = { owner: string; a: Point; b: Point }
   const segs: Seg[] = []

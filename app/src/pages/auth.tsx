@@ -9,7 +9,7 @@ import { Flourish } from '@/components/ui/Flourish'
 
 type Props = { canRegister: boolean }
 
-// Wer schon angemeldet ist, landet direkt im Stammbaum
+// Signed-in users go straight to their tree
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) =>
   getFamilyIdFromReq(req)
     ? { redirect: { destination: '/', permanent: false } }

@@ -1,17 +1,17 @@
 // src/components/intro/steps.ts
 //
-// Die Schritte der Einführung. Jeder Schritt zeigt auf etwas in der App und
-// erklärt es. Wo man etwas tun kann, geht es von selbst weiter, sobald es
-// getan ist – oder man überspringt den Schritt.
+// Steps of the guided tour. Each step points at something in the app and explains
+// it. Where there is something to do, the tour moves on by itself once it is done,
+// or the step can be skipped.
 
 import type { RelationPick } from '@/components/app/ViewProvider'
 
 export type StepMode =
-  /** Karte in der Mitte, Baum gesperrt */
+  /** Card in the middle, tree blocked */
   | 'modal'
-  /** ein Bereich leuchtet und ist bedienbar, der Rest ist gesperrt */
+  /** one area glows and is interactive, the rest is blocked */
   | 'spot'
-  /** nichts gesperrt, man darf sich frei umsehen */
+  /** nothing blocked, free to look around */
   | 'free'
 
 export type Step = {
@@ -19,24 +19,24 @@ export type Step = {
   mode: StepMode
   title: string
   text: string
-  /** Bereich, der hervorgehoben und bedienbar ist */
+  /** Area that is highlighted and interactive */
   target?: string
-  /** Zusätzliche Bereiche, die mit dazugehören (z. B. eine aufklappende Trefferliste) */
+  /** Extra areas that belong to it (e.g. a results list that pops open) */
   also?: string[]
-  /** Kleiner Goldring um das, worauf es ankommt */
+  /** Small gold ring around what matters */
   ring?: string
-  /** Bereich bzw. Ring im Infoblatt in Sicht scrollen */
+  /** Scroll the area or ring in the info sheet into view */
   scrollTo?: string
-  /** Beim Betreten ausführen */
+  /** Run on entering the step */
   enter?: () => void
-  /** Ist die Aufgabe erledigt? Dann geht es zu `doneTo` */
+  /** Is the task done? Then continue with `doneTo` */
   doneWhen?: () => boolean
   doneTo?: string
-  /** Kalender-Abo der Geburtstage anbieten (für die Linie dieser Person, sonst die ganze Familie) */
+  /** Offer the birthday calendar (for this person's line, otherwise the whole family) */
   calendar?: { personId: string | null }
-  /** Knopf „Weiter“ (für reine Erklärungen) */
+  /** "Next" button (for plain explanations) */
   nextLabel?: string
-  /** Beim Überspringen: aufräumen (z. B. Formular schließen) und wohin */
+  /** On skip: clean up (e.g. close a form) and where to go */
   onSkip?: () => void
   skipTo?: string
 }
@@ -52,7 +52,7 @@ const exists = (sel: string) => () => !!document.querySelector(sel)
 const gone = (sel: string) => () => !document.querySelector(sel)
 const click = (sel: string) => () => (document.querySelector(sel) as HTMLElement | null)?.click()
 
-/** Rundgang anhand der eigenen Person */
+/** Tour based on the visitor's own entry */
 export function personalSteps(me: string, given: string, a: TourActions): Step[] {
   return [
     {
@@ -165,7 +165,7 @@ export function personalSteps(me: string, given: string, a: TourActions): Step[]
   ]
 }
 
-/** Rundgang für alle, die (noch) nicht im Baum stehen */
+/** Tour for visitors who are not in the tree (yet) */
 export function guestSteps(a: TourActions): Step[] {
   return [
     {
@@ -220,7 +220,7 @@ function menuStep(a: TourActions): Step {
   }
 }
 
-/** Zum Schluss: Geburtstage in den eigenen Kalender – Linie und Umfang stehen im Link */
+/** Finally: birthdays into your own calendar; line and scope are part of the link */
 function calendarStep(me: string | null): Step {
   return {
     id: 'calendar',

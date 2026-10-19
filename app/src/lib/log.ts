@@ -1,8 +1,8 @@
 // src/lib/log.ts
-// Fehler gehen in die Server-Logs (`docker logs family-tree-app`).
-// Bewusst ohne Request-Bodys, Namen oder IPs.
+// Errors go to the server log (`docker logs family-tree-app`).
+// Deliberately without request bodies, names or IP addresses.
 
-/** Felder, die Supabase-, Postgres- und Node-Fehler zusätzlich zur Meldung mitbringen */
+/** Fields that Supabase, Postgres and Node errors carry besides the message */
 const DETAIL_FIELDS = ['code', 'status', 'details', 'hint'] as const
 
 export function describeError(err: unknown): string {
@@ -19,7 +19,7 @@ export function describeError(err: unknown): string {
       const json = JSON.stringify(err)
       if (json && json !== '{}') return name + json
     } catch {
-      // zirkuläre Objekte: unten weiter
+      // circular objects: fall through
     }
     return name + (Object.prototype.toString.call(err) === '[object Object]' ? 'unbekannter Fehler' : String(err))
   }

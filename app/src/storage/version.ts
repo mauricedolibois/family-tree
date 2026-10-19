@@ -1,4 +1,4 @@
-// Header, über den Server und Client die Version des gespeicherten Baums austauschen.
-// Beim Speichern schickt der Client die Version mit, die er geladen hat. Passt sie
-// nicht mehr, wurde der Baum inzwischen woanders geändert (Antwort 409).
+// Header used by server and client to exchange the version of the stored tree.
+// On save the client sends the version it loaded. If it no longer matches, the
+// tree was changed elsewhere in the meantime (response 409).
 export const TREE_VERSION_HEADER = 'x-tree-version'

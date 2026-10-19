@@ -14,8 +14,8 @@ const person = (url: string | null): Person => ({
   profile: { titleImageUrl: url, media: [] },
 })
 
-describe('Fehlende Bilder', () => {
-  it('Portrait zeigt die Initialen, wenn die Datei fehlt', () => {
+describe('missing images', () => {
+  it('Portrait shows initials when the file is missing', () => {
     const { container } = render(<Portrait person={person('https://example.org/weg.jpg')} />)
     const img = container.querySelector('img')!
     expect(img).toBeInTheDocument()
@@ -24,7 +24,7 @@ describe('Fehlende Bilder', () => {
     expect(container).toHaveTextContent('EB')
   })
 
-  it('Foto in der Sammlung zeigt „Bild fehlt“', () => {
+  it('a photo in the collection shows "Bild fehlt"', () => {
     const { container } = render(<MediaImage src="https://example.org/weg.jpg" alt="Hochzeit" />)
     fireEvent.error(container.querySelector('img')!)
     expect(screen.getByText('Bild fehlt')).toBeInTheDocument()

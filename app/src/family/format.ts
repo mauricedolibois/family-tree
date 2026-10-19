@@ -1,9 +1,9 @@
 // src/family/format.ts
-// Namen und Daten so aufbereiten, wie man sie im Stammbaum lesen möchte.
+// Names and dates prepared the way people expect to read them in a family tree.
 
 import type { LineScope, Person } from './model'
 
-/** „Karl Friedrich Mustermann“ → Vornamen „Karl Friedrich“, Nachname „Mustermann“ */
+/** "Karl Friedrich Mustermann" → given names "Karl Friedrich", surname "Mustermann" */
 export function splitName(name: string): { given: string; surname: string } {
   const parts = name.trim().split(/\s+/)
   if (parts.length < 2) return { given: parts[0] ?? '', surname: '' }
@@ -17,10 +17,10 @@ export function initials(name: string): string {
 
 const yearOf = (iso?: string | null) => (iso && /^\d{4}/.test(iso) ? iso.slice(0, 4) : null)
 
-/** Verstorben – mit Sterbedatum oder als „verstorben, Datum unbekannt“ eingetragen */
+/** Deceased, either with a date of death or flagged as "deceased, date unknown" */
 export const isDeceased = (p: Person) => !!p.profile?.deathDate || p.profile?.deceased === true
 
-/** „1919–1989“, „* 1944“, „† 1944“, ohne bekanntes Sterbejahr „1888–†“ bzw. „†“, oder leer */
+/** "1919–1989", "* 1944", "† 1944"; without a known year of death "1888–†" or "†"; or empty */
 export function lifeYears(p: Person): string {
   const b = yearOf(p.profile?.birthDate)
   const d = yearOf(p.profile?.deathDate)
@@ -54,7 +54,7 @@ function partsOf(iso?: string | null): DateParts | null {
   return { year: +m[1], month: m[2] ? +m[2] : undefined, day: m[3] ? +m[3] : undefined }
 }
 
-/** Gespeichertes Datum zum Lesen: „25.12.1944“, „Mai 1778“ oder „1778“ */
+/** Stored date for display: "25.12.1944", "Mai 1778" or "1778" */
 export function formatDate(iso?: string | null): string {
   const d = partsOf(iso)
   if (!d) return iso ?? ''
@@ -63,7 +63,7 @@ export function formatDate(iso?: string | null): string {
   return String(d.year)
 }
 
-/** Gespeichertes Datum zum Bearbeiten: „25.12.1944“, „05.1778“ oder „1778“ */
+/** Stored date for the edit field: "25.12.1944", "05.1778" or "1778" */
 export function toDateInput(iso?: string | null): string {
   const d = partsOf(iso)
   if (!d) return iso ?? ''
@@ -73,8 +73,8 @@ export function toDateInput(iso?: string | null): string {
 }
 
 /**
- * Eingabe „25.12.1944“, „5.3.1910“, „12.1944“, „1944“ oder „1944-12-25“ → gespeichertes Format.
- * Leer → null. Ungültig → undefined.
+ * Input "25.12.1944", "5.3.1910", "12.1944", "1944" or "1944-12-25" → stored format.
+ * Empty → null. Invalid → undefined.
  */
 export function parseDateInput(text: string): string | null | undefined {
   const t = text.trim()
@@ -101,12 +101,12 @@ function validParts(year: number, month?: number, day?: number): string | undefi
   return `${year}-${mm}-${String(day).padStart(2, '0')}`
 }
 
-/** Alter in Jahren (bis heute oder bis zum Tod); ungefähr, wenn nur Jahre bekannt sind */
+/** Age in years (until today or until death); approximate when only years are known */
 export function ageOf(p: Person, now = new Date()): { years: number; approx: boolean } | null {
   const b = partsOf(p.profile?.birthDate)
   if (!b) return null
   const deathRaw = p.profile?.deathDate
-  if (!deathRaw && isDeceased(p)) return null // Sterbedatum unbekannt
+  if (!deathRaw && isDeceased(p)) return null // date of death unknown
   const d: DateParts | null = deathRaw
     ? partsOf(deathRaw)
     : { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }
@@ -117,7 +117,7 @@ export function ageOf(p: Person, now = new Date()): { years: number; approx: boo
   return years >= 0 && years < 130 ? { years, approx: !exact } : null
 }
 
-/** Für die Suche: Groß/Klein und Akzente egal */
+/** For search: ignore case and accents */
 export function normalizeForSearch(s: string): string {
   return s
     .toLowerCase()
@@ -126,7 +126,7 @@ export function normalizeForSearch(s: string): string {
     .replace(/ß/g, 'ss')
 }
 
-/** „keine“, „1 Generation“, „3 Generationen“ */
+/** "keine", "1 Generation", "3 Generationen" */
 export function generations(n: number): string {
   if (n <= 0) return 'keine'
   return n === 1 ? '1 Generation' : `${n} Generationen`
@@ -139,7 +139,7 @@ const SIDE_TEXT: Record<LineScope['side'], string> = {
   3: 'mit allen Blutsverwandten',
 }
 
-/** Umfang einer Linie in Worten: „Vorfahren: alle 9 Generationen, Nachkommen: keine, ohne Seitenlinien“ */
+/** Line scope in words: "Vorfahren: alle 9 Generationen, Nachkommen: keine, ohne Seitenlinien" */
 export function describeLineScope(scope: LineScope, depth: { up: number; down: number }): string {
   const part = (v: number | null, max: number) =>
     max === 0 ? 'keine' : v === null || v >= max ? `alle ${generations(max)}` : generations(v)

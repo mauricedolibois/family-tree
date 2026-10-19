@@ -1,5 +1,5 @@
-// Lebenszeichen für den Docker-Healthcheck. Prüft bewusst nur, ob der Server antwortet:
-// Ist die Datenbank weg, hilft ein Neustart der App nicht.
+// Liveness probe for the Docker health check. Only checks that the server
+// responds; restarting the app would not help if the database is down.
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 

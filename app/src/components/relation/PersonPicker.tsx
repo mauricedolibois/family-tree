@@ -1,5 +1,5 @@
 // src/components/relation/PersonPicker.tsx
-// Eine Person für die Beziehungsansicht: als kleine Karte oder, beim Ändern, als Suchfeld.
+// One person in the relation view: a small card, or a search field while changing it.
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
@@ -10,7 +10,7 @@ import { searchPeople } from '@/family/search'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { Portrait } from '@/components/ui/Portrait'
 
-/** Gewählte Person als kompakte Karte, leer als gestrichelte Fläche */
+/** Selected person as a compact card; empty as a dashed placeholder */
 export function PersonChip({
   person,
   label,
@@ -18,10 +18,10 @@ export function PersonChip({
   tour,
 }: {
   person: Person | null
-  /** Für Screenreader: „Erste Person“, „Zweite Person“ */
+  /** For screen readers: "Erste Person", "Zweite Person" */
   label: string
   onClick: () => void
-  /** Markierung für die Einführung */
+  /** Anchor for the guided tour */
   tour?: string
 }) {
   if (!person) {
@@ -59,7 +59,7 @@ export function PersonChip({
   )
 }
 
-/** Suchfeld mit Trefferliste; Escape oder ✕ bricht ab */
+/** Search field with results; Escape or ✕ cancels */
 export function PersonSearchField({
   label,
   exclude,

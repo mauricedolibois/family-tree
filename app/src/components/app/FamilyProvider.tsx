@@ -1,8 +1,8 @@
 // src/components/app/FamilyProvider.tsx
 //
-// Lädt den Stammbaum, hält ihn im Speicher und speichert Änderungen.
-// Gespeichert wird immer mit der geladenen Version: Wurde der Baum
-// inzwischen woanders geändert, gibt es einen Hinweis statt stillem Überschreiben.
+// Loads the tree, keeps it in memory and saves changes.
+// Saves always carry the loaded version: if the tree was changed elsewhere in
+// the meantime, the user gets a notice instead of a silent overwrite.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { buildIndex, type Tree, type TreeIndex } from '@/family/model'
@@ -20,7 +20,7 @@ type FamilyCtx = {
   tree: Tree
   index: TreeIndex
   familyName: string
-  /** Speichert genau diesen Stand und zeigt ihn danach an */
+  /** Saves exactly this version and then displays it */
   commit: (next: Tree) => Promise<void>
   saving: boolean
 }

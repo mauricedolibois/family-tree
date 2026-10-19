@@ -1,5 +1,5 @@
 // src/storage/changes.ts
-// Was hat sich zwischen zwei Ständen geändert? Kurz in Worten, für die Notiz einer Sicherung.
+// What changed between two versions? A short summary used as the note of a backup.
 
 import type { StoredMemberV3, StoredTree } from './schema'
 
@@ -10,12 +10,12 @@ function names(list: string[]): string {
   return `${list.slice(0, MAX_NAMES).join(', ')} und ${list.length - MAX_NAMES} weitere`
 }
 
-/** Angaben einer Person ohne die Verweise auf andere */
+/** A person's own data without links to other people */
 const core = (m: StoredMemberV3) => JSON.stringify({ name: m.name, gender: m.gender, profile: m.profile ?? null })
 
 /**
- * z. B. „hinzugefügt: Lena Hornberger; bearbeitet: Karl Niehren“.
- * null, wenn beide Stände gleich sind.
+ * e.g. "hinzugefügt: Lena Hornberger; bearbeitet: Karl Niehren".
+ * null if both versions are equal.
  */
 export function describeChange(before: StoredTree, after: StoredTree): string | null {
   const b = before.members ?? {}
@@ -30,7 +30,7 @@ export function describeChange(before: StoredTree, after: StoredTree): string | 
   if (added.length) parts.push(`hinzugefügt: ${names(added.map((id) => a[id].name))}`)
   if (removed.length) parts.push(`entfernt: ${names(removed.map((id) => b[id].name))}`)
   if (edited.length) parts.push(`bearbeitet: ${names(edited.map((id) => a[id].name))}`)
-  // Neue oder entfernte Personen ändern immer auch die Verweise ihrer Verwandten – das ist keine eigene Nachricht wert
+  // Adding or removing someone always touches their relatives' links; not worth a separate entry
   if (relinked.length && !added.length && !removed.length) {
     parts.push(`Verbindungen geändert: ${names(relinked.map((id) => a[id].name))}`)
   }

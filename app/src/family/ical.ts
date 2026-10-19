@@ -1,26 +1,26 @@
 // src/family/ical.ts
 //
-// Die Geburtstage als Kalender-Abo (iCalendar, RFC 5545). Jede Feier ist ein
-// ganztägiger Termin mit Alter im Titel; damit das Alter stimmt, stehen die
-// nächsten zwei Male einzeln drin – das Abo rückt von selbst nach.
+// Birthdays as a calendar subscription (iCalendar, RFC 5545). Each birthday is an
+// all-day event with the age in its title. To keep the age right, the next two
+// occurrences are listed individually; the subscription refreshes itself.
 
 import { upcomingBirthdays } from './birthdays'
 import type { Tree } from './model'
 
 const CRLF = '\r\n'
 
-/** Text in iCalendar-Werten maskieren */
+/** Escape text in iCalendar values */
 function escapeText(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/;/g, ';').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
 }
 
-/** Bytes eines Zeichens in UTF-8 */
+/** UTF-8 byte length of a character */
 function utf8Length(ch: string): number {
   const cp = ch.codePointAt(0) ?? 0
   return cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4
 }
 
-/** Zeilen nach 75 Bytes umbrechen (Folgezeilen beginnen mit Leerzeichen), ohne Zeichen zu zerteilen */
+/** Fold lines after 75 bytes (continuation lines start with a space) without splitting characters */
 function fold(line: string): string {
   const out: string[] = []
   let current = ''
@@ -59,7 +59,7 @@ export function birthdayCalendar(
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeText(calendarName)}`,
     'X-WR-TIMEZONE:Europe/Berlin',
-    // Bitte an die Kalender-Apps, regelmäßig nachzusehen
+    // Ask calendar apps to refresh regularly
     'REFRESH-INTERVAL;VALUE=DURATION:PT6H',
     'X-PUBLISHED-TTL:PT6H',
   ]
@@ -75,7 +75,7 @@ export function birthdayCalendar(
       `SUMMARY:${escapeText(`🎂 ${name} (${b.age})`)}`,
       `DESCRIPTION:${escapeText(`${name} wird ${b.age}.`)}`,
       'TRANSP:TRANSPARENT',
-      // Erinnerung am Morgen des Geburtstags um 9 Uhr
+      // Reminder at 9 a.m. on the birthday
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
       `DESCRIPTION:${escapeText(`${name} hat heute Geburtstag (${b.age})`)}`,

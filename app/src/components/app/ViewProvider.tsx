@@ -1,41 +1,40 @@
 // src/components/app/ViewProvider.tsx
 //
-// Was gerade angezeigt wird: ausgewählte Person, „Linie von …“- oder
-// Beziehungsansicht, wer „ich“ bin (für „Dein Urgroßvater“) und
-// Sprung-Anfragen an den Baum.
+// What is on screen: the selected person, the "line of …" or relation view,
+// who "me" is (for "Dein Urgroßvater") and jump requests to the tree.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { DEFAULT_LINE_SCOPE, type LineScope } from '@/family/model'
 import { useFamily } from './FamilyProvider'
 
-/** Beziehungsansicht: zwei Personen, eine davon darf noch fehlen */
+/** Relation view: two people, one of them may still be missing */
 export type RelationPick = { from: string | null; to: string | null }
 
 type ViewCtx = {
   selectedId: string | null
   select: (id: string | null) => void
-  /** Ansicht auf die Linie dieser Person beschränken (null = ganze Familie) */
+  /** Limit the view to this person's line (null = whole family) */
   lineId: string | null
   showLine: (id: string | null) => void
-  /** Wie weit die Linie reicht (Generationen, Seitenlinien) */
+  /** How far the line reaches (generations, collateral lines) */
   lineScope: LineScope
   setLineScope: (scope: LineScope) => void
-  /** Nur den Weg zwischen zwei Personen zeigen (null = aus) */
+  /** Show only the path between two people (null = off) */
   relation: RelationPick | null
   showRelation: (pick: RelationPick | null) => void
-  /** Die Person, aus deren Sicht Verwandtschaft beschrieben wird */
+  /** The person from whose point of view kinship is described */
   meId: string | null
   setMe: (id: string | null) => void
-  /** Reiter „Nächste Geburtstage“ offen */
+  /** "Upcoming birthdays" panel is open */
   birthdays: boolean
   showBirthdays: (open: boolean) => void
-  /** Einführung läuft */
+  /** Guided tour is running */
   tourOpen: boolean
   setTourOpen: (open: boolean) => void
-  /** PDF-Export geöffnet */
+  /** PDF export is open */
   exportOpen: boolean
   setExportOpen: (open: boolean) => void
-  /** Bitte an den Baum, zu einer Person zu springen */
+  /** Request for the tree to jump to a person */
   focusRequest: { id: string; nonce: number } | null
   focusOn: (id: string) => void
 }
@@ -63,23 +62,23 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const [exportOpen, setExportOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
 
-  // „Ich“ wird nur auf diesem Gerät gemerkt
+  // "Me" is remembered on this device only
   useEffect(() => {
     try {
       const stored = localStorage.getItem(meKey(familyName))
       if (stored) setMeId(stored)
     } catch {
-      /* privates Fenster o. Ä. – dann eben ohne */
+      /* private window or similar: carry on without it */
     }
   }, [familyName])
 
-  // Umfang der Linie ebenfalls nur auf diesem Gerät
+  // Line scope is per device as well
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(scopeKey) ?? 'null')
       if (stored && typeof stored === 'object' && [0, 1, 2, 3].includes(stored.side)) setLineScopeState(stored)
     } catch {
-      /* egal */
+      /* storage unavailable: ignore */
     }
   }, [])
 
@@ -88,7 +87,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(scopeKey, JSON.stringify(scope))
     } catch {
-      /* egal */
+      /* storage unavailable: ignore */
     }
   }, [])
 
@@ -99,13 +98,13 @@ export function ViewProvider({ children }: { children: ReactNode }) {
         if (id) localStorage.setItem(meKey(familyName), id)
         else localStorage.removeItem(meKey(familyName))
       } catch {
-        /* egal */
+        /* storage unavailable: ignore */
       }
     },
     [familyName],
   )
 
-  // Linie, Beziehung und Geburtstage schließen sich aus; showLine(null) heißt „ganze Familie“
+  // Line, relation and birthdays are mutually exclusive; showLine(null) means the whole family
   const showLine = useCallback((id: string | null) => {
     setLineId(id)
     setRelation(null)
@@ -131,7 +130,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
     setFocusRequest({ id, nonce: Date.now() })
   }, [])
 
-  // Gelöschte Personen nicht weiter auswählen
+  // Drop the selection when the person was deleted
   const valid = (id: string | null) => (id && index.byId.has(id) ? id : null)
 
   const value = useMemo<ViewCtx>(

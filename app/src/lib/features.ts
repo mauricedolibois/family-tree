@@ -1,8 +1,8 @@
 // src/lib/features.ts
-// Schalter über Umgebungsvariablen (prod.env), nur auf dem Server lesbar.
+// Feature switches from environment variables (prod.env); server side only.
 
 const OFF = new Set(['false', '0', 'no', 'off', 'nein'])
 
-/** Neue Familien dürfen sich selbst registrieren. ALLOW_REGISTRATION=false schaltet das ab. */
+/** New families may sign up on their own. ALLOW_REGISTRATION=false turns this off. */
 export const registrationOpen = (raw = process.env.ALLOW_REGISTRATION): boolean =>
   !OFF.has((raw ?? '').trim().toLowerCase())

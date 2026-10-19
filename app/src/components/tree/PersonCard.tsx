@@ -1,5 +1,5 @@
 // src/components/tree/PersonCard.tsx
-// Eine Person im Baum: Bild, Vornamen, Nachname, Herkunftsflagge und Lebensjahre.
+// One person in the tree: picture, given names, surname, country flag and life years.
 
 import clsx from 'clsx'
 import { memo } from 'react'

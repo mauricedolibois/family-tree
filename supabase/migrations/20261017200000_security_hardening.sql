@@ -1,6 +1,6 @@
--- Sicherheit: Die App greift nur serverseitig mit dem Service-Role-Key zu.
--- Öffentliche Rollen (anon, authenticated) brauchen keinerlei Rechte auf die Tabellen.
--- Nur vorhandene Tabellen (public.media gibt es nicht in jeder Datenbank).
+-- The app only accesses the database server side with the service role key, so the
+-- public roles (anon, authenticated) need no rights on the tables at all.
+-- Only touches tables that exist (public.media is not present in every database).
 do $$
 declare
   t text;
@@ -13,8 +13,8 @@ begin
 end
 $$;
 
--- Zähler für Login- und Registrierungsversuche (Bremse gegen Passwort-Raten).
--- Gespeichert werden nur gehashte Schlüssel, keine Namen oder IP-Adressen.
+-- Counter for sign-in and sign-up attempts (throttles password guessing).
+-- Stores hashed keys only, never names or IP addresses.
 create table if not exists public.auth_attempts (
   id bigint generated always as identity primary key,
   kind text not null check (kind in ('login', 'register')),

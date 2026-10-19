@@ -1,5 +1,5 @@
 // src/components/tree/TreeCanvas.tsx
-// Der Baum als zoombare, verschiebbare Fläche, darüber Ansichtswahl und Beziehungskarte.
+// The tree as a zoomable, pannable canvas with the view switcher and relation card on top.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
@@ -20,11 +20,11 @@ import { BirthdaysCard } from '@/components/birthdays/BirthdaysCard'
 const MIN_SCALE = 0.05
 const MAX_SCALE = 2.2
 const READING_SCALE = 0.9
-/** Kleine Bäume (z. B. ein kurzer Weg) nicht riesig aufblasen */
+/** Do not blow up small trees (e.g. a short path) */
 const MAX_FIT_SCALE = 1.1
-/** Kleiner wird eine Linie am Handy nicht eingepasst, sonst ist nichts mehr lesbar */
+/** Minimum fit scale for a line on phones; anything smaller is unreadable */
 const SMALLEST_OVERVIEW = 0.3
-/** Ab dieser Breite liegen Karten links neben dem Baum statt darüber */
+/** From this width on, cards sit left of the tree instead of above it */
 const WIDE = 768
 
 export function TreeCanvas() {
@@ -41,7 +41,7 @@ export function TreeCanvas() {
     if (!lineId) setScopeOpen(false)
   }, [lineId])
 
-  // Beziehung: sobald beide Personen feststehen, nur noch den Weg zwischen ihnen zeigen
+  // Relation: once both people are chosen, show only the path between them
   const relFrom = relation?.from ?? null
   const relTo = relation?.to ?? null
   const pair = relFrom && relTo ? { from: relFrom, to: relTo } : null
@@ -68,8 +68,8 @@ export function TreeCanvas() {
   const cardById = useMemo(() => new Map(layout?.cards.map((c) => [c.id, c]) ?? []), [layout])
 
   /**
-   * Platz, den die Bedienelemente oben links belegen: am Handy oben,
-   * am Desktop links, sobald dort eine Karte (Beziehung, Linie anpassen) offen ist.
+   * Space taken by the controls in the top left: at the top on phones, on the
+   * left on desktop whenever a card (relation, line scope) is open there.
    */
   const insets = useCallback(() => {
     const el = box.current
@@ -82,7 +82,7 @@ export function TreeCanvas() {
     return { top: 0, left: cardOpen ? o.right - b.left + 16 : 0 }
   }, [])
 
-  /** Maßstab, bei dem das ganze Layout in den freien Platz passt */
+  /** Scale at which the whole layout fits the free space */
   const fitScale = useCallback(
     (l: TreeLayout) => {
       const el = box.current
@@ -95,7 +95,7 @@ export function TreeCanvas() {
     [insets],
   )
 
-  /** Ganze Fläche ins Bild, ohne unter die Bedienelemente zu rutschen */
+  /** Fit everything without sliding under the controls */
   const fitAll = useCallback(
     (l: TreeLayout | null = layout, time = 300) => {
       const el = box.current
@@ -116,8 +116,8 @@ export function TreeCanvas() {
   )
 
   /**
-   * Eine Karte gut lesbar in die Mitte holen (auf dem Handy oberhalb des Infoblatts).
-   * Mit `overview`: in diesem Maßstab, die Person im unteren Drittel, Vorfahren darüber.
+   * Bring a card to the centre at a readable size (above the info sheet on phones).
+   * With `overview`: at that scale, the person in the lower third, ancestors above.
    */
   const centerOn = useCallback(
     (card: CardBox, time = 450, overview?: { scale: number }) => {
@@ -128,7 +128,7 @@ export function TreeCanvas() {
       const narrow = el.clientWidth < WIDE
       const { top, left } = insets()
       const targetX = narrow ? el.clientWidth / 2 : (left + el.clientWidth - 420) / 2
-      // Am Handy liegt das halb offene Infoblatt (46 % der Höhe) über dem Baum
+      // On phones the half-open info sheet (46 % of the height) covers the tree
       const sheet = narrow && !overview ? window.innerHeight * 0.46 : 0
       const targetY = overview
         ? top + (el.clientHeight - top) * 0.7
@@ -144,7 +144,7 @@ export function TreeCanvas() {
     [insets],
   )
 
-  // Erste Ansicht: eigene Person, sonst ganzer Baum
+  // Initial view: your own person, otherwise the whole tree
   useEffect(() => {
     if (!layout || didInitialView.current) return
     didInitialView.current = true
@@ -152,8 +152,8 @@ export function TreeCanvas() {
     requestAnimationFrame(() => (me ? centerOn(me, 0) : fitAll(layout, 0)))
   }, [layout, meId, cardById, centerOn, fitAll])
 
-  // Nach Wechsel der Ansicht (ganze Familie, Linie, Umfang, Beziehung) neu einpassen,
-  // sobald das neue Layout fertig berechnet ist
+  // After switching views (whole family, line, scope, relation) refit once the
+  // new layout has been computed
   const viewKey = pair
     ? `rel:${pair.from}:${pair.to}`
     : lineId
@@ -166,7 +166,7 @@ export function TreeCanvas() {
     lastView.current = viewKey
     refitPending.current = true
   }, [viewKey])
-  /** Ansicht einpassen; eine große Linie wäre am Handy winzig, dann lieber lesbar bei der Person beginnen */
+  /** Fit the view; a large line would be tiny on phones, so start readable at the person instead */
   const showView = useCallback(
     (l: TreeLayout) => {
       const focus = lineId ? l.cards.find((c) => c.id === lineId) : undefined
@@ -176,8 +176,8 @@ export function TreeCanvas() {
     },
     [lineId, fitScale, centerOn, fitAll],
   )
-  // Nur auf ein neues Layout reagieren, nicht auf eine neue showView-Funktion –
-  // sonst würde noch das alte Layout eingepasst
+  // React to a new layout only, not to a new showView function; otherwise the
+  // old layout would be fitted
   const showViewRef = useRef(showView)
   showViewRef.current = showView
   useEffect(() => {
@@ -186,7 +186,7 @@ export function TreeCanvas() {
     requestAnimationFrame(() => showViewRef.current(layout))
   }, [layout])
 
-  // Karte „Linie anpassen“ auf- oder zugeklappt: Platz für den Baum hat sich geändert
+  // Line scope card opened or closed: the space for the tree has changed
   const lastScopeOpen = useRef(scopeOpen)
   useEffect(() => {
     if (lastScopeOpen.current === scopeOpen) return
@@ -194,7 +194,7 @@ export function TreeCanvas() {
     if (layout && lineId && !refitPending.current) requestAnimationFrame(() => showView(layout))
   }, [scopeOpen, lineId, layout, showView])
 
-  // Sprung zu einer Person (Suche, Verwandte im Infoblatt) – jede Anfrage nur einmal
+  // Jump to a person (search, relatives in the info sheet), each request once
   const handledFocus = useRef<number | null>(null)
   useEffect(() => {
     if (!focusRequest || handledFocus.current === focusRequest.nonce) return
@@ -203,14 +203,14 @@ export function TreeCanvas() {
       handledFocus.current = focusRequest.nonce
       centerOn(card)
     } else if (lineId || relation) {
-      showLine(null) // nicht in der aktuellen Ansicht → ganze Familie zeigen, dann erneut versuchen
+      showLine(null) // not in the current view → show the whole family, then retry
     }
   }, [focusRequest, cardById, centerOn, lineId, relation, showLine])
 
-  /** Angetippte Karte nachziehen, falls das Infoblatt sie verdecken würde */
+  /** Move a tapped card into view if the info sheet would cover it */
   const onSelectCard = useCallback(
     (id: string) => {
-      // Beziehung noch unvollständig: angetippte Person füllt die freie Stelle
+      // Relation still incomplete: the tapped person fills the empty slot
       if (relation && (!relation.from || !relation.to)) {
         if (id === relation.from || id === relation.to) return
         showRelation(relation.from ? { ...relation, to: id } : { ...relation, from: id })

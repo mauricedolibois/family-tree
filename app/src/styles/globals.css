@@ -27,7 +27,7 @@
 }
 
 @layer components {
-  /* ---------- Eingabefelder ---------- */
+  /* ---------- Input fields ---------- */
   .field {
     @apply w-full rounded-control border border-card-rule bg-paper-raised/70 px-3 py-2.5 text-base text-ink
       placeholder:text-ink-faint focus:border-gilt focus:bg-card focus:outline-none focus:ring-2 focus:ring-gilt/25;
@@ -36,7 +36,7 @@
     @apply mb-1.5 block text-sm font-medium text-ink-muted;
   }
 
-  /* ---------- Blattgold-Schrift ---------- */
+  /* ---------- Gold-leaf lettering ---------- */
   .gilt-text {
     background: linear-gradient(176deg, rgb(var(--gilt-light)) 8%, rgb(var(--gilt)) 52%, rgb(var(--gilt-deep)) 96%);
     -webkit-background-clip: text;
@@ -45,20 +45,20 @@
     text-shadow: 0 1px 0 rgb(0 0 0 / 0.04);
   }
 
-  /* ---------- Pergamentfläche mit dunklen Rändern ---------- */
+  /* ---------- Parchment surface with darkened edges ---------- */
   .parchment {
     background-color: rgb(var(--card));
     background-image: radial-gradient(130% 120% at 50% 40%, transparent 55%, rgb(var(--card-edge) / 0.9) 100%),
       var(--grain);
   }
 
-  /* ---------- Karten wie alte Exlibris ---------- */
+  /* ---------- Cards styled like old bookplates ---------- */
   .bookplate {
     --plate-rule: rgb(var(--card-rule) / 0.75);
     --corner: rgb(var(--gilt) / 0.85);
     background-image: radial-gradient(120% 140% at 50% 45%, transparent 50%, rgb(var(--card-edge)) 100%);
   }
-  /* innere Zierlinie */
+  /* inner ornamental rule */
   .bookplate::after {
     content: '';
     position: absolute;
@@ -68,7 +68,7 @@
     pointer-events: none;
     transition: border-color 0.3s;
   }
-  /* goldene Eckwinkel */
+  /* gold corner brackets */
   .bookplate::before {
     content: '';
     position: absolute;
@@ -86,7 +86,7 @@
     background-repeat: no-repeat;
   }
 
-  /* Gewählte Person: warmer Kerzenschein */
+  /* Selected person: warm candle glow */
   .candle-glow {
     box-shadow:
       0 0 0 1px rgb(var(--gilt)),
@@ -95,7 +95,7 @@
     animation: candle 3.2s ease-in-out infinite;
   }
 
-  /* Porträt im Goldrahmen */
+  /* Portrait in a gold frame */
   .cameo {
     box-shadow:
       0 0 0 1.5px rgb(var(--card)),
@@ -104,7 +104,7 @@
       0 0 0 4.75px rgb(var(--gilt) / 0.45);
   }
 
-  /* Abschnittstitel mit Zierlinien links und rechts */
+  /* Section title with ornamental rules on both sides */
   .ornament-heading {
     @apply flex items-center gap-3 font-display text-lg text-ink;
   }
@@ -117,7 +117,7 @@
   }
 }
 
-/* ---------- Kerzenlicht-Hintergrund mit Rand-Abdunklung ---------- */
+/* ---------- Candlelight background with vignette ---------- */
 .desk {
   background-image: radial-gradient(
       120% 90% at 50% 45%,
@@ -131,7 +131,7 @@
     radial-gradient(120% 90% at 50% 45%, transparent 40%, rgb(0 0 0 / 0.55) 100%), var(--grain);
 }
 
-/* ---------- Anmeldeseite: Einband mit Goldprägung ---------- */
+/* ---------- Sign-in page: book cover with gold embossing ---------- */
 .book-cover {
   background-color: rgb(var(--linen));
   background-image: radial-gradient(90% 70% at 50% 35%, rgb(255 230 170 / 0.08), transparent 65%),
@@ -153,9 +153,9 @@
   pointer-events: none;
 }
 
-/* ---------- Bewegung ---------- */
+/* ---------- Motion ---------- */
 
-/* Die goldene Linie zeichnet sich einmal, wenn eine Person gewählt wird */
+/* The gold line draws itself once when a person is selected */
 .ink-draw {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
@@ -167,7 +167,7 @@
   }
 }
 
-/* Funkelnde Lichtpunkte entlang der Goldlinie */
+/* Sparkles along the gold line */
 .sparkle {
   transform-box: fill-box;
   transform-origin: center;
@@ -202,7 +202,7 @@
   }
 }
 
-/* Infoblatt gleitet herein (von unten am Handy, von rechts am Desktop) */
+/* Info sheet slides in (from the bottom on phones, from the right on desktop) */
 .panel-enter {
   animation: panel-up 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -224,7 +224,7 @@
   }
 }
 
-/* Zoom/Pan-Fläche des Baums soll den ganzen Platz nutzen */
+/* The tree's zoom/pan area should fill all available space */
 .react-transform-wrapper,
 .react-transform-component {
   width: 100% !important;
@@ -232,7 +232,7 @@
   touch-action: none;
 }
 
-/* ---------- Einführung: leuchtender Ausschnitt und Goldring ---------- */
+/* ---------- Guided tour: glowing cut-out and gold ring ---------- */
 .tour-hole {
   box-shadow:
     0 0 0 200vmax rgb(var(--linen-deep) / 0.62),
@@ -281,7 +281,7 @@
   }
 }
 
-/* ---------- Druck (PDF-Export) ---------- */
+/* ---------- Print (PDF export) ---------- */
 @media print {
   html,
   body {
@@ -289,13 +289,13 @@
     height: auto !important;
     overflow: visible !important;
   }
-  /* Vorschau-Verkleinerung aufheben: das Blatt kommt in Originalgröße aufs Papier */
+  /* Undo the preview scaling: the sheet goes onto paper at full size */
   .print-sheet-holder {
     transform: none !important;
   }
   .print-sheet {
     box-shadow: none !important;
-    /* knapp unter Blatthöhe, damit keine leere zweite Seite entsteht */
+    /* just under the sheet height so no blank second page appears */
     height: calc(var(--sheet-h) - 0.6mm) !important;
     break-after: avoid;
     -webkit-print-color-adjust: exact;

@@ -1,4 +1,4 @@
-# Drei Stufen: Abhängigkeiten → Build → schlankes Laufzeit-Image (nur der eigenständige Next-Server).
+# Three stages: dependencies → build → slim runtime image (only the standalone Next server).
 
 FROM node:20-alpine AS deps
 WORKDIR /app
@@ -19,11 +19,11 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
-# Dateien gehören root, die App läuft als Benutzer „node“ und kann ihren eigenen Code nicht verändern
+# Files are owned by root; the app runs as "node" and cannot modify its own code
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-# Für die tägliche Sicherung per Cron (siehe README)
+# For the daily backup cron job (see README)
 COPY --from=builder /app/scripts ./scripts
 RUN mkdir -p .next/cache && chown node:node .next/cache
 

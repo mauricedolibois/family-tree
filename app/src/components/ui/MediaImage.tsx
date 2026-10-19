@@ -1,5 +1,5 @@
 // src/components/ui/MediaImage.tsx
-// Foto aus der Sammlung einer Person. Fehlt die Datei, steht dort ein Hinweis statt eines kaputten Bildes.
+// Photo from a person's collection. A missing file shows a notice instead of a broken image.
 
 import { useState } from 'react'
 import { ImageOff } from 'lucide-react'

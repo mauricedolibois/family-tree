@@ -1,5 +1,5 @@
 // src/components/person/upload.ts
-// Fotos vor dem Hochladen verkleinern (spart Speicherplatz und Datenvolumen).
+// Shrink photos before upload (saves storage and mobile data).
 
 import type { MediaKind, StoredMedia } from '@/storage/schema'
 import { newId } from '@/family/edit'
@@ -14,7 +14,7 @@ export function kindOf(file: File): MediaKind {
   return 'other'
 }
 
-/** Große JPEG/PNG/WebP-Fotos auf max. 2000 px verkleinern; andere Dateien unverändert */
+/** Scale large JPEG/PNG/WebP photos down to at most 2000 px; other files pass through */
 async function shrink(file: File): Promise<File> {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file
   try {

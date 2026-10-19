@@ -1,8 +1,8 @@
 // src/family/model.ts
 //
-// Der Stammbaum als schlichte Daten (so wie er gespeichert wird) plus ein
-// Index für schnelle Fragen wie „Wer sind die Eltern?“. Quelle der Wahrheit
-// für Eltern-Kind-Beziehungen sind die `childrenIds` der Eltern.
+// The tree as plain data (exactly as stored) plus an index for quick lookups
+// such as "who are the parents?". Parent-child links are owned by the parents'
+// `childrenIds`; `parentIds` is derived from them.
 
 import type { StoredMemberV3, StoredTree } from '@/storage/schema'
 
@@ -15,7 +15,7 @@ export type TreeIndex = {
   byId: Map<string, Person>
   parents: Map<string, string[]>
   children: Map<string, string[]>
-  /** Kind-IDs, die von diesem Elternteil adoptiert wurden */
+  /** Child ids this parent adopted */
   adopted: Map<string, Set<string>>
 }
 
@@ -49,7 +49,7 @@ export function spouseOf(ix: TreeIndex, id: string): string | null {
   return s && ix.byId.has(s) ? s : null
 }
 
-/** Geschwister (auch Halbgeschwister), ohne die Person selbst */
+/** Siblings including half-siblings, excluding the person */
 export function siblingsOf(ix: TreeIndex, id: string): string[] {
   const out = new Set<string>()
   for (const p of parentsOf(ix, id)) for (const c of childrenOf(ix, p)) if (c !== id) out.add(c)
@@ -63,7 +63,7 @@ export function isHalfSibling(ix: TreeIndex, a: string, b: string): boolean {
   return shared > 0 && (shared < pa.length || shared < pb.length)
 }
 
-/** Vorfahren mit Abstand in Generationen (Eltern = 1) */
+/** Ancestors with their distance in generations (parents = 1) */
 export function ancestorsOf(ix: TreeIndex, id: string): Map<string, number> {
   const out = new Map<string, number>()
   let frontier = [id]
@@ -80,7 +80,7 @@ export function ancestorsOf(ix: TreeIndex, id: string): Map<string, number> {
   return out
 }
 
-/** Nachkommen mit Abstand in Generationen (Kinder = 1) */
+/** Descendants with their distance in generations (children = 1) */
 export function descendantsOf(ix: TreeIndex, id: string): Map<string, number> {
   const out = new Map<string, number>()
   let frontier = [id]
@@ -97,7 +97,7 @@ export function descendantsOf(ix: TreeIndex, id: string): Map<string, number> {
   return out
 }
 
-/** Direkte Linie einer Person: sie selbst, Partner, alle Vorfahren und Nachkommen */
+/** Direct line of a person: the person, their spouse, all ancestors and descendants */
 export function lineageOf(ix: TreeIndex, id: string): Set<string> {
   const set = new Set<string>([id, ...ancestorsOf(ix, id).keys(), ...descendantsOf(ix, id).keys()])
   const sp = spouseOf(ix, id)
@@ -106,24 +106,24 @@ export function lineageOf(ix: TreeIndex, id: string): Set<string> {
 }
 
 /**
- * Wie weit die Ansicht „Linie von …“ reicht.
- * `up`/`down`: Generationen nach oben/unten, null = alle.
- * `side`: Seitenlinien – 0 keine, 1 Geschwister (auch Onkel, Tanten, Großonkel …),
- * 2 zusätzlich deren Kinder (Neffen, Cousins …), 3 alle Blutsverwandten.
+ * How far the "line of …" view reaches.
+ * `up`/`down`: generations above/below, null = all.
+ * `side`: collateral lines. 0 none, 1 siblings (also uncles, aunts, great-uncles …),
+ * 2 plus their children (nephews, cousins …), 3 all blood relatives.
  */
 export type LineScope = { up: number | null; down: number | null; side: 0 | 1 | 2 | 3 }
 
 export const DEFAULT_LINE_SCOPE: LineScope = { up: null, down: null, side: 0 }
 
-/** Wie viele Generationen es über bzw. unter einer Person überhaupt gibt */
+/** How many generations exist above and below a person */
 export function lineDepth(ix: TreeIndex, id: string): { up: number; down: number } {
   const max = (m: Map<string, number>) => Math.max(0, ...m.values())
   return { up: max(ancestorsOf(ix, id)), down: max(descendantsOf(ix, id)) }
 }
 
 /**
- * Personen für die Ansicht „Linie von …“: die direkte Linie im gewählten Umfang,
- * Seitenlinien nach Wunsch, dazu die Partner, damit Paare vollständig bleiben.
+ * People shown in the "line of …" view: the direct line within the chosen scope,
+ * optional collateral lines, and spouses so that couples stay complete.
  */
 export function lineageView(ix: TreeIndex, id: string, scope: LineScope = DEFAULT_LINE_SCOPE): Set<string> {
   const within = (d: number, max: number | null) => max === null || d <= max
@@ -131,8 +131,8 @@ export function lineageView(ix: TreeIndex, id: string, scope: LineScope = DEFAUL
   const descendants = [...descendantsOf(ix, id)].filter(([, d]) => within(d, scope.down)).map(([c]) => c)
   const set = new Set<string>([id, ...ancestors, ...descendants])
 
-  // Seitenlinien zweigen bei den gezeigten Vorfahren ab: deren übrige Kinder sind
-  // die Geschwister der Linie, deren Kinder Neffen und Cousins usw.
+  // Collateral lines branch off at the shown ancestors: their other children are
+  // the line's siblings, whose children are nephews, cousins and so on.
   if (scope.side > 0) {
     const sideDepth = scope.side === 3 ? Infinity : scope.side
     const line = new Set([id, ...ancestorsOf(ix, id).keys()])
@@ -145,7 +145,7 @@ export function lineageView(ix: TreeIndex, id: string, scope: LineScope = DEFAUL
     }
   }
 
-  // Partner: der eigene, die der Nachkommen und die anderen Elternteile gezeigter Kinder
+  // Spouses: the person's own, those of descendants, and the other parent of any shown child
   for (const x of [id, ...descendants]) {
     const sp = spouseOf(ix, x)
     if (sp) set.add(sp)
@@ -157,7 +157,7 @@ export function lineageView(ix: TreeIndex, id: string, scope: LineScope = DEFAUL
   return set
 }
 
-/** Teilbaum mit nur diesen Personen (Verweise nach außen werden gekappt) */
+/** Subtree with only these people; links to anyone outside are dropped */
 export function subTree(tree: Tree, keep: Set<string>): Tree {
   const members: Tree['members'] = {}
   for (const id of keep) {

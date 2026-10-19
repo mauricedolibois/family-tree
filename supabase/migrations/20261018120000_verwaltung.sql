@@ -1,15 +1,16 @@
--- Werkzeuge für den Notfall: gesicherte Stände ansehen, zurückholen und von Hand sichern.
--- Liegen im eigenen Schema „verwaltung“, das nicht über die API erreichbar ist –
--- nutzbar nur im SQL-Editor von Supabase.
+-- Emergency tools: list backups, restore one, take a manual backup.
+-- They live in their own schema "verwaltung" (German for administration), which is
+-- not exposed through the API and can only be used from the Supabase SQL editor.
+-- Schema, function names and their messages are German; the README documents them.
 --
---   select * from verwaltung.staende limit 20;          -- letzte Stände
---   select verwaltung.wiederherstellen(NUMMER);          -- Stand mit dieser Nummer zurückholen (siehe 20261018130000)
---   select verwaltung.sichern('vor dem Familienfest');   -- jetzt von Hand sichern
+--   select * from verwaltung.staende limit 20;          -- latest backups
+--   select verwaltung.wiederherstellen(NUMMER);          -- restore backup NUMMER (see 20261018130000)
+--   select verwaltung.sichern('vor dem Familienfest');   -- manual backup now
 
 create schema if not exists verwaltung;
 revoke all on schema verwaltung from public, anon, authenticated;
 
--- Alle gesicherten Stände, neueste zuerst
+-- All backups, newest first
 create or replace view verwaltung.staende as
 select
   b.id,
@@ -21,8 +22,8 @@ from public.family_trees_backup b
 left join public.families f on f.id = b.family_id
 order by b.backed_up_at desc;
 
--- Einen gesicherten Stand zurückholen. Der aktuelle Stand wird vorher selbst gesichert,
--- das Zurückholen lässt sich also ebenso wieder rückgängig machen.
+-- Restore a backup. The current version is backed up first, so a restore can be
+-- undone the same way.
 create or replace function verwaltung.wiederherstellen(stand_id bigint)
 returns text
 language plpgsql
@@ -56,7 +57,7 @@ begin
 end
 $$;
 
--- Den aktuellen Stand aller Familien von Hand sichern (bleibt für immer)
+-- Manually back up the current version of every family (kept forever)
 create or replace function verwaltung.sichern(notiz text default 'von Hand gesichert')
 returns text
 language plpgsql

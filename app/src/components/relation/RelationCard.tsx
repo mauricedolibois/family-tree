@@ -1,5 +1,5 @@
 // src/components/relation/RelationCard.tsx
-// Beziehungsansicht: zwei Personen wählen, Bezeichnung lesen, darunter zeigt der Baum nur den Weg.
+// Relation view: pick two people, read how they are related; the tree below shows only the path.
 
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
@@ -39,7 +39,7 @@ export function RelationCard({ connection, compact }: { connection: Connection |
       aria-label="Beziehung zwischen zwei Personen"
       className="parchment pointer-events-auto relative w-full rounded-card border border-gilt/60 p-3 shadow-card md:w-[380px]"
     >
-      {/* Am Handy mit offenem Infoblatt nur eine Zeile, damit der Baum sichtbar bleibt */}
+      {/* On phones with the info sheet open, a single row keeps the tree visible */}
       {compact && from && to && (
         <p className="truncate font-serif text-[15px] text-ink md:hidden">
           <span className="text-ink-muted">
@@ -99,22 +99,22 @@ export function RelationCard({ connection, compact }: { connection: Connection |
   )
 }
 
-/** Vorname reicht – außer beide heißen gleich */
+/** First name is enough unless both share it */
 function shortName(p: Person, other: Person): string {
   const a = splitName(p.name).given || p.name
   const b = splitName(other.name).given || other.name
   return a === b ? p.name : a
 }
 
-/** Überschrift, Sätze in beide Richtungen und gemeinsame Vorfahren; mit `meId` aus deiner Sicht („dein Cousin“) */
+/** Heading, sentences in both directions and common ancestors; with `meId` from your point of view ("dein Cousin") */
 export function describeRelation(ix: TreeIndex, c: Connection, from: Person, to: Person, meId: string | null) {
   const party = (p: Person, other: Person): Party => (p.id === meId ? 'you' : { name: shortName(p, other) })
   const { title, note } = c.detour !== null ? { title: detourTitle(c.detour), note: '' } : kinshipTitle(c.kinship)
   const forward = kinshipSentence(c.kinship, party(to, from), party(from, to))
   const backward = kinshipSentence(c.reverse, party(from, to), party(to, from))
-  // Gleiche Bezeichnung in beide Richtungen (z. B. zwei Cousins): ein Satz genügt
+  // Same term both ways (e.g. two cousins): one sentence is enough
   const same = c.reverse.term === c.kinship.term && kinshipTitle(c.reverse).title === kinshipTitle(c.kinship).title
-  // Wie in der Ahnentafel: Mann zuerst
+  // As in a pedigree chart: husband first
   const common = c.common
     .map((id) => ix.byId.get(id))
     .filter((p): p is Person => !!p)

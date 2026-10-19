@@ -1,11 +1,11 @@
 // src/components/tree/Connectors.tsx
-// Linien im Baum: Sepiatinte für alle, Blattgold für die ausgewählte Linie.
+// Tree lines: sepia ink for all, gold leaf for the selected line.
 
 import { memo } from 'react'
 import clsx from 'clsx'
 import type { Connector, MarriageLine, Point } from '@/family/layout/types'
 
-/** Polylinie mit abgerundeten Ecken */
+/** Polyline with rounded corners */
 export function roundedPath(points: Point[], radius = 10): string {
   if (points.length < 2) return ''
   let d = `M ${points[0].x} ${points[0].y}`
@@ -24,7 +24,7 @@ export function roundedPath(points: Point[], radius = 10): string {
   return `${d} L ${last.x} ${last.y}`
 }
 
-/** Vierzackiger Stern als Funkeln */
+/** Four-pointed star used as a sparkle */
 function star(x: number, y: number, r: number): string {
   const k = r * 0.28
   return `M ${x} ${y - r} Q ${x + k} ${y - k} ${x + r} ${y} Q ${x + k} ${y + k} ${x} ${y + r} Q ${x - k} ${y + k} ${
@@ -32,7 +32,7 @@ function star(x: number, y: number, r: number): string {
   } ${y} Q ${x - k} ${y - k} ${x} ${y - r} Z`
 }
 
-/** Funkelpunkte an den Knicken der Goldlinie, höchstens 28 */
+/** Sparkles at the bends of the gold line, at most 28 */
 function sparklePoints(list: Connector[]): Point[] {
   const pts: Point[] = []
   const seen = new Set<string>()
@@ -52,11 +52,11 @@ type Props = {
   height: number
   connectors: Connector[]
   marriages: MarriageLine[]
-  /** IDs der hervorgehobenen Linie (oder null) */
+  /** Ids on the highlighted line (or null) */
   lineage: Set<string> | null
-  /** ändert sich bei jeder neuen Auswahl → Goldlinie zeichnet sich neu */
+  /** changes with every new selection → the gold line redraws */
   drawKey: string
-  /** Für den Druck: keine Bewegung, nichts abgedunkelt */
+  /** For print: no animation, nothing dimmed */
   still?: boolean
 }
 
@@ -84,8 +84,8 @@ export const Connectors = memo(function Connectors({
         </filter>
       </defs>
 
-      {/* Sepia-Tinte: weicher Tintenhof plus feste Linie */}
-      {/* Farben über style statt Attribut: var() in SVG-Attributen kann Safari nicht überall */}
+      {/* Sepia ink: soft halo plus solid line */}
+      {/* Colours via style rather than attributes: Safari does not support var() in every SVG attribute */}
       <g fill="none" style={{ stroke: 'rgb(var(--line))' }} strokeLinecap="round" strokeLinejoin="round">
         {connectors.map((c) => {
           const d = roundedPath(c.points)
@@ -99,7 +99,7 @@ export const Connectors = memo(function Connectors({
         })}
       </g>
 
-      {/* Ehelinien mit ⚭ */}
+      {/* Marriage lines with ⚭ */}
       {marriages.map((m) => {
         const gold = marriageInLine(m)
         const cx = (m.from.x + m.to.x) / 2
@@ -116,7 +116,7 @@ export const Connectors = memo(function Connectors({
               style={{ fill: 'rgb(var(--card))', stroke: gold ? 'rgb(var(--gilt))' : 'rgb(var(--card-rule))' }}
               strokeWidth={1}
             />
-            {/* ⚭ als zwei verschlungene Ringe */}
+            {/* ⚭ drawn as two interlocking rings */}
             <g
               fill="none"
               style={{ stroke: gold ? 'rgb(var(--gilt-deep))' : 'rgb(var(--ink-muted))' }}
@@ -129,7 +129,7 @@ export const Connectors = memo(function Connectors({
         )
       })}
 
-      {/* Goldene Linie der ausgewählten Person, zeichnet sich wie mit Tinte */}
+      {/* Gold line of the selected person, drawn in like ink */}
       {lineage && (
         <g key={drawKey}>
           <g

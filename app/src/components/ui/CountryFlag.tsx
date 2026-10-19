@@ -1,5 +1,5 @@
 // src/components/ui/CountryFlag.tsx
-// Kleine Flaggen aus reinem CSS (keine Bilder, keine Emojis – die zeigt Windows nicht an).
+// Small flags in plain CSS (no images, no emoji flags, which Windows does not render).
 
 import clsx from 'clsx'
 
@@ -16,7 +16,7 @@ const FLAGS: Record<string, Flag> = {
   belgien: { title: 'Belgien', dir: 'row', stripes: ['#000000', '#FDDA24', '#EF3340'] },
   italien: { title: 'Italien', dir: 'row', stripes: ['#009246', '#FFFFFF', '#CE2B37'] },
   polen: { title: 'Polen', dir: 'col', stripes: ['#FFFFFF', '#DC143C'] },
-  // Gelb doppelt so breit wie die roten Streifen (1:2:1), Wappen weggelassen
+  // Yellow twice as wide as the red stripes (1:2:1); coat of arms omitted
   spanien: { title: 'Spanien', dir: 'col', stripes: ['#AA151B', '#F1BF00', '#F1BF00', '#AA151B'] },
   schweiz: { title: 'Schweiz', special: 'swiss' },
   usa: { title: 'USA', special: 'usa' },

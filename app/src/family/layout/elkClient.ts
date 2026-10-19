@@ -1,5 +1,5 @@
 // src/family/layout/elkClient.ts
-// ELK im Browser: die schwere Berechnung läuft in einem Web Worker.
+// ELK in the browser: the heavy computation runs in a web worker.
 
 import ELK from 'elkjs/lib/elk-api'
 import type { RunElk } from './compute'

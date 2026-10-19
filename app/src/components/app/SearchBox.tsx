@@ -1,5 +1,5 @@
 // src/components/app/SearchBox.tsx
-// Personen finden und direkt im Baum anspringen.
+// Find people and jump to them in the tree.
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'

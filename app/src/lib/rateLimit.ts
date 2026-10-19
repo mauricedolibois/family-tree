@@ -1,9 +1,9 @@
 // src/lib/rateLimit.ts
 //
-// Bremse gegen Passwort-Raten und Massen-Registrierungen.
-// Versuche werden in der Tabelle `auth_attempts` gezählt (nur gehashte
-// Schlüssel, keine Klartext-IPs). Fehlt die Tabelle, wird nicht blockiert,
-// damit niemand ausgesperrt wird – der Fehler landet aber im Log.
+// Throttles password guessing and mass sign-ups.
+// Attempts are counted in `auth_attempts` (hashed keys only, no plain IPs).
+// If the table is missing nothing is blocked, so nobody gets locked out;
+// the error still ends up in the log.
 
 import { createHmac } from 'crypto'
 import type { IncomingMessage } from 'http'
@@ -17,20 +17,20 @@ function hashKey(value: string): string {
   return createHmac('sha256', salt).update(value).digest('hex').slice(0, 32)
 }
 
-/** Anzahl eigener Reverse-Proxys vor der App (TRUSTED_PROXIES, Standard 1 = ein nginx) */
+/** Number of own reverse proxies in front of the app (TRUSTED_PROXIES, default 1 = one nginx) */
 export function trustedProxies(raw = process.env.TRUSTED_PROXIES): number {
-  // Leer oder ungültig → Standard. Sonst würde aus "" die 0, und alle Besucher
-  // hätten die Adresse des Proxys – eine einzige gemeinsame Login-Bremse für alle.
+  // Empty or invalid → default. Otherwise "" would become 0, every visitor would
+  // get the proxy's address, and everyone would share a single login limit.
   if (!raw?.trim()) return 1
   const n = Number(raw)
   return Number.isInteger(n) && n >= 0 ? n : 1
 }
 
 /**
- * IP des Besuchers. Jeder Proxy hängt die Adresse, von der er die Anfrage bekam,
- * hinten an X-Forwarded-For an – verlässlich sind also nur die letzten Einträge.
- * Den Anfang der Liste kann der Besucher selbst beliebig füllen.
- * Ohne Proxy (TRUSTED_PROXIES=0) zählt nur die Verbindungsadresse.
+ * Visitor IP. Each proxy appends the address it received the request from to
+ * X-Forwarded-For, so only the last entries can be trusted; the visitor can put
+ * anything at the start of the list. Without a proxy (TRUSTED_PROXIES=0) only
+ * the socket address counts.
  */
 export function clientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>, proxies = trustedProxies()): string {
   const direct = req.socket?.remoteAddress || 'unknown'
@@ -43,7 +43,7 @@ export function clientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>, proxi
   return hops.length ? hops[Math.max(0, hops.length - proxies)] : direct
 }
 
-/** Anzahl Versuche (optional nur fehlgeschlagene) im Zeitfenster. */
+/** Number of attempts (optionally failures only) within the window. */
 async function countAttempts(kind: AttemptKind, key: string, windowMinutes: number, onlyFailures: boolean) {
   const since = new Date(Date.now() - windowMinutes * 60_000).toISOString()
   let query = getSupaAdmin()

@@ -1,4 +1,4 @@
-// Link zum Kalender-Abo der Geburtstage: GET liefert ihn, POST erzeugt einen neuen.
+// Birthday calendar subscription link: GET returns it, POST issues a new one.
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getFamilyIdFromReq } from '@/lib/session'

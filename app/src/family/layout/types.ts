@@ -3,7 +3,7 @@
 export type Point = { x: number; y: number }
 
 export type CardBox = {
-  /** Personen-ID */
+  /** Person id */
   id: string
   x: number
   y: number
@@ -11,7 +11,7 @@ export type CardBox = {
   h: number
 }
 
-/** Linie zwischen zwei Ehepartnern */
+/** Line between two spouses */
 export type MarriageLine = {
   id: string
   a: string
@@ -20,10 +20,10 @@ export type MarriageLine = {
   to: Point
 }
 
-/** Verbindung von Eltern zu einem Kind */
+/** Connector from parents to a child */
 export type Connector = {
   id: string
-  /** Eltern-IDs (eine oder zwei Personen) */
+  /** Parent ids (one or two people) */
   parents: string[]
   child: string
   points: Point[]
@@ -41,6 +41,6 @@ export type TreeLayout = {
 export const CARD = {
   w: 184,
   h: 68,
-  /** Abstand zwischen Ehepartnern (Platz für das ⚭-Zeichen) */
+  /** Gap between spouses (room for the ⚭ sign) */
   coupleGap: 30,
 } as const

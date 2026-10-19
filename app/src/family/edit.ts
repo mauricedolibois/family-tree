@@ -1,7 +1,7 @@
 // src/family/edit.ts
 //
-// Änderungen am Stammbaum als reine Funktionen: Sie verändern den
-// übergebenen Baum nie, sondern liefern eine geänderte Kopie zurück.
+// Tree edits as pure functions. They never touch the tree they are given
+// and return a modified copy instead.
 
 import type { StoredProfile } from '@/storage/schema'
 import { buildIndex, descendantsOf, parentsOf, type Gender, type Person, type Tree } from './model'
@@ -12,11 +12,11 @@ export type NewRelative = {
   relation: Relation
   name: string
   gender: Gender
-  /** nur Kind: als adoptiert markieren */
+  /** child only: mark as adopted */
   adopted?: boolean
-  /** nur Kind: auch Kind des Ehepartners der Bezugsperson (Standard: ja) */
+  /** child only: also a child of the reference person's spouse (default: yes) */
   alsoChildOfSpouse?: boolean
-  /** nur Elternteil: mit dem vorhandenen anderen Elternteil verheiraten */
+  /** parent only: marry the existing other parent */
   marryExistingParent?: boolean
 }
 
@@ -61,7 +61,7 @@ function clone(tree: Tree): Tree {
   return JSON.parse(JSON.stringify(tree)) as Tree
 }
 
-/** parentIds aus den childrenIds neu ableiten, damit beide Seiten zusammenpassen */
+/** Re-derive parentIds from childrenIds so both sides agree */
 export function normalize(tree: Tree): Tree {
   const ix = buildIndex(tree)
   for (const p of Object.values(tree.members)) {
@@ -80,7 +80,7 @@ function link(parent: Person, child: Person, adopted = false) {
   }
 }
 
-/** Neue Person in Beziehung zu `refId` anlegen */
+/** Create a new person related to `refId` */
 export function addRelative(tree: Tree, refId: string, input: NewRelative): { tree: Tree; id: string } {
   const name = input.name.trim()
   if (!name) throw new EditError('Bitte einen Namen eingeben.')
@@ -148,8 +148,8 @@ export function updatePerson(tree: Tree, id: string, patch: PersonPatch): Tree {
 }
 
 /**
- * Ehepartner des einzigen Elternteils, der nicht selbst Elternteil ist – etwa ein
- * Stiefvater, der nachträglich auch als Vater eingetragen werden soll.
+ * Spouse of a child's only parent who is not a parent themselves, e.g. a
+ * stepfather who should later be recorded as the father as well.
  */
 export function spouseOfSingleParent(tree: Tree, childId: string): string | null {
   const parents = parentsOf(buildIndex(tree), childId)
@@ -158,7 +158,7 @@ export function spouseOfSingleParent(tree: Tree, childId: string): string | null
   return spouseId && spouseId !== childId && tree.members[spouseId] ? spouseId : null
 }
 
-/** Vorhandene Person als weiteres Elternteil eintragen */
+/** Record an existing person as an additional parent */
 export function addExistingParent(tree: Tree, childId: string, parentId: string): Tree {
   const next = clone(tree)
   const child = next.members[childId]
@@ -176,8 +176,8 @@ export function addExistingParent(tree: Tree, childId: string, parentId: string)
 }
 
 /**
- * Löschen ist erlaubt für Personen ohne Kinder oder ohne Eltern (ganz oben).
- * Personen in der Mitte würden den Baum zerreißen.
+ * Only people without children, or without parents (at the top), can be deleted.
+ * Removing someone in the middle would split the tree.
  */
 export function canDelete(tree: Tree, id: string): boolean {
   const p = tree.members[id]
@@ -199,7 +199,7 @@ export function deletePerson(tree: Tree, id: string): Tree {
     m.childrenIds = m.childrenIds.filter((c) => c !== id)
     m.adoptedChildrenIds = (m.adoptedChildrenIds ?? []).filter((c) => c !== id)
   }
-  // Kinder, die sonst ohne Eltern dastünden, an den Ehepartner hängen
+  // Children who would be left without a parent move to the spouse
   const ixAfter = buildIndex({
     ...next,
     members: Object.fromEntries(Object.entries(next.members).filter(([k]) => k !== id)),
@@ -215,7 +215,7 @@ export function deletePerson(tree: Tree, id: string): Tree {
   return normalize(next)
 }
 
-/** Startbaum für eine neue Familie */
+/** Starter tree for a new family */
 export function starterTree(): Tree {
   const father = newPerson('Vater', 'MALE')
   const mother = newPerson('Mutter', 'FEMALE')

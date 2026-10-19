@@ -1,5 +1,5 @@
 // src/family/search.ts
-// Personen nach Namen, Ort oder Geburtsjahr finden – ohne Rücksicht auf Akzente.
+// Find people by name, place or year of birth, ignoring accents.
 
 import { normalizeForSearch } from './format'
 import type { Person, Tree } from './model'

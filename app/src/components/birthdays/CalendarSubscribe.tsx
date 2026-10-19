@@ -1,9 +1,9 @@
 // src/components/birthdays/CalendarSubscribe.tsx
 //
-// Geburtstage als Kalender-Abo: für iPhone/Mac, Google oder zum Kopieren.
-// Wahlweise die ganze Familie oder nur die eigene Linie – Person und Umfang
-// stehen als Parameter im Link (siehe src/family/calendarLink.ts).
-// Steht unter „Nächste Geburtstage“ und am Ende der Einführung.
+// Birthdays as a calendar subscription: for iPhone/Mac, Google, or as a link to copy.
+// Either the whole family or just one's own line; person and scope are link
+// parameters (see src/family/calendarLink.ts).
+// Shown under "Upcoming birthdays" and at the end of the guided tour.
 
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
@@ -25,11 +25,11 @@ export function CalendarSubscribe({
   intro = true,
   allowRenew = false,
 }: {
-  /** Wessen Linie zur Wahl steht; ohne Person nur die ganze Familie */
+  /** Whose line can be chosen; without a person only the whole family */
   personId: string | null
-  /** Einleitender Satz (in der Einführung steht er schon in der Erklärung) */
+  /** Intro sentence (the tour already explains it) */
   intro?: boolean
-  /** „Neuen Link erzeugen“ anbieten */
+  /** Offer "create new link" */
   allowRenew?: boolean
 }) {
   const { tree, index } = useFamily()
@@ -49,7 +49,7 @@ export function CalendarSubscribe({
       .catch(() => setFailed(true))
   }, [])
 
-  // Vorfahren und Nachkommen wie unter „Meine Linie“ eingestellt, Seitenlinien hier wählbar
+  // Ancestors and descendants as set under "Meine Linie"; collateral lines chosen here
   const selection = useMemo<CalendarSelection | null>(
     () => (person && whom === 'line' ? { personId: person.id, scope: { ...lineScope, side } } : null),
     [person, whom, lineScope, side],
