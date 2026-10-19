@@ -35,7 +35,9 @@ yarn-error.log*
 next-env.d.ts
 
 /data
-/public
+/public/*
+!/public/favicon.ico
+!/public/fonts/
 /.env.local
 /todos.txt
 # lokale Logs

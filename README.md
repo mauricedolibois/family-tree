@@ -26,7 +26,7 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
   `vorfahren`/`nachkommen`: Anzahl Generationen oder `alle`; `seiten`: `keine`, `geschwister`, `cousins` oder `alle`. Ohne `linie` die ganze Familie.
 
 - **Verstorben, Datum unbekannt:** Schalter „Ist verstorben“ beim Bearbeiten (bzw. „Bereits verstorben“ beim Hinzufügen); das Sterbedatum ist dann freiwillig. Auf der Karte steht z. B. „1888–†“, die Person fällt aus Geburtstagen und Kalender heraus.
-- **Als PDF exportieren** über das Menü: eigene Linie, Beziehung oder ganze Familie, hoch oder quer, A4 bis A1. Druckfertiges Blatt mit Goldrahmen, Titel und Datum; gesichert wird über den Druckdialog („Als PDF sichern“), dadurch bleibt alles vektorscharf.
+- **Als PDF exportieren** über das Menü: eigene Linie, Beziehung oder ganze Familie, hoch oder quer, A4 bis A1. Druckfertiges Blatt mit Goldrahmen, Titel und Datum. „PDF herunterladen“ erzeugt die Datei direkt im Browser (`src/components/print/pdf.ts`, pdf-lib): genau in der gewählten Größe, mit eingebetteten Schriften, vektorscharf und mit Fotos – unabhängig davon, wie der Browser druckt (Safari auf dem iPhone hält sich nicht an die Seitengröße). „Direkt drucken“ nutzt weiterhin den Druckdialog. Die Schriften liegen als TTF in `public/fonts` (aus @fontsource umgewandelt mit `node scripts/woff-to-ttf.mjs`, SIL Open Font License).
 - **Herkunftsflagge** bei jeder Person mit eingetragenem Land.
 - **Sicherung herunterladen** als JSON über das Menü.
 
