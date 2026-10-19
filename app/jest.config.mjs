@@ -11,6 +11,8 @@ const config = {
   // Add more setup options before each test is run
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
+  // The compiler rewrites "@/" in imports, but jest.mock() needs it resolved as well
+  moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

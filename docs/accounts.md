@@ -65,25 +65,26 @@ from the language picker; for invitations the inviting admin's language).
 
 ## Rollout on an existing installation
 
-The previous version used one shared password per family. After this update only
-personal accounts can sign in.
+The original version used one shared password per family; now only personal
+accounts can sign in.
 
-1. **Apply the migrations** (`supabase/migrations/`, including
-   `20261020120000_user_accounts.sql`) in the Supabase SQL editor or with
-   `docker exec -i supabase-db psql …` (see README). Existing trees stay as they are.
-2. **Merge and deploy.**
-3. **Create the first admin** in the SQL editor:
+1. **Run `supabase/setup.sql`** in the Supabase SQL editor (see README, "Database").
+   Existing trees stay as they are.
+2. **Deploy** the new version.
+3. **Create the first admin:** while no account exists, the app writes a one-time
+   link to its log on every start (`docker logs family-tree-app | grep setup`).
+   Open it within 7 days and create your account. Without access to the log, the
+   SQL editor gives you such a link too:
 
    ```sql
    select verwaltung.admin_invite('you@example.org');
    ```
 
-   It returns a path like `/invite/3f9c…`. Open `https://<your domain>/invite/3f9c…`
-   within 7 days and create your account.
+   It returns a path like `/invite/3f9c…`; open `https://<your domain>/invite/3f9c…`.
 4. On `/admin`, **invite the family** to the existing tree, as editors or viewers.
 
-Rolling back stays possible: the previous version ignores the new tables, and the
-old family passwords are still stored.
+Rolling back stays possible: older versions ignore the new tables, and the old
+family passwords are still stored.
 
 **HTTP basic auth in front of the app:** invited people would need its credentials
 as well, before they even reach the invitation page. With personal accounts it is

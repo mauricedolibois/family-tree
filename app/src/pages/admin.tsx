@@ -36,7 +36,15 @@ type Invite = {
   inviter: string | null
   expiresAt: string
 }
-type Overview = { me: string; mail: boolean; users: AdminUserView[]; trees: Tree[]; invites: Invite[] }
+type Overview = {
+  me: string
+  mail: boolean
+  /** Set when supabase/setup.sql has to be run */
+  schema: { have: number; need: number } | null
+  users: AdminUserView[]
+  trees: Tree[]
+  invites: Invite[]
+}
 
 const fullUrl = (path: string) => (typeof window === 'undefined' ? path : window.location.origin + path)
 
@@ -124,6 +132,7 @@ export default function AdminPage() {
             <p className="text-center text-ink-muted">{t.auth.wait}</p>
           ) : (
             <>
+              {data.schema && <FormMessage>{t.setup.outdated(data.schema.have, data.schema.need)}</FormMessage>}
               {!data.mail && <FormMessage tone="info">{t.admin.noMail}</FormMessage>}
               <InviteCard trees={data.trees} mail={data.mail} onCreated={load} />
               <InvitesCard

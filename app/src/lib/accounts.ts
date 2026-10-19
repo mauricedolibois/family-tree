@@ -107,6 +107,12 @@ export async function deleteUser(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function countUsers(): Promise<number> {
+  const { count, error } = await db().from('users').select('id', { count: 'exact', head: true })
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function countActiveAdmins(): Promise<number> {
   const { count, error } = await db()
     .from('users')
@@ -238,7 +244,8 @@ export async function createInvite(input: {
   familyId: string | null
   role: Role | null
   makeAdmin: boolean
-  createdBy: string
+  /** null for the first-admin link written at start */
+  createdBy: string | null
   expiresAt: Date
 }): Promise<InviteRow> {
   const { data, error } = await db()

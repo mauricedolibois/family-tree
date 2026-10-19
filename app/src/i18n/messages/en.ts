@@ -494,6 +494,12 @@ export const en: Messages = {
     none: 'You are not part of a family tree yet. Ask someone to invite you.',
     noneAdmin: 'There is no family tree yet. Create one in the administration.',
   },
+  setup: {
+    outdated: (have, need) =>
+      `The database is at version ${have}, this app needs version ${need}. An admin has to run supabase/setup.sql in the Supabase SQL editor.`,
+    noAccount:
+      'There is no account yet. The app writes the link for the first admin to its log when it starts (docker logs family-tree-app).',
+  },
   admin: {
     title: 'Administration',
     noMail: 'This site does not send emails: pass invitations and reset links on yourself.',

@@ -495,6 +495,12 @@ export const es: Messages = {
     none: 'Todavía no perteneces a ningún árbol. Pide a alguien que te invite.',
     noneAdmin: 'Todavía no hay ningún árbol. Crea uno en la administración.',
   },
+  setup: {
+    outdated: (have, need) =>
+      `La base de datos está en la versión ${have}, esta aplicación necesita la versión ${need}. Un administrador debe ejecutar supabase/setup.sql en el editor SQL de Supabase.`,
+    noAccount:
+      'Todavía no hay ninguna cuenta. Al arrancar, la aplicación escribe en su registro el enlace para el primer administrador (docker logs family-tree-app).',
+  },
   admin: {
     title: 'Administración',
     noMail: 'Este sitio no envía correos: transmite tú las invitaciones y los enlaces para restablecer contraseñas.',

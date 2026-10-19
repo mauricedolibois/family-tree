@@ -73,7 +73,7 @@ export async function snapshotBeforeSave(familyId: string, current: StoredTree, 
   const { error } = await getSupaAdmin()
     .from('family_trees_backup')
     .insert({ family_id: familyId, tree_json: current, note })
-  // Without the migration (table missing) still save, just without a backup
+  // A failed snapshot must not stop the save; the log shows it
   if (error) logError('db.snapshotBeforeSave', error)
 }
 
