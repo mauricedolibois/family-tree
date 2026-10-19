@@ -3,6 +3,7 @@
 
 import type { MediaKind, StoredMedia } from '@/storage/schema'
 import { newId } from '@/family/edit'
+import { tr, type Lang } from '@/i18n/lang'
 
 const MAX_EDGE = 2000
 const JPEG_QUALITY = 0.86
@@ -33,15 +34,22 @@ async function shrink(file: File): Promise<File> {
   }
 }
 
-export async function uploadFiles(files: File[]): Promise<StoredMedia[]> {
+export async function uploadFiles(files: File[], lang: Lang = 'de'): Promise<StoredMedia[]> {
+  const t = tr(lang)
   const prepared = await Promise.all(files.map(shrink))
   const form = new FormData()
   for (const f of prepared) form.append('file', f)
   const res = await fetch('/api/media', { method: 'POST', body: form })
-  if (res.status === 413) throw new Error('Die Datei ist zu groß (höchstens 20 MB).')
+  if (res.status === 413)
+    throw new Error(t('Die Datei ist zu groß (höchstens 20 MB).', 'The file is too large (20 MB at most).'))
   if (res.status === 400)
-    throw new Error('Dieser Dateityp wird nicht unterstützt. Erlaubt sind Fotos, Videos und PDFs.')
-  if (!res.ok) throw new Error('Hochladen fehlgeschlagen.')
+    throw new Error(
+      t(
+        'Dieser Dateityp wird nicht unterstützt. Erlaubt sind Fotos, Videos und PDFs.',
+        'This file type isn’t supported. Photos, videos and PDFs are allowed.',
+      ),
+    )
+  if (!res.ok) throw new Error(t('Hochladen fehlgeschlagen.', 'Upload failed.'))
   const { urls } = (await res.json()) as { urls: string[] }
   return urls.map((url, i) => ({
     id: newId(),

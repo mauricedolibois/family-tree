@@ -8,6 +8,7 @@ import { lineageOf, lineageView, subTree } from '@/family/model'
 import { findConnection } from '@/family/kinship'
 import type { CardBox, TreeLayout } from '@/family/layout/types'
 import { useFamily } from '@/components/app/FamilyProvider'
+import { useLang } from '@/i18n/lang'
 import { useView } from '@/components/app/ViewProvider'
 import { PersonCard, type CardState } from './PersonCard'
 import { Connectors } from './Connectors'
@@ -31,6 +32,7 @@ export function TreeCanvas() {
   const { tree, index } = useFamily()
   const { selectedId, select, lineId, lineScope, showLine, relation, showRelation, birthdays, meId, focusRequest } =
     useView()
+  const { t } = useLang()
   const api = useRef<ReactZoomPanPinchRef | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
   const overlay = useRef<HTMLDivElement | null>(null)
@@ -328,13 +330,13 @@ export function TreeCanvas() {
 
       {/* Zoom */}
       <div className="parchment absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 flex flex-col overflow-hidden rounded-control border border-gilt/50 shadow-card">
-        <ZoomButton label="Vergrößern" onClick={() => api.current?.zoomIn(0.35)}>
+        <ZoomButton label={t('Vergrößern', 'Zoom in')} onClick={() => api.current?.zoomIn(0.35)}>
           <Plus className="h-5 w-5" />
         </ZoomButton>
-        <ZoomButton label="Verkleinern" onClick={() => api.current?.zoomOut(0.35)}>
+        <ZoomButton label={t('Verkleinern', 'Zoom out')} onClick={() => api.current?.zoomOut(0.35)}>
           <Minus className="h-5 w-5" />
         </ZoomButton>
-        <ZoomButton label="Ganzen Baum zeigen" onClick={() => fitAll()}>
+        <ZoomButton label={t('Ganzen Baum zeigen', 'Show the whole tree')} onClick={() => fitAll()}>
           <Maximize className="h-[18px] w-[18px]" />
         </ZoomButton>
       </div>

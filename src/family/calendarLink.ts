@@ -8,8 +8,10 @@
 //
 // vorfahren/nachkommen: Anzahl Generationen oder „alle“ (Standard)
 // seiten: keine (Standard) | geschwister | cousins | alle – wie bei „Meine Linie“
+// sprache: en für englische Texte im Kalender (Standard deutsch)
 
 import { buildIndex, lineageView, subTree, type LineScope, type Tree } from './model'
+import type { Lang } from '@/i18n/lang'
 
 export type CalendarSelection = { personId: string; scope: LineScope }
 
@@ -17,17 +19,27 @@ const SIDE_WORDS = ['keine', 'geschwister', 'cousins', 'alle'] as const
 
 const MAX_GENERATIONS = 99
 
-/** Parameter für den Link, mit führendem „?“ – leer für die ganze Familie */
-export function calendarQuery(sel: CalendarSelection | null): string {
-  if (!sel) return ''
+/** Parameter für den Link, mit führendem „?“ – leer für die ganze Familie auf Deutsch */
+export function calendarQuery(sel: CalendarSelection | null, lang: Lang = 'de'): string {
   const gen = (n: number | null) => (n === null ? 'alle' : String(n))
-  const q = new URLSearchParams({
-    linie: sel.personId,
-    vorfahren: gen(sel.scope.up),
-    nachkommen: gen(sel.scope.down),
-    seiten: SIDE_WORDS[sel.scope.side],
-  })
-  return `?${q.toString()}`
+  const q = new URLSearchParams(
+    sel
+      ? {
+          linie: sel.personId,
+          vorfahren: gen(sel.scope.up),
+          nachkommen: gen(sel.scope.down),
+          seiten: SIDE_WORDS[sel.scope.side],
+        }
+      : {},
+  )
+  if (lang === 'en') q.set('sprache', 'en')
+  const s = q.toString()
+  return s ? `?${s}` : ''
+}
+
+/** Sprache der Kalendertexte aus dem Link */
+export function calendarLang(query: Query): Lang {
+  return first(query.sprache) === 'en' ? 'en' : 'de'
 }
 
 type Query = Record<string, string | string[] | undefined>

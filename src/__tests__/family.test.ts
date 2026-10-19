@@ -307,7 +307,7 @@ describe('Umfang der Linie', () => {
 
 describe('Umfang in Worten (für den Druck)', () => {
   it('Generationen', () => {
-    expect([0, 1, 3].map(generations)).toEqual(['keine', '1 Generation', '3 Generationen'])
+    expect([0, 1, 3].map((n) => generations(n))).toEqual(['keine', '1 Generation', '3 Generationen'])
   })
 
   it('Linie', () => {

@@ -20,7 +20,15 @@ export type NewRelative = {
   marryExistingParent?: boolean
 }
 
-export class EditError extends Error {}
+/** Fehler beim Bearbeiten; `message` deutsch, `en` englisch */
+export class EditError extends Error {
+  constructor(
+    message: string,
+    readonly en: string = message,
+  ) {
+    super(message)
+  }
+}
 
 const ID_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
 
@@ -81,11 +89,11 @@ function link(parent: Person, child: Person, adopted = false) {
 /** Neue Person in Beziehung zu `refId` anlegen */
 export function addRelative(tree: Tree, refId: string, input: NewRelative): { tree: Tree; id: string } {
   const name = input.name.trim()
-  if (!name) throw new EditError('Bitte einen Namen eingeben.')
+  if (!name) throw new EditError('Bitte einen Namen eingeben.', 'Please enter a name.')
 
   const next = clone(tree)
   const ref = next.members[refId]
-  if (!ref) throw new EditError('Die Bezugsperson wurde nicht gefunden.')
+  if (!ref) throw new EditError('Die Bezugsperson wurde nicht gefunden.', 'The related person was not found.')
   const person = newPerson(name, input.gender)
   const ix = buildIndex(next)
 
@@ -99,7 +107,11 @@ export function addRelative(tree: Tree, refId: string, input: NewRelative): { tr
     }
     case 'SPOUSE': {
       if (ref.spouseId && next.members[ref.spouseId]) {
-        throw new EditError(`${ref.name} ist bereits mit ${next.members[ref.spouseId].name} verheiratet.`)
+        const spouseName = next.members[ref.spouseId].name
+        throw new EditError(
+          `${ref.name} ist bereits mit ${spouseName} verheiratet.`,
+          `${ref.name} is already married to ${spouseName}.`,
+        )
       }
       next.members[person.id] = person
       ref.spouseId = person.id
@@ -108,7 +120,8 @@ export function addRelative(tree: Tree, refId: string, input: NewRelative): { tr
     }
     case 'PARENT': {
       const existing = parentsOf(ix, ref.id)
-      if (existing.length >= 2) throw new EditError(`${ref.name} hat bereits zwei Eltern.`)
+      if (existing.length >= 2)
+        throw new EditError(`${ref.name} hat bereits zwei Eltern.`, `${ref.name} already has two parents.`)
       next.members[person.id] = person
       link(person, ref)
       if (input.marryExistingParent && existing.length === 1) {
@@ -134,10 +147,10 @@ export type PersonPatch = {
 export function updatePerson(tree: Tree, id: string, patch: PersonPatch): Tree {
   const next = clone(tree)
   const p = next.members[id]
-  if (!p) throw new EditError('Die Person wurde nicht gefunden.')
+  if (!p) throw new EditError('Die Person wurde nicht gefunden.', 'The person was not found.')
   if (patch.name !== undefined) {
     const name = patch.name.trim()
-    if (!name) throw new EditError('Der Name darf nicht leer sein.')
+    if (!name) throw new EditError('Der Name darf nicht leer sein.', 'The name can’t be empty.')
     p.name = name
   }
   if (patch.gender) p.gender = patch.gender
@@ -158,7 +171,10 @@ export function canDelete(tree: Tree, id: string): boolean {
 
 export function deletePerson(tree: Tree, id: string): Tree {
   if (!canDelete(tree, id)) {
-    throw new EditError('Diese Person hat Eltern und Kinder im Baum und kann deshalb nicht gelöscht werden.')
+    throw new EditError(
+      'Diese Person hat Eltern und Kinder im Baum und kann deshalb nicht gelöscht werden.',
+      'This person has parents and children in the tree and can’t be removed.',
+    )
   }
   const next = clone(tree)
   const target = next.members[id]
@@ -186,10 +202,11 @@ export function deletePerson(tree: Tree, id: string): Tree {
 }
 
 /** Startbaum für eine neue Familie */
-export function starterTree(): Tree {
-  const father = newPerson('Vater', 'MALE')
-  const mother = newPerson('Mutter', 'FEMALE')
-  const child = newPerson('Kind', 'FEMALE')
+export function starterTree(lang: 'de' | 'en' = 'de'): Tree {
+  const en = lang === 'en'
+  const father = newPerson(en ? 'Father' : 'Vater', 'MALE')
+  const mother = newPerson(en ? 'Mother' : 'Mutter', 'FEMALE')
+  const child = newPerson(en ? 'Child' : 'Kind', 'FEMALE')
   father.spouseId = mother.id
   mother.spouseId = father.id
   father.childrenIds = [child.id]

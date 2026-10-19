@@ -1,13 +1,36 @@
 // src/family/kinship.ts
 //
 // „Wie sind wir verwandt?“ – beschreibt eine Person aus Sicht einer anderen
-// mit den üblichen deutschen Verwandtschaftsbezeichnungen und findet den Weg
-// zwischen beiden durch den Baum.
+// mit den üblichen Verwandtschaftsbezeichnungen (deutsch oder englisch) und
+// findet den Weg zwischen beiden durch den Baum.
 
 import { ancestorsOf, childrenOf, isHalfSibling, parentsOf, spouseOf, type Gender, type TreeIndex } from './model'
+import type { Lang } from '@/i18n/lang'
 
-/** Ein Verwandtschaftswort und das Geschlecht der Person, die es bezeichnet */
-export type KinWord = { term: string; gender: Gender }
+/**
+ * Art der Verwandtschaft, unabhängig von der Sprache. Die Wörter dazu
+ * („Urgroßvater“, „great-grandfather“) entstehen erst beim Anzeigen.
+ */
+export type Rel =
+  | { kind: 'parent'; up: number }
+  | { kind: 'child'; down: number }
+  | { kind: 'sibling'; half: boolean }
+  /** Neffe/Nichte (down 2), Großneffe (3) … */
+  | { kind: 'nibling'; down: number }
+  /** Onkel/Tante (up 2), Großonkel (3) …; angeheiratet mit `inLaw` */
+  | { kind: 'pibling'; up: number; inLaw?: boolean }
+  | { kind: 'cousin'; degree: number; removed: number }
+  | { kind: 'spouse' }
+  /** „Mann“/„Frau“ in Ketten wie „Bruder deines Mannes“ */
+  | { kind: 'partner' }
+  | { kind: 'childInLaw' }
+  | { kind: 'parentInLaw' }
+  | { kind: 'siblingInLaw' }
+  | { kind: 'stepParent' }
+  | { kind: 'stepChild' }
+
+/** Ein Verwandtschaftsverhältnis und das Geschlecht der Person, die es bezeichnet */
+export type KinWord = { rel: Rel; gender: Gender }
 
 export type Kinship = KinWord & {
   /** über Heirat statt Abstammung */
@@ -38,8 +61,8 @@ function pick(gender: Gender, male: string, female: string) {
   return gender === 'FEMALE' ? female : male
 }
 
-function kin(term: string, gender: Gender, byMarriage = false, via: KinWord[] = []): Kinship {
-  return { term, gender, byMarriage, via }
+function kin(rel: Rel, gender: Gender, byMarriage = false, via: KinWord[] = []): Kinship {
+  return { rel, gender, byMarriage, via }
 }
 
 /** Abstand jeder Person zu ihren Vorfahren, inklusive sich selbst (0) */
@@ -72,65 +95,17 @@ function closestCommon(ix: TreeIndex, a: string, b: string): Common | null {
   return best
 }
 
-function urPrefix(n: number) {
-  return 'Ur'.repeat(n)
-}
-
-/** withUr(2, 'Großonkel') → „Ururgroßonkel“ */
-function withUr(n: number, word: string) {
-  return n === 0 ? word : urPrefix(n) + word.charAt(0).toLowerCase() + word.slice(1)
-}
-
-/** Blutsverwandtschaft: Begriff für B aus Sicht von A, oder null */
-function bloodTerm(ix: TreeIndex, a: string, b: string, common = closestCommon(ix, a, b)): string | null {
-  const person = ix.byId.get(b)
-  if (!person || !common) return null
-  const g = person.gender
+/** Blutsverwandtschaft: B aus Sicht von A, oder null */
+function bloodRel(ix: TreeIndex, a: string, b: string, common = closestCommon(ix, a, b)): Rel | null {
+  if (!ix.byId.get(b) || !common) return null
   const { up, down } = common
-
   if (up === 0 && down === 0) return null
-
-  // B ist Vorfahr von A
-  if (down === 0) {
-    if (up === 1) return pick(g, 'Vater', 'Mutter')
-    if (up === 2) return pick(g, 'Großvater', 'Großmutter')
-    if (up - 2 <= MAX_NAMED_UR) return urPrefix(up - 2) + pick(g, 'großvater', 'großmutter')
-    return `${pick(g, 'Vorfahr', 'Vorfahrin')}, ${up} Generationen zurück`
-  }
-
-  // B ist Nachkomme von A
-  if (up === 0) {
-    if (down === 1) return pick(g, 'Sohn', 'Tochter')
-    if (down === 2) return pick(g, 'Enkel', 'Enkelin')
-    if (down - 2 <= MAX_NAMED_UR) return urPrefix(down - 2) + pick(g, 'enkel', 'enkelin')
-    return `${pick(g, 'Nachfahre', 'Nachfahrin')}, ${down} Generationen später`
-  }
-
-  if (up === 1 && down === 1) {
-    return isHalfSibling(ix, a, b) ? pick(g, 'Halbbruder', 'Halbschwester') : pick(g, 'Bruder', 'Schwester')
-  }
-
-  // Nichte/Neffe und weiter nach unten
-  if (up === 1) {
-    if (down === 2) return pick(g, 'Neffe', 'Nichte')
-    if (down - 3 <= MAX_NAMED_UR) return withUr(down - 3, pick(g, 'Großneffe', 'Großnichte'))
-    return `${pick(g, 'Nachfahre', 'Nachfahrin')} eines Geschwisters`
-  }
-
-  // Onkel/Tante und weiter nach oben
-  if (down === 1) {
-    if (up === 2) return pick(g, 'Onkel', 'Tante')
-    if (up - 3 <= MAX_NAMED_UR) return withUr(up - 3, pick(g, 'Großonkel', 'Großtante'))
-    return `${pick(g, 'Onkel', 'Tante')}, ${up - 1} Generationen zurück`
-  }
-
-  // Cousin/Cousine n. Grades, ggf. um Generationen versetzt
-  const degree = Math.min(up, down) - 1
-  const removed = Math.abs(up - down)
-  const base = pick(g, 'Cousin', 'Cousine')
-  const named = degree === 1 ? base : `${base} ${degree}. Grades`
-  if (removed === 0) return named
-  return `${named}, ${removed === 1 ? 'eine Generation' : `${removed} Generationen`} versetzt`
+  if (down === 0) return { kind: 'parent', up }
+  if (up === 0) return { kind: 'child', down }
+  if (up === 1 && down === 1) return { kind: 'sibling', half: isHalfSibling(ix, a, b) }
+  if (up === 1) return { kind: 'nibling', down }
+  if (down === 1) return { kind: 'pibling', up }
+  return { kind: 'cousin', degree: Math.min(up, down) - 1, removed: Math.abs(up - down) }
 }
 
 /** Von einer Person über ihre Eltern hinauf bis zu einem Vorfahren: [from, …, to] */
@@ -177,11 +152,11 @@ function relate(ix: TreeIndex, a: string, b: string): Found | null {
   if (!other || !ix.byId.has(a)) return null
   const g = other.gender
 
-  if (spouseOf(ix, a) === b) return { kinship: kin(pick(g, 'Ehemann', 'Ehefrau'), g, true), path: [a, b], common: [] }
+  if (spouseOf(ix, a) === b) return { kinship: kin({ kind: 'spouse' }, g, true), path: [a, b], common: [] }
 
   const blood = closestCommon(ix, a, b)
-  const term = blood && bloodTerm(ix, a, b, blood)
-  if (blood && term) return { kinship: kin(term, g), ...bloodPath(ix, a, b, blood) }
+  const rel = blood && bloodRel(ix, a, b, blood)
+  if (blood && rel) return { kinship: kin(rel, g), ...bloodPath(ix, a, b, blood) }
 
   // B ist mit einem Blutsverwandten von A verheiratet
   const otherSpouse = spouseOf(ix, b)
@@ -190,14 +165,14 @@ function relate(ix: TreeIndex, a: string, b: string): Found | null {
     const { up, down } = viaOtherSpouse
     const route = bloodPath(ix, a, otherSpouse, viaOtherSpouse)
     const found = (k: Kinship): Found => ({ kinship: k, path: [...route.path, b], common: route.common })
-    if (up === 0 && down === 1) return found(kin(pick(g, 'Schwiegersohn', 'Schwiegertochter'), g, true))
-    if (up === 1 && down === 0) return found(kin(pick(g, 'Stiefvater', 'Stiefmutter'), g, true))
-    if (up === 1 && down === 1) return found(kin(pick(g, 'Schwager', 'Schwägerin'), g, true))
-    const spouseTerm = bloodTerm(ix, a, otherSpouse, viaOtherSpouse)
-    if (spouseTerm && down === 1 && up >= 2) return found(kin(`${swapGender(spouseTerm, g)} (angeheiratet)`, g, true))
-    if (spouseTerm && !spouseTerm.includes(',')) {
-      const sg = ix.byId.get(otherSpouse)!.gender
-      return found(kin(pick(g, 'Ehemann', 'Ehefrau'), g, true, [{ term: spouseTerm, gender: sg }]))
+    if (up === 0 && down === 1) return found(kin({ kind: 'childInLaw' }, g, true))
+    if (up === 1 && down === 0) return found(kin({ kind: 'stepParent' }, g, true))
+    if (up === 1 && down === 1) return found(kin({ kind: 'siblingInLaw' }, g, true))
+    const spouseRel = bloodRel(ix, a, otherSpouse, viaOtherSpouse)
+    if (spouseRel?.kind === 'pibling') return found(kin({ kind: 'pibling', up: spouseRel.up, inLaw: true }, g, true))
+    const sg = ix.byId.get(otherSpouse)!.gender
+    if (spouseRel && !hasTail({ rel: spouseRel, gender: sg })) {
+      return found(kin({ kind: 'spouse' }, g, true, [{ rel: spouseRel, gender: sg }]))
     }
   }
 
@@ -208,13 +183,13 @@ function relate(ix: TreeIndex, a: string, b: string): Found | null {
     const { up, down } = viaMySpouse
     const route = bloodPath(ix, mySpouse, b, viaMySpouse)
     const found = (k: Kinship): Found => ({ kinship: k, path: [a, ...route.path], common: route.common })
-    if (down === 0 && up === 1) return found(kin(pick(g, 'Schwiegervater', 'Schwiegermutter'), g, true))
-    if (up === 1 && down === 1) return found(kin(pick(g, 'Schwager', 'Schwägerin'), g, true))
-    if (up === 0 && down === 1) return found(kin(pick(g, 'Stiefsohn', 'Stieftochter'), g, true))
-    const t = bloodTerm(ix, mySpouse, b, viaMySpouse)
-    if (t) {
+    if (down === 0 && up === 1) return found(kin({ kind: 'parentInLaw' }, g, true))
+    if (up === 1 && down === 1) return found(kin({ kind: 'siblingInLaw' }, g, true))
+    if (up === 0 && down === 1) return found(kin({ kind: 'stepChild' }, g, true))
+    const r = bloodRel(ix, mySpouse, b, viaMySpouse)
+    if (r) {
       const sg = ix.byId.get(mySpouse)!.gender
-      return found(kin(t, g, true, [{ term: pick(sg, 'Mann', 'Frau'), gender: sg }]))
+      return found(kin(r, g, true, [{ rel: { kind: 'partner' }, gender: sg }]))
     }
   }
 
@@ -264,12 +239,11 @@ function chainKinship(ix: TreeIndex, path: string[]): Kinship {
     // Hinauf zum Elternteil und gleich zu dessen Kind: Geschwister
     if (isParent && next && childrenOf(ix, cur).includes(next)) {
       const ng = ix.byId.get(next)!.gender
-      const half = isHalfSibling(ix, prev, next)
-      words.push({ term: half ? pick(ng, 'Halbbruder', 'Halbschwester') : pick(ng, 'Bruder', 'Schwester'), gender: ng })
+      words.push({ rel: { kind: 'sibling', half: isHalfSibling(ix, prev, next) }, gender: ng })
       i++
-    } else if (isParent) words.push({ term: pick(g, 'Vater', 'Mutter'), gender: g })
-    else if (childrenOf(ix, prev).includes(cur)) words.push({ term: pick(g, 'Sohn', 'Tochter'), gender: g })
-    else words.push({ term: pick(g, 'Ehemann', 'Ehefrau'), gender: g })
+    } else if (isParent) words.push({ rel: { kind: 'parent', up: 1 }, gender: g })
+    else if (childrenOf(ix, prev).includes(cur)) words.push({ rel: { kind: 'child', down: 1 }, gender: g })
+    else words.push({ rel: { kind: 'spouse' }, gender: g })
   }
   const [last, ...rest] = words.reverse()
   return { ...last, byMarriage: true, via: rest }
@@ -298,20 +272,148 @@ export function findConnection(ix: TreeIndex, a: string, b: string): Connection 
   }
 }
 
-/** „Onkel“ ↔ „Tante“ usw., wenn der angeheiratete Partner das andere Geschlecht hat */
-function swapGender(term: string, g: Gender): string {
-  const pairs: Array<[string, string]> = [
-    ['onkel', 'tante'],
-    ['Onkel', 'Tante'],
-  ]
-  for (const [m, f] of pairs) {
-    if (g === 'FEMALE' && term.includes(m)) return term.replace(m, f)
-    if (g === 'MALE' && term.includes(f)) return term.replace(f, m)
-  }
-  return term
+// ── In Worte fassen ──────────────────────────────────────────────────────────
+
+function urPrefix(n: number) {
+  return 'Ur'.repeat(n)
 }
 
-// ── In Worte fassen ──────────────────────────────────────────────────────────
+/** withUr(2, 'Großonkel') → „Ururgroßonkel“ */
+function withUr(n: number, word: string) {
+  return n === 0 ? word : urPrefix(n) + word.charAt(0).toLowerCase() + word.slice(1)
+}
+
+/** Deutsch: Hauptwort und Zusatz, z. B. [„Cousine 2. Grades“, „eine Generation versetzt“] */
+function termDe(rel: Rel, g: Gender): [string, string] {
+  switch (rel.kind) {
+    case 'parent': {
+      const { up } = rel
+      if (up === 1) return [pick(g, 'Vater', 'Mutter'), '']
+      if (up === 2) return [pick(g, 'Großvater', 'Großmutter'), '']
+      if (up - 2 <= MAX_NAMED_UR) return [urPrefix(up - 2) + pick(g, 'großvater', 'großmutter'), '']
+      return [pick(g, 'Vorfahr', 'Vorfahrin'), `${up} Generationen zurück`]
+    }
+    case 'child': {
+      const { down } = rel
+      if (down === 1) return [pick(g, 'Sohn', 'Tochter'), '']
+      if (down === 2) return [pick(g, 'Enkel', 'Enkelin'), '']
+      if (down - 2 <= MAX_NAMED_UR) return [urPrefix(down - 2) + pick(g, 'enkel', 'enkelin'), '']
+      return [pick(g, 'Nachfahre', 'Nachfahrin'), `${down} Generationen später`]
+    }
+    case 'sibling':
+      return [rel.half ? pick(g, 'Halbbruder', 'Halbschwester') : pick(g, 'Bruder', 'Schwester'), '']
+    case 'nibling': {
+      const { down } = rel
+      if (down === 2) return [pick(g, 'Neffe', 'Nichte'), '']
+      if (down - 3 <= MAX_NAMED_UR) return [withUr(down - 3, pick(g, 'Großneffe', 'Großnichte')), '']
+      return [`${pick(g, 'Nachfahre', 'Nachfahrin')} eines Geschwisters`, '']
+    }
+    case 'pibling': {
+      const { up } = rel
+      const tag = rel.inLaw ? ' (angeheiratet)' : ''
+      if (up === 2) return [pick(g, 'Onkel', 'Tante') + tag, '']
+      if (up - 3 <= MAX_NAMED_UR) return [withUr(up - 3, pick(g, 'Großonkel', 'Großtante')) + tag, '']
+      return [pick(g, 'Onkel', 'Tante'), `${up - 1} Generationen zurück${tag}`]
+    }
+    case 'cousin': {
+      const base = pick(g, 'Cousin', 'Cousine')
+      const named = rel.degree === 1 ? base : `${base} ${rel.degree}. Grades`
+      if (rel.removed === 0) return [named, '']
+      return [named, `${rel.removed === 1 ? 'eine Generation' : `${rel.removed} Generationen`} versetzt`]
+    }
+    case 'spouse':
+      return [pick(g, 'Ehemann', 'Ehefrau'), '']
+    case 'partner':
+      return [pick(g, 'Mann', 'Frau'), '']
+    case 'childInLaw':
+      return [pick(g, 'Schwiegersohn', 'Schwiegertochter'), '']
+    case 'parentInLaw':
+      return [pick(g, 'Schwiegervater', 'Schwiegermutter'), '']
+    case 'siblingInLaw':
+      return [pick(g, 'Schwager', 'Schwägerin'), '']
+    case 'stepParent':
+      return [pick(g, 'Stiefvater', 'Stiefmutter'), '']
+    case 'stepChild':
+      return [pick(g, 'Stiefsohn', 'Stieftochter'), '']
+  }
+}
+
+const greats = (n: number) => 'great-'.repeat(n)
+
+const ORDINALS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth']
+const ordinal = (n: number) => ORDINALS[n - 1] ?? `${n}th`
+
+/** Englisch: „second cousin once removed“, „great-great-grandfather“, „ancestor“ + „9 generations back“ */
+function termEn(rel: Rel, g: Gender): [string, string] {
+  switch (rel.kind) {
+    case 'parent': {
+      const { up } = rel
+      if (up === 1) return [pick(g, 'father', 'mother'), '']
+      if (up - 2 <= MAX_NAMED_UR) return [greats(up - 2) + pick(g, 'grandfather', 'grandmother'), '']
+      return ['ancestor', `${up} generations back`]
+    }
+    case 'child': {
+      const { down } = rel
+      if (down === 1) return [pick(g, 'son', 'daughter'), '']
+      if (down - 2 <= MAX_NAMED_UR) return [greats(down - 2) + pick(g, 'grandson', 'granddaughter'), '']
+      return ['descendant', `${down} generations later`]
+    }
+    case 'sibling':
+      return [rel.half ? pick(g, 'half-brother', 'half-sister') : pick(g, 'brother', 'sister'), '']
+    case 'nibling': {
+      const { down } = rel
+      if (down === 2) return [pick(g, 'nephew', 'niece'), '']
+      if (down - 3 <= MAX_NAMED_UR) return [greats(down - 3) + pick(g, 'grandnephew', 'grandniece'), '']
+      return ['descendant of a sibling', '']
+    }
+    case 'pibling': {
+      const { up } = rel
+      const word = pick(g, 'uncle', 'aunt')
+      if (up - 3 <= MAX_NAMED_UR) return [greats(up - 2) + word + (rel.inLaw ? ' by marriage' : ''), '']
+      return [word, `${up - 1} generations back${rel.inLaw ? ' (by marriage)' : ''}`]
+    }
+    case 'cousin': {
+      if (rel.degree === 1 && rel.removed === 0) return ['cousin', '']
+      const removed =
+        rel.removed === 0
+          ? ''
+          : rel.removed === 1
+          ? ' once removed'
+          : rel.removed === 2
+          ? ' twice removed'
+          : ` ${rel.removed} times removed`
+      return [`${ordinal(rel.degree)} cousin${removed}`, '']
+    }
+    case 'spouse':
+    case 'partner':
+      return [pick(g, 'husband', 'wife'), '']
+    case 'childInLaw':
+      return [pick(g, 'son-in-law', 'daughter-in-law'), '']
+    case 'parentInLaw':
+      return [pick(g, 'father-in-law', 'mother-in-law'), '']
+    case 'siblingInLaw':
+      return [pick(g, 'brother-in-law', 'sister-in-law'), '']
+    case 'stepParent':
+      return [pick(g, 'stepfather', 'stepmother'), '']
+    case 'stepChild':
+      return [pick(g, 'stepson', 'stepdaughter'), '']
+  }
+}
+
+function termParts(word: KinWord, lang: Lang): [string, string] {
+  return lang === 'en' ? termEn(word.rel, word.gender) : termDe(word.rel, word.gender)
+}
+
+/** Hat die Bezeichnung einen Zusatz wie „, 5 Generationen zurück“? Dann taugt sie nicht für Ketten. */
+function hasTail(word: KinWord): boolean {
+  return termDe(word.rel, word.gender)[1] !== ''
+}
+
+/** Ganze Bezeichnung, z. B. „Cousine 2. Grades, eine Generation versetzt“ oder „first cousin once removed“ */
+export function kinTerm(word: KinWord, lang: Lang = 'de'): string {
+  const [head, tail] = termParts(word, lang)
+  return tail ? `${head}, ${tail}` : head
+}
 
 const article = (g: Gender) => pick(g, 'der', 'die')
 const ofArticle = (g: Gender) => pick(g, 'des', 'der')
@@ -321,17 +423,12 @@ const ofYour = (g: Gender) => pick(g, 'deines', 'deiner')
 const IRREGULAR_GENITIVE: Record<string, string> = { Mann: 'Mannes', Sohn: 'Sohnes' }
 
 /** „des Cousins 2. Grades“, „des Neffen“, „der Cousine“ – nur das Wort, ohne Artikel */
-function genitive({ term, gender }: KinWord): string {
-  if (gender === 'FEMALE') return term
+function genitive(word: KinWord): string {
+  const [term] = termDe(word.rel, word.gender)
+  if (word.gender === 'FEMALE') return term
   const [first, ...rest] = term.split(' ')
   const gen = IRREGULAR_GENITIVE[first] ?? (/e$/.test(first) ? `${first}n` : /[sßx]$/.test(first) ? first : `${first}s`)
   return [gen, ...rest].join(' ')
-}
-
-/** „Cousin 2. Grades, eine Generation versetzt“ → Hauptwort und Zusatz */
-function splitTerm(term: string): [string, string] {
-  const i = term.indexOf(', ')
-  return i < 0 ? [term, ''] : [term.slice(0, i), term.slice(i + 2)]
 }
 
 /** „der Schwester des Ehemanns“ – bei `yours` gehört die letzte Person zu „dir“ */
@@ -341,18 +438,35 @@ function viaChain(via: KinWord[], yours: boolean): string {
     .join(' ')
 }
 
+/** Englisch, von der anderen Seite her: „husband’s sister’s “ (via steht von B aus gelesen) */
+function possessiveChain(via: KinWord[]): string {
+  return via
+    .slice()
+    .reverse()
+    .map((v) => `${termEn(v.rel, v.gender)[0]}’s `)
+    .join('')
+}
+
+const possessive = (name: string) => (/s$/i.test(name) ? `${name}’` : `${name}’s`)
+
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** Aus deiner Sicht, z. B. im Infoblatt: „Dein Urgroßvater“, „Ehemann deiner Cousine“ */
-export function kinshipLabel(k: Kinship): string {
-  const [head, tail] = splitTerm(k.term)
-  const core = k.via.length ? `${head} ${viaChain(k.via, true)}` : `${capitalize(your(k.gender))} ${head}`
+/** Aus deiner Sicht, z. B. im Infoblatt: „Dein Urgroßvater“, „Ehemann deiner Cousine“, „Your cousin’s husband“ */
+export function kinshipLabel(k: Kinship, lang: Lang = 'de'): string {
+  const [head, tail] = termParts(k, lang)
+  const core =
+    lang === 'en'
+      ? `Your ${possessiveChain(k.via)}${head}`
+      : k.via.length
+      ? `${head} ${viaChain(k.via, true)}`
+      : `${capitalize(your(k.gender))} ${head}`
   return tail ? `${core}, ${tail}` : core
 }
 
 /** Ohne Bezug auf jemanden, als Überschrift: „Cousin 2. Grades“ + „eine Generation versetzt“ */
-export function kinshipTitle(k: Kinship): { title: string; note: string } {
-  const [head, tail] = splitTerm(k.term)
+export function kinshipTitle(k: Kinship, lang: Lang = 'de'): { title: string; note: string } {
+  const [head, tail] = termParts(k, lang)
+  if (lang === 'en') return { title: capitalize(`${possessiveChain(k.via)}${head}`), note: tail }
   return { title: k.via.length ? `${head} ${viaChain(k.via, false)}` : head, note: tail }
 }
 
@@ -362,9 +476,15 @@ export type Party = { name: string } | 'you'
 /**
  * Ganzer Satz, Subjekt ist B, Objekt ist A:
  * „Ida ist die Tante von Kurt.“, „Ida ist deine Tante.“, „Du bist die Tante von Kurt.“
+ * Englisch: „Ida is Kurt’s aunt.“, „Ida is your aunt.“, „You are Kurt’s aunt.“
  */
-export function kinshipSentence(k: Kinship, subject: Party, object: Party): string {
-  const [head, tail] = splitTerm(k.term)
+export function kinshipSentence(k: Kinship, subject: Party, object: Party, lang: Lang = 'de'): string {
+  const [head, tail] = termParts(k, lang)
+  if (lang === 'en') {
+    const start = subject === 'you' ? 'You are' : `${subject.name} is`
+    const owner = object === 'you' ? 'your' : possessive(object.name)
+    return `${start} ${owner} ${possessiveChain(k.via)}${head}${tail ? `, ${tail}` : ''}.`
+  }
   const start = subject === 'you' ? 'Du bist' : `${subject.name} ist`
   let rel: string
   if (object === 'you') {

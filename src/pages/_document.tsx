@@ -1,8 +1,10 @@
-import { Html, Head, Main, NextScript } from 'next/document'
+import { Html, Head, Main, NextScript, type DocumentProps } from 'next/document'
 
-export default function Document() {
+export default function Document(props: DocumentProps) {
+  // Sprache der Seite (vom Server ermittelt), damit Vorlesefunktionen richtig betonen
+  const lang = props.__NEXT_DATA__.props?.pageProps?.lang === 'en' ? 'en' : 'de'
   return (
-    <Html lang="de">
+    <Html lang={lang}>
       <Head>
         <meta name="theme-color" content="#1E3428" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -8,6 +8,7 @@ import { splitName } from '@/family/format'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { useToast } from '@/components/app/Toast'
+import { useLang } from '@/i18n/lang'
 
 export function ViewModes({
   count,
@@ -21,6 +22,7 @@ export function ViewModes({
   const { index } = useFamily()
   const { lineId, showLine, meId, relation, showRelation, selectedId, select, birthdays } = useView()
   const { notify } = useToast()
+  const { t } = useLang()
   const other = lineId && lineId !== meId ? index.byId.get(lineId) : null
 
   const openRelation = () => {
@@ -34,33 +36,42 @@ export function ViewModes({
     <div className="flex max-w-full flex-wrap items-center gap-2">
       <div
         role="radiogroup"
-        aria-label="Ansicht"
+        aria-label={t('Ansicht', 'View')}
         className="parchment pointer-events-auto flex rounded-full border border-gilt/60 p-1 shadow-card"
       >
         <Tab active={!lineId && !relation} onClick={() => showLine(null)}>
-          Ganze Familie
+          {t('Ganze Familie', 'Whole family')}
         </Tab>
         <Tab
           active={!!lineId && lineId === meId}
           onClick={() =>
-            meId ? showLine(meId) : notify({ message: 'Tippe im Baum auf dich selbst und wähle „Das bin ich“.' })
+            meId
+              ? showLine(meId)
+              : notify({
+                  message: t(
+                    'Tippe im Baum auf dich selbst und wähle „Das bin ich“.',
+                    'Tap yourself in the tree and choose “That’s me”.',
+                  ),
+                })
           }
           disabled={!meId}
         >
-          Meine Linie
+          {t('Meine Linie', 'My line')}
         </Tab>
         <Tab active={!!relation} onClick={openRelation}>
-          Beziehung
+          {t('Beziehung', 'Relationship')}
         </Tab>
       </div>
 
       {other && (
         <span className="parchment pointer-events-auto flex items-center rounded-full border border-gilt/60 pl-3 text-sm text-ink shadow-card">
-          <span className="max-w-[10rem] truncate">Linie von {splitName(other.name).given || other.name}</span>
+          <span className="max-w-[10rem] truncate">
+            {t('Linie von', 'Line of')} {splitName(other.name).given || other.name}
+          </span>
           <button
             type="button"
             onClick={() => showLine(null)}
-            aria-label="Ganze Familie zeigen"
+            aria-label={t('Ganze Familie zeigen', 'Show whole family')}
             className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:text-ink"
           >
             <X className="h-4 w-4" />
@@ -73,8 +84,8 @@ export function ViewModes({
           type="button"
           onClick={onToggleScope}
           aria-expanded={scopeOpen}
-          aria-label="Linie anpassen"
-          title="Linie anpassen"
+          aria-label={t('Linie anpassen', 'Adjust the line')}
+          title={t('Linie anpassen', 'Adjust the line')}
           data-tour="scope"
           className={clsx(
             'pointer-events-auto grid h-10 w-10 place-items-center rounded-full border shadow-card',
@@ -89,7 +100,7 @@ export function ViewModes({
 
       {!relation && !scopeOpen && !birthdays && (
         <span className="parchment pointer-events-auto hidden rounded-full border border-card-rule px-3 py-1 text-sm tabular-nums text-ink-muted shadow-card sm:inline-block">
-          {count} Personen
+          {t(`${count} Personen`, count === 1 ? '1 person' : `${count} people`)}
         </span>
       )}
     </div>

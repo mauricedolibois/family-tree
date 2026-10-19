@@ -19,6 +19,7 @@ import { describeRelation } from '@/components/relation/RelationCard'
 import { Segmented } from '@/components/ui/Choice'
 import { Button } from '@/components/ui/Button'
 import { Flourish } from '@/components/ui/Flourish'
+import { locale, useLang } from '@/i18n/lang'
 
 type Content = 'line' | 'relation' | 'all'
 type Orientation = 'portrait' | 'landscape'
@@ -80,6 +81,7 @@ export function ExportSheet() {
 function ExportDialog() {
   const { tree, index, familyName } = useFamily()
   const { setExportOpen, lineId, meId, relation, lineScope } = useView()
+  const { t, lang } = useLang()
   const close = () => setExportOpen(false)
 
   const linePerson = lineId ?? meId
@@ -134,11 +136,12 @@ function ExportDialog() {
   const options: Array<{ value: Content; label: string }> = []
   if (linePerson) {
     const p = index.byId.get(linePerson)
-    const label = linePerson === meId ? 'Meine Linie' : `Linie von ${p ? splitName(p.name).given || p.name : '…'}`
+    const who = p ? splitName(p.name).given || p.name : '…'
+    const label = linePerson === meId ? t('Meine Linie', 'My line') : t(`Linie von ${who}`, `Line of ${who}`)
     options.push({ value: 'line', label })
   }
-  if (pair) options.push({ value: 'relation', label: 'Beziehung' })
-  options.push({ value: 'all', label: 'Ganze Familie' })
+  if (pair) options.push({ value: 'relation', label: t('Beziehung', 'Relationship') })
+  options.push({ value: 'all', label: t('Ganze Familie', 'Whole family') })
 
   const chooseContent = (c: Content) => {
     setContent(c)
@@ -156,37 +159,46 @@ function ExportDialog() {
           onClick={close}
           className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-card/90 hover:bg-white/10"
         >
-          <ArrowLeft className="h-4 w-4" /> Zurück
+          <ArrowLeft className="h-4 w-4" /> {t('Zurück', 'Back')}
         </button>
-        <h1 className="font-display text-[1.35rem] text-gilt-soft">Als PDF exportieren</h1>
+        <h1 className="font-display text-[1.35rem] text-gilt-soft">{t('Als PDF exportieren', 'Export as PDF')}</h1>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-auto md:flex-row md:overflow-hidden print:block print:overflow-visible">
         {/* Einstellungen */}
         <aside className="shrink-0 p-3 md:w-[380px] md:overflow-auto md:p-4 print:hidden">
           <div className="parchment flex flex-col gap-4 rounded-card border border-gilt/60 p-4 shadow-card">
-            <Segmented dense label="Inhalt" value={content} options={options} onChange={chooseContent} />
             <Segmented
-              label="Format"
+              dense
+              label={t('Inhalt', 'Content')}
+              value={content}
+              options={options}
+              onChange={chooseContent}
+            />
+            <Segmented
+              label={t('Format', 'Orientation')}
               value={orientation}
               options={[
-                { value: 'portrait', label: 'Hoch' },
-                { value: 'landscape', label: 'Quer' },
+                { value: 'portrait', label: t('Hoch', 'Portrait') },
+                { value: 'landscape', label: t('Quer', 'Landscape') },
               ]}
               onChange={setOrientationChoice}
             />
             <Segmented
               dense
-              label="Papier"
+              label={t('Papier', 'Paper')}
               value={paper}
               options={PAPERS.map((p) => ({ value: p, label: p }))}
               onChange={setPaperChoice}
             />
             <p className="text-sm leading-snug text-ink-muted" aria-live="polite">
               {layout
-                ? `Namen in etwa ${pt.toLocaleString('de-DE', { maximumFractionDigits: 1 })} pt.` +
-                  (pt < READABLE_PT ? ' Für gut lesbaren Druck größeres Papier wählen.' : ' Gut lesbar.')
-                : 'Der Baum wird angeordnet …'}
+                ? t('Namen in etwa ', 'Names at about ') +
+                  `${pt.toLocaleString(locale(lang), { maximumFractionDigits: 1 })} pt.` +
+                  (pt < READABLE_PT
+                    ? t(' Für gut lesbaren Druck größeres Papier wählen.', ' Choose larger paper for a readable print.')
+                    : t(' Gut lesbar.', ' Easy to read.'))
+                : t('Der Baum wird angeordnet …', 'Arranging the tree …')}
             </p>
             <div>
               <Button
@@ -196,10 +208,13 @@ function ExportDialog() {
                 onClick={() => window.print()}
                 disabled={!layout}
               >
-                Drucken oder als PDF sichern
+                {t('Drucken oder als PDF sichern', 'Print or save as PDF')}
               </Button>
               <p className="mt-2 text-sm leading-snug text-ink-faint">
-                Im Druckdialog als Drucker „Als PDF sichern“ wählen. Papiergröße und Ausrichtung sind schon eingestellt.
+                {t(
+                  'Im Druckdialog als Drucker „Als PDF sichern“ wählen. Papiergröße und Ausrichtung sind schon eingestellt.',
+                  'In the print dialog, choose “Save as PDF” as the printer. Paper size and orientation are already set.',
+                )}
               </p>
             </div>
           </div>
@@ -264,41 +279,55 @@ function useHeading(
 ): Heading {
   const { index } = useFamily()
   const { lineScope } = useView()
+  const { t, lang } = useLang()
   return useMemo(() => {
     const count = Object.keys(tree.members).length
     const generations = layout ? new Set(layout.cards.map((c) => c.y)).size : 0
+    const kicker = t(`Stammbaum ${familyName}`, `${familyName} family tree`)
+    const people = t(
+      `${count} Personen in ${generations} Generationen.`,
+      `${count} people in ${generations} generations.`,
+    )
     if (content === 'line' && linePerson) {
       const p = index.byId.get(linePerson)
       const depth = lineDepth(index, linePerson)
       const pedigree = lineScope.side === 0 && (lineScope.down === 0 || depth.down === 0)
+      const name = p?.name ?? ''
       return {
-        kicker: `Stammbaum ${familyName}`,
-        title: `${pedigree ? 'Ahnentafel' : 'Linie'} von ${p?.name ?? ''}`,
-        lines: [`${describeLineScope(lineScope, depth)}. ${count} Personen in ${generations} Generationen.`],
-        legendLine: pedigree ? null : 'direkte Linie',
+        kicker,
+        title: pedigree
+          ? t(`Ahnentafel von ${name}`, `Pedigree of ${name}`)
+          : t(`Linie von ${name}`, `Line of ${name}`),
+        lines: [`${describeLineScope(lineScope, depth, lang)}. ${people}`],
+        legendLine: pedigree ? null : t('direkte Linie', 'direct line'),
       }
     }
     if (content === 'relation' && pair) {
       const a = index.byId.get(pair.from)
       const b = index.byId.get(pair.to)
       const c = findConnection(index, pair.from, pair.to)
-      const text = a && b && c ? describeRelation(index, c, a, b, null) : null
+      const text = a && b && c ? describeRelation(index, c, a, b, null, lang) : null
       return {
-        kicker: `Stammbaum ${familyName}`,
-        title: `${a?.name ?? ''} und ${b?.name ?? ''}`,
+        kicker,
+        title: `${a?.name ?? ''} ${t('und', 'and')} ${b?.name ?? ''}`,
         lines: text
           ? [[text.forward, text.backward].filter(Boolean).join(' '), text.common ?? ''].filter(Boolean)
-          : ['Im Stammbaum gibt es keine Verbindung zwischen den beiden.'],
+          : [
+              t(
+                'Im Stammbaum gibt es keine Verbindung zwischen den beiden.',
+                'The family tree has no connection between the two.',
+              ),
+            ],
         legendLine: null,
       }
     }
     return {
-      kicker: 'Die ganze Familie',
-      title: `Stammbaum ${familyName}`,
-      lines: [`${count} Personen in ${generations} Generationen.`],
+      kicker: t('Die ganze Familie', 'The whole family'),
+      title: kicker,
+      lines: [people],
       legendLine: null,
     }
-  }, [content, tree, layout, linePerson, pair, familyName, index, lineScope])
+  }, [content, tree, layout, linePerson, pair, familyName, index, lineScope, t, lang])
 }
 
 function Sheet({
@@ -316,8 +345,9 @@ function Sheet({
   highlight: Set<string> | null
   heading: Heading
 }) {
+  const { t, lang } = useLang()
   const mm = (v: number) => `${v}mm`
-  const today = new Date().toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+  const today = new Date().toLocaleDateString(locale(lang), { day: 'numeric', month: 'long', year: 'numeric' })
   const adopted = layout?.connectors.some((c) => c.adopted)
 
   return (
@@ -400,7 +430,9 @@ function Sheet({
               </div>
             </div>
           ) : (
-            <p className="font-serif italic text-ink-muted">Der Baum wird angeordnet …</p>
+            <p className="font-serif italic text-ink-muted">
+              {t('Der Baum wird angeordnet …', 'Arranging the tree …')}
+            </p>
           )}
         </div>
 
@@ -410,7 +442,7 @@ function Sheet({
         >
           <span className="flex items-center" style={{ gap: '1.4em' }}>
             <span className="flex items-center" style={{ gap: '0.4em' }}>
-              <Rings /> verheiratet
+              <Rings /> {t('verheiratet', 'married')}
             </span>
             {heading.legendLine && (
               <span className="flex items-center" style={{ gap: '0.4em' }}>
@@ -427,11 +459,13 @@ function Sheet({
                   className="inline-block"
                   style={{ width: '1.8em', borderTop: '0.12em dashed rgb(var(--line))' }}
                 />
-                adoptiert
+                {t('adoptiert', 'adopted')}
               </span>
             )}
           </span>
-          <span>Stand: {today}</span>
+          <span>
+            {t('Stand', 'As of')}: {today}
+          </span>
         </footer>
       </div>
     </article>

@@ -2,6 +2,7 @@
 // Namen und Daten so aufbereiten, wie man sie im Stammbaum lesen möchte.
 
 import type { LineScope, Person } from './model'
+import { locale, type Lang } from '@/i18n/lang'
 
 /** „Karl Friedrich Mustermann“ → Vornamen „Karl Friedrich“, Nachname „Mustermann“ */
 export function splitName(name: string): { given: string; surname: string } {
@@ -20,14 +21,18 @@ const yearOf = (iso?: string | null) => (iso && /^\d{4}/.test(iso) ? iso.slice(0
 /** Verstorben – mit Sterbedatum oder als „verstorben, Datum unbekannt“ eingetragen */
 export const isDeceased = (p: Person) => !!p.profile?.deathDate || p.profile?.deceased === true
 
-/** „1919–1989“, „* 1944“, „† 1944“, ohne bekanntes Sterbejahr „1888–†“ bzw. „†“, oder leer */
-export function lifeYears(p: Person): string {
+/**
+ * „1919–1989“, „* 1944“, „† 1944“, ohne bekanntes Sterbejahr „1888–†“ bzw. „†“, oder leer.
+ * Englisch: „b. 1944“, „d. 1944“.
+ */
+export function lifeYears(p: Person, lang: Lang = 'de'): string {
   const b = yearOf(p.profile?.birthDate)
   const d = yearOf(p.profile?.deathDate)
-  if (b && d) return b === d ? `* † ${b}` : `${b}–${d}`
-  if (d) return `† ${d}`
+  const en = lang === 'en'
+  if (b && d) return b === d ? (en ? `${b}–${d}` : `* † ${b}`) : `${b}–${d}`
+  if (d) return en ? `d. ${d}` : `† ${d}`
   if (isDeceased(p)) return b ? `${b}–†` : '†'
-  if (b) return `* ${b}`
+  if (b) return en ? `b. ${b}` : `* ${b}`
   return ''
 }
 
@@ -54,26 +59,38 @@ function partsOf(iso?: string | null): DateParts | null {
   return { year: +m[1], month: m[2] ? +m[2] : undefined, day: m[3] ? +m[3] : undefined }
 }
 
-/** Gespeichertes Datum zum Lesen: „25.12.1944“, „Mai 1778“ oder „1778“ */
-export function formatDate(iso?: string | null): string {
+const pad = (n: number) => String(n).padStart(2, '0')
+
+/** Gespeichertes Datum zum Lesen: „25.12.1944“, „Mai 1778“ oder „1778“; englisch „Dec 25, 1944“, „May 1778“ */
+export function formatDate(iso?: string | null, lang: Lang = 'de'): string {
   const d = partsOf(iso)
   if (!d) return iso ?? ''
-  if (d.day && d.month) return `${String(d.day).padStart(2, '0')}.${String(d.month).padStart(2, '0')}.${d.year}`
+  if (lang === 'en' && d.month) {
+    const date = new Date(Date.UTC(d.year, d.month - 1, d.day ?? 1))
+    const opts: Intl.DateTimeFormatOptions = d.day
+      ? { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
+      : { month: 'long', year: 'numeric', timeZone: 'UTC' }
+    return new Intl.DateTimeFormat(locale(lang), opts).format(date)
+  }
+  if (d.day && d.month) return `${pad(d.day)}.${pad(d.month)}.${d.year}`
   if (d.month) return `${MONTHS[d.month - 1]} ${d.year}`
   return String(d.year)
 }
 
-/** Gespeichertes Datum zum Bearbeiten: „25.12.1944“, „05.1778“ oder „1778“ */
-export function toDateInput(iso?: string | null): string {
+/** Gespeichertes Datum zum Bearbeiten: „25.12.1944“, „05.1778“ oder „1778“; englisch „12/25/1944“, „05/1778“ */
+export function toDateInput(iso?: string | null, lang: Lang = 'de'): string {
   const d = partsOf(iso)
   if (!d) return iso ?? ''
-  if (d.day && d.month) return `${String(d.day).padStart(2, '0')}.${String(d.month).padStart(2, '0')}.${d.year}`
-  if (d.month) return `${String(d.month).padStart(2, '0')}.${d.year}`
+  const en = lang === 'en'
+  if (d.day && d.month)
+    return en ? `${pad(d.month)}/${pad(d.day)}/${d.year}` : `${pad(d.day)}.${pad(d.month)}.${d.year}`
+  if (d.month) return en ? `${pad(d.month)}/${d.year}` : `${pad(d.month)}.${d.year}`
   return String(d.year)
 }
 
 /**
  * Eingabe „25.12.1944“, „5.3.1910“, „12.1944“, „1944“ oder „1944-12-25“ → gespeichertes Format.
+ * Mit Schrägstrichen amerikanisch: „12/25/1944“, „12/1944“.
  * Leer → null. Ungültig → undefined.
  */
 export function parseDateInput(text: string): string | null | undefined {
@@ -82,6 +99,10 @@ export function parseDateInput(text: string): string | null | undefined {
   let m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(t)
   if (m) return validParts(+m[3], +m[2], +m[1])
   m = /^(\d{1,2})\.(\d{4})$/.exec(t)
+  if (m) return validParts(+m[2], +m[1])
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t)
+  if (m) return validParts(+m[3], +m[1], +m[2])
+  m = /^(\d{1,2})\/(\d{4})$/.exec(t)
   if (m) return validParts(+m[2], +m[1])
   m = /^(\d{4})$/.exec(t)
   if (m) return validParts(+m[1])
@@ -126,22 +147,37 @@ export function normalizeForSearch(s: string): string {
     .replace(/ß/g, 'ss')
 }
 
-/** „keine“, „1 Generation“, „3 Generationen“ */
-export function generations(n: number): string {
+/** „keine“, „1 Generation“, „3 Generationen“ (englisch „none“, „1 generation“, „3 generations“) */
+export function generations(n: number, lang: Lang = 'de'): string {
+  if (lang === 'en') return n <= 0 ? 'none' : n === 1 ? '1 generation' : `${n} generations`
   if (n <= 0) return 'keine'
   return n === 1 ? '1 Generation' : `${n} Generationen`
 }
 
-const SIDE_TEXT: Record<LineScope['side'], string> = {
-  0: 'ohne Seitenlinien',
-  1: 'mit Geschwistern',
-  2: 'mit Geschwistern und deren Kindern',
-  3: 'mit allen Blutsverwandten',
+/** „alle 4 Generationen“ */
+export function allGenerations(n: number, lang: Lang = 'de'): string {
+  return lang === 'en' ? `all ${generations(n, lang)}` : `alle ${generations(n, lang)}`
+}
+
+const SIDE_TEXT: Record<Lang, Record<LineScope['side'], string>> = {
+  de: {
+    0: 'ohne Seitenlinien',
+    1: 'mit Geschwistern',
+    2: 'mit Geschwistern und deren Kindern',
+    3: 'mit allen Blutsverwandten',
+  },
+  en: {
+    0: 'no side branches',
+    1: 'with siblings',
+    2: 'with siblings and their children',
+    3: 'with all blood relatives',
+  },
 }
 
 /** Umfang einer Linie in Worten: „Vorfahren: alle 9 Generationen, Nachkommen: keine, ohne Seitenlinien“ */
-export function describeLineScope(scope: LineScope, depth: { up: number; down: number }): string {
+export function describeLineScope(scope: LineScope, depth: { up: number; down: number }, lang: Lang = 'de'): string {
   const part = (v: number | null, max: number) =>
-    max === 0 ? 'keine' : v === null || v >= max ? `alle ${generations(max)}` : generations(v)
-  return `Vorfahren: ${part(scope.up, depth.up)}, Nachkommen: ${part(scope.down, depth.down)}, ${SIDE_TEXT[scope.side]}`
+    max === 0 ? generations(0, lang) : v === null || v >= max ? allGenerations(max, lang) : generations(v, lang)
+  const [up, down] = lang === 'en' ? ['Ancestors', 'Descendants'] : ['Vorfahren', 'Nachkommen']
+  return `${up}: ${part(scope.up, depth.up)}, ${down}: ${part(scope.down, depth.down)}, ${SIDE_TEXT[lang][scope.side]}`
 }

@@ -4,6 +4,7 @@
 // ganztägiger Termin mit Alter im Titel; damit das Alter stimmt, stehen die
 // nächsten zwei Male einzeln drin – das Abo rückt von selbst nach.
 
+import type { Lang } from '@/i18n/lang'
 import { upcomingBirthdays } from './birthdays'
 import type { Tree } from './model'
 
@@ -49,8 +50,14 @@ const stamp = (d: Date) =>
 
 export function birthdayCalendar(
   tree: Tree,
-  { calendarName, now = new Date(), occurrences = 2 }: { calendarName: string; now?: Date; occurrences?: number },
+  {
+    calendarName,
+    now = new Date(),
+    occurrences = 2,
+    lang = 'de',
+  }: { calendarName: string; now?: Date; occurrences?: number; lang?: Lang },
 ): string {
+  const en = lang === 'en'
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -73,12 +80,14 @@ export function birthdayCalendar(
       `DTSTART;VALUE=DATE:${dateValue(b.date)}`,
       `DTEND;VALUE=DATE:${dateValue(end)}`,
       `SUMMARY:${escapeText(`🎂 ${name} (${b.age})`)}`,
-      `DESCRIPTION:${escapeText(`${name} wird ${b.age}.`)}`,
+      `DESCRIPTION:${escapeText(en ? `${name} turns ${b.age}.` : `${name} wird ${b.age}.`)}`,
       'TRANSP:TRANSPARENT',
       // Erinnerung am Morgen des Geburtstags um 9 Uhr
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
-      `DESCRIPTION:${escapeText(`${name} hat heute Geburtstag (${b.age})`)}`,
+      `DESCRIPTION:${escapeText(
+        en ? `${name}’s birthday today (${b.age})` : `${name} hat heute Geburtstag (${b.age})`,
+      )}`,
       'TRIGGER:PT9H',
       'END:VALARM',
       'END:VEVENT',
