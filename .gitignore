@@ -46,6 +46,7 @@ next-env.d.ts
 /data
 /public
 /.env.local
+.env*.local
 /todos.txt
 logs/
 

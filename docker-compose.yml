@@ -3,6 +3,7 @@ services:
     image: "registry.lptzocker.com/lptzocker/family-tree/family-tree:latest"
     build: ./app
     container_name: family-tree-app
+    restart: unless-stopped
     ports:
       - "3000:3000"
     env_file:

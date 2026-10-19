@@ -1,7 +1,7 @@
-import { IMember } from '@/types/IMember'
-import { Gender } from '@/types/Gender'
+// src/storage/schema.ts
+// So wird ein Stammbaum gespeichert (Spalte family_trees.tree_json).
 
-/* ===== v3 (neu, ID-basiert) ===== */
+export type Gender = 'MALE' | 'FEMALE'
 export type MediaKind = 'image' | 'video' | 'pdf' | 'other'
 
 export type StoredMedia = {
@@ -15,8 +15,11 @@ export type StoredMedia = {
 export type StoredProfile = {
   birthDate?: string | null
   birthPlace?: string | null
+  /** Geburtsname, z. B. nach Heirat */
   maidenName?: string | null
   deathDate?: string | null
+  /** verstorben – auch wenn das Sterbedatum unbekannt ist (nur gespeichert, wenn ja) */
+  deceased?: boolean
   country?: string | null
   job?: string | null
   city?: string | null
@@ -30,9 +33,10 @@ export type StoredMemberV3 = {
   name: string
   gender: Gender
   spouseId?: string | null
+  /** abgeleitet aus den childrenIds der Eltern (Quelle der Wahrheit) */
   parentIds?: string[]
   childrenIds: string[]
-  /** Adoption ist eine Eigenschaft der Parent→Child-Kante: welche Kinder sind (von DIESEM Parent) adoptiert? */
+  /** Adoption ist eine Eigenschaft der Eltern→Kind-Kante: welche Kinder hat DIESES Elternteil adoptiert? */
   adoptedChildrenIds?: string[]
   profile?: StoredProfile
 }
@@ -40,77 +44,5 @@ export type StoredMemberV3 = {
 export type StoredTree = {
   version: 3
   rootId: string
-  members: Record<string, StoredMemberV3> // key = id
-}
-
-/* ===== Serialize (Graph -> Stored, ID-basiert) ===== */
-export function serializeFromRoot(root: IMember, existing?: StoredTree | null): StoredTree {
-  const prev = existing && existing.version === 3 ? existing : null
-  const members: Record<string, StoredMemberV3> = {}
-  const seen = new Set<string>()
-  const stack: IMember[] = [root]
-
-  while (stack.length) {
-    const m = stack.pop()!
-    if (!m || !m.id || seen.has(m.id)) continue
-    seen.add(m.id)
-
-    const prevRec = prev?.members[m.id]
-    const prevProfile = prevRec?.profile
-    const children = Array.isArray(m.children) ? m.children : []
-    const spouseId = m.spouse?.id ?? null
-
-    // NEU: Adoption-Flags bevorzugt aus Runtime lesen (Member.adoptedChildrenIds),
-    // sonst aus vorherigem Snapshot übernehmen, sonst []
-    const runtimeAdopted: string[] =
-      Array.isArray((m as any).adoptedChildrenIds) ? (m as any).adoptedChildrenIds as string[] : []
-    const adoptedChildrenIds: string[] =
-      runtimeAdopted.length > 0
-        ? runtimeAdopted.slice()
-        : Array.isArray(prevRec?.adoptedChildrenIds)
-          ? prevRec!.adoptedChildrenIds.slice()
-          : []
-
-    members[m.id] = {
-      id: m.id,
-      name: m.name,
-      gender: m.gender,
-      spouseId,
-      parentIds: m.parents.map((p) => p.id),
-      childrenIds: children.map((c) => c.id),
-      adoptedChildrenIds,
-      profile: prevProfile
-        ? {
-            birthDate: prevProfile.birthDate ?? null,
-            birthPlace: prevProfile.birthPlace ?? null,
-            maidenName: prevProfile.maidenName ?? null,
-            deathDate: prevProfile.deathDate ?? null,
-            country: prevProfile.country ?? null,
-            job: prevProfile.job ?? null,
-            city: prevProfile.city ?? null,
-            comments: prevProfile.comments ?? null,
-            titleImageUrl: prevProfile.titleImageUrl ?? null,
-            media: Array.isArray(prevProfile.media) ? prevProfile.media : [],
-          }
-        : {
-            birthDate: null,
-            birthPlace: null,
-            maidenName: null,
-            deathDate: null,
-            country: null,
-            job: null,
-            city: null,
-            comments: null,
-            titleImageUrl: null,
-            media: [],
-          },
-    }
-
-    // reach everything connected:
-    if (m.spouse) stack.push(m.spouse)
-    if (children.length) stack.push(...children)
-    if (Array.isArray(m.parents) && m.parents.length) stack.push(...m.parents)
-  }
-
-  return { version: 3, rootId: root.id, members }
+  members: Record<string, StoredMemberV3>
 }
