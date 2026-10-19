@@ -56,9 +56,12 @@ const gone = (sel: string) => () => !document.querySelector(sel)
 const click = (sel: string) => () => (document.querySelector(sel) as HTMLElement | null)?.click()
 
 /** Tour based on the visitor's own entry */
-export function personalSteps(me: string, given: string, a: TourActions, t: TourText): Step[] {
+/** Steps that change the tree; left out for people who may only read it */
+const EDITING_STEPS = new Set(['edit', 'form', 'child', 'child-form'])
+
+export function personalSteps(me: string, given: string, a: TourActions, t: TourText, canEdit = true): Step[] {
   const s = t.steps
-  return [
+  const steps: Step[] = [
     {
       id: 'card',
       mode: 'spot',
@@ -167,6 +170,7 @@ export function personalSteps(me: string, given: string, a: TourActions, t: Tour
       nextLabel: t.start,
     },
   ]
+  return canEdit ? steps : steps.filter((step) => !EDITING_STEPS.has(step.id))
 }
 
 /** Tour for visitors who are not in the tree (yet) */

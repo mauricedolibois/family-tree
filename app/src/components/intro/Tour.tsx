@@ -52,7 +52,7 @@ function markSeen() {
 }
 
 function TourRunner() {
-  const { index } = useFamily()
+  const { index, canEdit } = useFamily()
   const view = useView()
   const { meId, setMe, setTourOpen, focusOn, select, showLine, showRelation } = view
   const { t } = useI18n()
@@ -67,8 +67,8 @@ function TourRunner() {
     if (me === undefined) return []
     if (me === null) return guestSteps(actions, t.tour)
     const p = index.byId.get(me)
-    return personalSteps(me, p ? splitName(p.name).given || p.name : '', actions, t.tour)
-  }, [me, index, actions, t])
+    return personalSteps(me, p ? splitName(p.name).given || p.name : '', actions, t.tour, canEdit)
+  }, [me, index, actions, t, canEdit])
 
   const step = steps.find((s) => s.id === stepId) ?? null
   const position = step ? steps.indexOf(step) : -1

@@ -2,7 +2,21 @@
 // Header styled like a book cover: dark linen, title in gold leaf.
 
 import { useEffect, useRef, useState } from 'react'
-import { BookOpen, Cake, Download, Flame, LogOut, Menu, Printer, Search, Sun, X } from 'lucide-react'
+import {
+  ArrowLeftRight,
+  BookOpen,
+  Cake,
+  Download,
+  Flame,
+  LogOut,
+  Menu,
+  Printer,
+  Search,
+  Settings,
+  Shield,
+  Sun,
+  X,
+} from 'lucide-react'
 import { useFamily } from './FamilyProvider'
 import { useView } from './ViewProvider'
 import { SearchBox } from './SearchBox'
@@ -10,7 +24,10 @@ import { useTheme } from './useTheme'
 import { useI18n } from '@/i18n/I18nProvider'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
 
-export function TopBar() {
+/** The signed-in person, as far as the header needs to know */
+export type Viewer = { name: string; isAdmin: boolean; treeCount: number }
+
+export function TopBar({ viewer }: { viewer: Viewer }) {
   const { familyName } = useFamily()
   const { t } = useI18n()
   const [mobileSearch, setMobileSearch] = useState(false)
@@ -54,7 +71,7 @@ export function TopBar() {
             <Search className="h-5 w-5" />
           </button>
         )}
-        <AppMenu />
+        <AppMenu viewer={viewer} />
       </div>
     </header>
   )
@@ -78,7 +95,7 @@ function ThemeButton() {
   )
 }
 
-function AppMenu() {
+function AppMenu({ viewer }: { viewer: Viewer }) {
   const { tree, familyName } = useFamily()
   const { setExportOpen, setTourOpen, showBirthdays, select } = useView()
   const { t } = useI18n()
@@ -113,7 +130,7 @@ function AppMenu() {
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
-    window.location.href = '/auth'
+    window.location.href = '/login'
   }
 
   return (
@@ -165,6 +182,19 @@ function AppMenu() {
           <MenuItem icon={<Download className="h-4 w-4" />} onClick={downloadBackup}>
             {t.topBar.downloadBackup}
           </MenuItem>
+          {viewer.treeCount > 1 && (
+            <MenuItem icon={<ArrowLeftRight className="h-4 w-4" />} onClick={() => (window.location.href = '/?pick=1')}>
+              {t.topBar.switchTree}
+            </MenuItem>
+          )}
+          <MenuItem icon={<Settings className="h-4 w-4" />} onClick={() => (window.location.href = '/account')}>
+            {t.account.title}
+          </MenuItem>
+          {viewer.isAdmin && (
+            <MenuItem icon={<Shield className="h-4 w-4" />} onClick={() => (window.location.href = '/admin')}>
+              {t.admin.title}
+            </MenuItem>
+          )}
           <MenuItem icon={<LogOut className="h-4 w-4" />} onClick={logout}>
             {t.topBar.logout}
           </MenuItem>

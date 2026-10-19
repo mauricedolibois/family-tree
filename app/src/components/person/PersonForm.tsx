@@ -19,7 +19,7 @@ import { SUGGESTED_COUNTRIES, countryName } from '@/i18n/countries'
 import { useI18n } from '@/i18n/I18nProvider'
 
 export function PersonForm({ person, onDone }: { person: Person; onDone: () => void }) {
-  const { tree, commit, saving } = useFamily()
+  const { tree, treeId, commit, saving } = useFamily()
   const { notify } = useToast()
   const { t, locale } = useI18n()
   const p = person.profile ?? {}
@@ -54,7 +54,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
     setUploading(true)
     setError(null)
     try {
-      const added = await uploadFiles(files)
+      const added = await uploadFiles(treeId, files)
       setMedia((m) => [...m, ...added])
       const firstImage = added.find((m) => m.kind === 'image')
       if (!titleUrl && firstImage) setTitleUrl(firstImage.url)

@@ -1,13 +1,17 @@
+// Public sign-up: a new account with a tree of its own. Off unless ALLOW_REGISTRATION=true;
+// otherwise people join through invitation links.
+
 import type { NextApiRequest, NextApiResponse } from 'next'
-import bcrypt from 'bcryptjs'
-import { createFamily, getFamilyByName } from '@/lib/db'
+import { createTree, createUser, findUserByEmail, looksLikeEmail, setMembership } from '@/lib/accounts'
+import { emailVerificationRequired, registrationOpen } from '@/lib/features'
+import { cleanName, hashPassword, validPassword } from '@/lib/passwords'
 import { setSessionCookie } from '@/lib/session'
 import { clientIp, isLimited, recordAttempt } from '@/lib/rateLimit'
 import { logError } from '@/lib/log'
-import { registrationOpen } from '@/lib/features'
+import { sendVerification } from '@/lib/accountMail'
+import { starterTree } from '@/family/edit'
+import { localeFromRequest } from '@/i18n/server'
 
-const MIN_PASSWORD_LENGTH = 8
-const MAX_NAME_LENGTH = 60
 const REGISTRATIONS_PER_IP_PER_DAY = 5
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,36 +21,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   if (!registrationOpen()) return res.status(403).json({ error: 'registration closed' })
 
-  const { familyName, password } = (req.body || {}) as { familyName?: unknown; password?: unknown }
-  if (typeof familyName !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ error: 'missing fields' })
-  }
-  const name = familyName.trim()
-  if (name.length < 2 || name.length > MAX_NAME_LENGTH) return res.status(400).json({ error: 'invalid name' })
-  if (password.length < MIN_PASSWORD_LENGTH) return res.status(400).json({ error: 'password too short' })
+  const body = (req.body || {}) as { name?: unknown; email?: unknown; password?: unknown; treeName?: unknown }
+  const name = cleanName(body.name)
+  const treeName = cleanName(body.treeName)
+  const email = typeof body.email === 'string' ? body.email.trim() : ''
+  if (!name || !treeName || !looksLikeEmail(email)) return res.status(400).json({ error: 'missing fields' })
+  if (!validPassword(body.password)) return res.status(400).json({ error: 'invalid password' })
 
   const ipKey = `ip:${clientIp(req)}`
-
+  const locale = localeFromRequest(req)
   try {
-    if (
-      await isLimited('register', [ipKey], {
-        max: REGISTRATIONS_PER_IP_PER_DAY,
-        windowMinutes: 24 * 60,
-        onlyFailures: false,
-      })
-    ) {
-      return res.status(429).json({ error: 'too many attempts' })
-    }
+    const limits = { max: REGISTRATIONS_PER_IP_PER_DAY, windowMinutes: 24 * 60, onlyFailures: false }
+    if (await isLimited('register', [ipKey], limits)) return res.status(429).json({ error: 'too many attempts' })
+    if (await findUserByEmail(email)) return res.status(409).json({ error: 'email taken' })
 
-    if (await getFamilyByName(name)) return res.status(409).json({ error: 'family exists' })
-
-    const family = await createFamily(name, await bcrypt.hash(password, 12))
+    const user = await createUser({ email, name, passHash: await hashPassword(body.password), locale })
+    const tree = await createTree(treeName, starterTree(locale))
+    await setMembership(user.id, tree.id, 'editor')
     await recordAttempt('register', [ipKey], true)
 
-    setSessionCookie(res, family.id)
-    return res.status(200).json({ ok: true })
-  } catch (err: any) {
-    if (err?.code === '23505') return res.status(409).json({ error: 'family exists' })
+    if (emailVerificationRequired()) {
+      await sendVerification(user)
+      return res.status(200).json({ ok: true, verify: true })
+    }
+    setSessionCookie(res, { uid: user.id, epoch: user.session_epoch })
+    return res.status(200).json({ ok: true, treeId: tree.id })
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code === '23505') return res.status(409).json({ error: 'email taken' })
     logError('api/auth/register', err)
     return res.status(500).json({ error: 'internal error' })
   }

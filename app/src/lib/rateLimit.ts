@@ -10,7 +10,7 @@ import type { IncomingMessage } from 'http'
 import { getSupaAdmin } from '@/lib/supabaseServer'
 import { logError } from '@/lib/log'
 
-export type AttemptKind = 'login' | 'register'
+export type AttemptKind = 'login' | 'register' | 'forgot' | 'invite'
 
 function hashKey(value: string): string {
   const salt = process.env.SUPABASE_SERVICE_ROLE_KEY ?? 'family-tree'

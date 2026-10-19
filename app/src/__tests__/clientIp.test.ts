@@ -44,8 +44,8 @@ describe('switches from prod.env', () => {
     expect(trustedProxies('2')).toBe(2)
   })
 
-  it('ALLOW_REGISTRATION: several spellings of "off"', () => {
-    for (const off of ['false', 'FALSE', ' 0 ', 'no', 'off', 'Nein']) expect(registrationOpen(off)).toBe(false)
-    for (const on of [undefined, '', 'true', '1']) expect(registrationOpen(on)).toBe(true)
+  it('ALLOW_REGISTRATION: off unless switched on explicitly', () => {
+    for (const on of ['true', 'TRUE', ' 1 ', 'yes', 'on']) expect(registrationOpen(on)).toBe(true)
+    for (const off of [undefined, '', 'false', '0', 'no', 'maybe']) expect(registrationOpen(off)).toBe(false)
   })
 })

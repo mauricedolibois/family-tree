@@ -1,7 +1,7 @@
 # Family Tree
 
 A private family tree styled like an old family library: parchment, ink and gold leaf.
-Each family signs in with its family name and password and maintains its tree together, on phones and computers alike.
+Everyone has their own account, can belong to several family trees and maintains them together with the family, on phones and computers alike. See [docs/accounts.md](docs/accounts.md).
 
 The interface speaks German, English, French and Spanish; see [docs/i18n.md](docs/i18n.md).
 
@@ -34,7 +34,8 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 
 ## Security and data
 
-- Sign-in with a signed session cookie (HMAC) and throttling against password guessing.
+- Personal accounts with email and password; admins, editors and viewers per tree; invitation links; optional email verification and mail over SMTP ([docs/accounts.md](docs/accounts.md)).
+- Signed session cookies (HMAC) that can be ended everywhere at once, and throttling against password guessing.
 - The server validates every tree before saving, and only saves if nobody changed the tree on another device in the meantime.
 - Automatic backups: before **every** change (with a note about what changed, e.g. "bearbeitet: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
 - Emergency restore from the Supabase SQL editor (schema `verwaltung`, not reachable through the API; the names are German):
@@ -75,8 +76,13 @@ SUPABASE_URL=…
 SUPABASE_SERVICE_ROLE_KEY=…
 # optional, derived from the service role key otherwise:
 SESSION_SECRET=…
-# optional: disable creating new trees (default: allowed)
-ALLOW_REGISTRATION=false
+# optional: let anyone sign up with a tree of their own (default: off, people join by invitation)
+ALLOW_REGISTRATION=true
+# optional: outgoing mail for invitations, password resets and verification (see docs/accounts.md)
+MAIL_ENABLED=true
+SMTP_HOST=…  SMTP_PORT=587  SMTP_USER=…  SMTP_PASSWORD=…  MAIL_FROM=…
+APP_URL=https://tree.example.org
+REQUIRE_EMAIL_VERIFICATION=true
 # optional: number of own reverse proxies in front of the app (default 1 = one nginx; 0 = none)
 TRUSTED_PROXIES=1
 ```
@@ -107,6 +113,7 @@ Alternatively paste them into the Supabase Studio SQL editor. Running them more 
 
 **Notes:**
 
+- **Personal accounts (since `20261020120000_user_accounts.sql`):** apply the migrations, deploy, then create the first admin with `select verwaltung.admin_invite('you@example.org');` in the SQL editor and invite the family on `/admin`. Step by step in [docs/accounts.md](docs/accounts.md#rollout-on-an-existing-installation).
 - Optionally set `SESSION_SECRET` (at least 32 characters) in `prod.env`. Without it the key is derived from the service role key. Changing it signs everyone out once.
 - The app must be served over HTTPS because the session cookie is `Secure` in production.
 - nginx has to append the visitor IP to `X-Forwarded-For` (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, already part of `proxy_params`). The app only trusts the last entry; the visitor can forge the beginning.
@@ -133,7 +140,8 @@ Alternatively paste them into the Supabase Studio SQL editor. Running them more 
 | `app/src/components/ui/`       | Design-system building blocks                                         |
 | `app/src/i18n/`                | Languages: detection, texts, provider                                 |
 | `app/src/styles/tokens.css`    | Colours of the "parchment & ink" design system                        |
-| `app/src/pages/api/`           | Sign-in, tree, uploads, calendar                                      |
+| `app/src/pages/api/`           | Accounts, trees, uploads, calendar, administration                    |
+| `app/src/lib/`                 | Server side: database, accounts, sessions, mail, throttling           |
 | `app/scripts/`                 | Maintenance scripts (daily backup, keep-alive)                        |
 | `supabase/migrations/`         | Database changes                                                      |
 
@@ -141,4 +149,4 @@ Alternatively paste them into the Supabase Studio SQL editor. Running them more 
 
 1. ~~English codebase (comments, tests, documentation).~~
 2. ~~Multilingual interface: German, English, French, Spanish.~~
-3. Personal accounts: sign-in with email, admins, invitation links, several trees per user, optional email verification and outgoing mail via SMTP.
+3. ~~Personal accounts: sign-in with email, admins, invitation links, several trees per user, optional email verification and outgoing mail via SMTP.~~

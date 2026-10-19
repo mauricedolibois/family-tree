@@ -1,9 +1,12 @@
+// Uploads photos and documents of a tree (editors and admins).
+
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { IncomingForm, type File } from 'formidable'
 import fs from 'fs'
 import { randomUUID } from 'crypto'
 import { getSupaAdmin } from '@/lib/supabaseServer'
-import { getFamilyIdFromReq } from '@/lib/session'
+import { canEdit, currentUser, treeAccess } from '@/lib/auth'
+import { treeIdParam } from '@/lib/ids'
 import { logError } from '@/lib/log'
 
 export const config = { api: { bodyParser: false } }
@@ -45,8 +48,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end()
   }
 
-  const fid = getFamilyIdFromReq(req)
-  if (!fid) return res.status(401).json({ error: 'unauthorized' })
+  // Checked before reading the body, so nobody without rights can push 20 MB at the server
+  let fid: string | null
+  try {
+    const user = await currentUser(req)
+    if (!user) return res.status(401).json({ error: 'unauthorized' })
+    fid = treeIdParam(req.query.id)
+    const access = fid ? await treeAccess(user, fid) : null
+    if (!fid || !access) return res.status(404).json({ error: 'not found' })
+    if (!canEdit(access)) return res.status(403).json({ error: 'read only' })
+  } catch (err) {
+    logError('api/trees/[id]/media', err)
+    return res.status(500).json({ error: 'internal error' })
+  }
 
   let files: File[]
   try {
@@ -69,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     return res.status(200).json({ urls })
   } catch (err) {
-    logError('api/media', err)
+    logError('api/trees/[id]/media', err)
     return res.status(500).json({ error: 'upload failed' })
   } finally {
     await Promise.all(files.map((f) => fs.promises.unlink(f.filepath).catch(() => {})))
