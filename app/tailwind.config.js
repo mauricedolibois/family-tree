@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 
-// Style-System „Pergament & Tinte“: Alle Farben kommen aus CSS-Variablen in
-// src/styles/tokens.css. Hier werden sie nur unter sprechenden Namen
-// für Tailwind verfügbar gemacht (z. B. bg-linen, text-ink-muted).
+// "Parchment & ink" design system: every colour comes from CSS variables in
+// src/styles/tokens.css. This file only exposes them to Tailwind under
+// meaningful names (e.g. bg-linen, text-ink-muted).
 const v = (name) => `rgb(var(--${name}) / <alpha-value>)`
 
 module.exports = {
@@ -20,15 +20,15 @@ module.exports = {
         danger: { DEFAULT: v('danger'), soft: v('danger-soft') },
       },
       fontFamily: {
-        // Titel und Überschriften: alte Buchdruck-Schrift
+        // Titles and headings: old letterpress typeface
         display: ['"IM Fell English"', '"EB Garamond Variable"', 'Georgia', 'serif'],
-        // Namen: klassische Garamond
+        // Names: classic Garamond
         serif: ['"EB Garamond Variable"', 'Georgia', 'serif'],
-        // Bedienung und Daten: besonders gut lesbar
+        // Controls and data: highly legible
         sans: ['"Atkinson Hyperlegible Next"', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        // Typo-Skala (Verhältnis ~1.2), Zeilenhöhen passend
+        // Type scale (ratio ~1.2) with matching line heights
         xs: ['0.75rem', { lineHeight: '1rem' }],
         sm: ['0.875rem', { lineHeight: '1.25rem' }],
         base: ['1rem', { lineHeight: '1.5rem' }],

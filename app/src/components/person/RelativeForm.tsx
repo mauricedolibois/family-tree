@@ -1,6 +1,6 @@
 // src/components/person/RelativeForm.tsx
-// Neue Person in Beziehung zur gewählten Person anlegen – direkt mit
-// den wichtigsten Angaben, der Rest lässt sich später ergänzen.
+// Add a new person related to the selected one, with the key details right away;
+// everything else can be filled in later.
 
 import { useEffect, useRef, useState } from 'react'
 import { parentsOf, spouseOf, type Gender, type Person } from '@/family/model'
@@ -22,7 +22,7 @@ type Props = {
   person: Person
   relation: Relation
   onDone: () => void
-  /** nach dem Speichern die neue Person bearbeiten */
+  /** open the new person for editing after saving */
   onEditNew: (id: string) => void
 }
 
@@ -40,7 +40,7 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
       ? index.byId.get(existingParents[0])
       : null
 
-  // Für Kinder den Nachnamen der Familie vorschlagen
+  // Suggest the family surname for children
   const familySurname = splitName(person.name).surname
   const [name, setName] = useState(relation === 'CHILD' && familySurname ? ` ${familySurname}` : '')
   const [gender, setGender] = useState<Gender | ''>(
@@ -57,7 +57,7 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
     const el = nameInput.current
     if (!el) return
     el.focus()
-    el.setSelectionRange(0, 0) // Cursor vor den vorgeschlagenen Nachnamen
+    el.setSelectionRange(0, 0) // caret before the suggested surname
   }, [])
 
   const submit = async (e: React.FormEvent) => {

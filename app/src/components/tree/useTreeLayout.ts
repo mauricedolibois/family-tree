@@ -1,13 +1,13 @@
 // src/components/tree/useTreeLayout.ts
-// Berechnet das Layout im Hintergrund. Während eine neue Berechnung läuft,
-// bleibt das alte Bild stehen – kein Flackern beim Bearbeiten.
+// Computes the layout in the background. The previous layout stays on screen
+// while a new one is calculated, so editing does not flicker.
 
 import { useEffect, useRef, useState } from 'react'
 import type { Tree } from '@/family/model'
 import { computeTreeLayout } from '@/family/layout/compute'
 import type { TreeLayout } from '@/family/layout/types'
 
-/** @param focusId Person, um die herum geordnet wird (Linie, Beziehung) */
+/** @param focusId person the layout is arranged around (line, relation) */
 export function useTreeLayout(tree: Tree, focusId: string | null = null) {
   const [layout, setLayout] = useState<TreeLayout | null>(null)
   const [error, setError] = useState<string | null>(null)

@@ -1,6 +1,6 @@
--- Bereits am 17.10.2026 direkt angewendet; hier zur Nachvollziehbarkeit.
+-- Originally applied by hand on 2026-10-17; kept here for the record.
 
--- Sicherungen von Stammbäumen (manuell und automatisch)
+-- Tree backups (manual and automatic)
 create table if not exists public.family_trees_backup (
   id bigint generated always as identity primary key,
   family_id uuid not null,
@@ -10,7 +10,7 @@ create table if not exists public.family_trees_backup (
 );
 alter table public.family_trees_backup enable row level security;
 
--- Vorbereitete Stände, die erst nach Freigabe übernommen werden
+-- Prepared versions that are only applied after approval
 create table if not exists public.family_tree_drafts (
   id bigint generated always as identity primary key,
   family_id uuid not null,

@@ -5,8 +5,8 @@ const { THEME_SCRIPT } = require('./src/lib/themeScript')
 const isDev = process.env.NODE_ENV !== 'production'
 const themeScriptHash = `'sha256-${createHash('sha256').update(THEME_SCRIPT).digest('base64')}'`
 
-// Was die Seite laden darf. Skripte nur von hier (plus das eine Inline-Skript per Hash);
-// Fotos und Videos liegen auf der Supabase-Domain, deren Adresse erst zur Laufzeit feststeht – daher https:.
+// What pages may load. Scripts only from this origin plus the single inline script by hash.
+// Photos and videos live on the Supabase domain, which is only known at runtime, hence https:.
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' ${themeScriptHash}${isDev ? " 'unsafe-eval'" : ''}`,
@@ -22,7 +22,7 @@ const contentSecurityPolicy = [
   "frame-ancestors 'none'",
 ].join('; ')
 
-// Grundlegende Sicherheits-Header für alle Seiten
+// Baseline security headers for every page
 const securityHeaders = [
   { key: 'Content-Security-Policy', value: contentSecurityPolicy },
   { key: 'X-Frame-Options', value: 'DENY' },
@@ -35,7 +35,7 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  // Eigenständiger Server mit nur den nötigen Dateien – hält das Docker-Image klein
+  // Self-contained server with only the files it needs; keeps the Docker image small
   output: 'standalone',
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]

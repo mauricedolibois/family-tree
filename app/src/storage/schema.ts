@@ -1,5 +1,5 @@
 // src/storage/schema.ts
-// So wird ein Stammbaum gespeichert (Spalte family_trees.tree_json).
+// How a family tree is stored (column family_trees.tree_json).
 
 export type Gender = 'MALE' | 'FEMALE'
 export type MediaKind = 'image' | 'video' | 'pdf' | 'other'
@@ -15,10 +15,10 @@ export type StoredMedia = {
 export type StoredProfile = {
   birthDate?: string | null
   birthPlace?: string | null
-  /** Geburtsname, z. B. nach Heirat */
+  /** Name at birth, e.g. before marriage */
   maidenName?: string | null
   deathDate?: string | null
-  /** verstorben – auch wenn das Sterbedatum unbekannt ist (nur gespeichert, wenn ja) */
+  /** Deceased even if the date of death is unknown (only stored when true) */
   deceased?: boolean
   country?: string | null
   job?: string | null
@@ -33,10 +33,10 @@ export type StoredMemberV3 = {
   name: string
   gender: Gender
   spouseId?: string | null
-  /** abgeleitet aus den childrenIds der Eltern (Quelle der Wahrheit) */
+  /** Derived from the parents' childrenIds, which are the source of truth */
   parentIds?: string[]
   childrenIds: string[]
-  /** Adoption ist eine Eigenschaft der Eltern→Kind-Kante: welche Kinder hat DIESES Elternteil adoptiert? */
+  /** Adoption belongs to the parent→child edge: which children did THIS parent adopt? */
   adoptedChildrenIds?: string[]
   profile?: StoredProfile
 }

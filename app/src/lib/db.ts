@@ -1,5 +1,5 @@
 // src/lib/db.ts
-// Alle Datenbankzugriffe des Servers an einer Stelle.
+// All server-side database access in one place.
 
 import { randomBytes } from 'crypto'
 import { getSupaAdmin } from './supabaseServer'
@@ -9,7 +9,7 @@ import { logError } from './log'
 
 export type FamilyRow = { id: string; name: string; pass_hash: string; created_at: string }
 
-/** Supabase-Code für „keine Zeile gefunden“ bei .single() */
+/** PostgREST code for "no rows" with .single() */
 const NO_ROWS = 'PGRST116'
 
 export async function getFamilyByName(name: string): Promise<FamilyRow | null> {
@@ -54,9 +54,9 @@ export async function loadFamilyTree(familyId: string): Promise<LoadedTree | nul
 export type SaveResult = { status: 'saved'; version: string } | { status: 'conflict' }
 
 /**
- * Speichert nur, wenn der Baum seit `baseVersion` nicht woanders geändert wurde
- * (z. B. auf einem zweiten Gerät). Sonst `conflict` statt stillem Überschreiben.
- * Ohne `baseVersion` wird nur ein neuer Baum angelegt.
+ * Saves only if the tree has not been changed elsewhere since `baseVersion`
+ * (e.g. on a second device); otherwise returns `conflict` instead of silently
+ * overwriting. Without `baseVersion` it only creates a new tree.
  */
 export async function saveFamilyTree(
   familyId: string,
@@ -71,7 +71,7 @@ export async function saveFamilyTree(
       .insert({ family_id: familyId, tree_json: tree, updated_at })
       .select('updated_at')
       .single()
-    if (error?.code === '23505') return { status: 'conflict' } // existiert schon
+    if (error?.code === '23505') return { status: 'conflict' } // already exists
     if (error) throw error
     return { status: 'saved', version: data.updated_at }
   }
@@ -88,26 +88,26 @@ export async function saveFamilyTree(
 }
 
 /**
- * Sichert vor jeder Änderung den bisherigen Stand – mit einer Notiz, was danach
- * geändert wurde, damit man im Notfall gezielt zurückgehen kann.
- * Automatische Sicherungen räumt die tägliche Sicherung nach einiger Zeit auf.
+ * Backs up the current version before every change, noting what is about to
+ * change so a specific state can be restored if needed. The daily backup job
+ * prunes these automatic snapshots after a while.
  */
 export async function snapshotBeforeSave(familyId: string, current: StoredTree, next: StoredTree) {
   const change = describeChange(current, next)
-  if (!change) return // nichts geändert, nichts zu sichern
+  if (!change) return // nothing changed, nothing to back up
   const note = `automatisch: vor Änderung (${change})`.slice(0, 500)
   const { error } = await getSupaAdmin()
     .from('family_trees_backup')
     .insert({ family_id: familyId, tree_json: current, note })
-  // Ohne Migration (Tabelle fehlt) trotzdem speichern – wie bisher, nur ohne Sicherung
+  // Without the migration (table missing) still save, just without a backup
   if (error) logError('db.snapshotBeforeSave', error)
 }
 
-// ── Kalender-Abo ──────────────────────────────────────────────────────────────
+// ── Calendar subscription ─────────────────────────────────────────────────────
 
 const newCalendarToken = () => randomBytes(24).toString('base64url')
 
-/** Schlüssel für das Kalender-Abo der Familie; wird beim ersten Mal angelegt */
+/** Calendar subscription token of the family; created on first use */
 export async function getCalendarToken(familyId: string): Promise<string> {
   const read = async () => {
     const { data, error } = await getSupaAdmin().from('families').select('calendar_token').eq('id', familyId).single()
@@ -116,7 +116,7 @@ export async function getCalendarToken(familyId: string): Promise<string> {
   }
   const existing = await read()
   if (existing) return existing
-  // Nur setzen, wenn noch keiner da ist – bei zwei gleichzeitigen Aufrufen gewinnt der erste
+  // Only set if none exists yet; with two concurrent calls the first one wins
   const { error } = await getSupaAdmin()
     .from('families')
     .update({ calendar_token: newCalendarToken() })
@@ -126,7 +126,7 @@ export async function getCalendarToken(familyId: string): Promise<string> {
   return (await read())!
 }
 
-/** Neuer Schlüssel; der alte Abo-Link funktioniert danach nicht mehr */
+/** New token; the old subscription link stops working */
 export async function renewCalendarToken(familyId: string): Promise<string> {
   const token = newCalendarToken()
   const { error } = await getSupaAdmin().from('families').update({ calendar_token: token }).eq('id', familyId)

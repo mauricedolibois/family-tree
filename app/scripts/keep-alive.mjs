@@ -1,8 +1,8 @@
 /**
- * Keep-Alive Script für Supabase
+ * Keep-alive for free Supabase cloud projects.
  *
- * Erstellt eine temporäre Test-Familie in der Datenbank und löscht sie wieder.
- * Verhindert, dass Supabase die Datenbank nach 7 Tagen Inaktivität pausiert.
+ * Creates a throwaway family and deletes it again, so Supabase does not pause
+ * the project after 7 days without activity. Not needed when self-hosting.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -11,7 +11,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('❌ Fehlende Umgebungsvariablen: SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY')
+  console.error('❌ Missing environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
   process.exit(1)
 }
 
@@ -22,12 +22,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 const KEEP_ALIVE_FAMILY_NAME = '__keep_alive_test_family__'
 
 async function main() {
-  console.log('🔄 Keep-Alive Script gestartet...')
-  console.log(`📅 Zeitstempel: ${new Date().toISOString()}`)
+  console.log('🔄 keep-alive started')
+  console.log(`📅 ${new Date().toISOString()}`)
 
   try {
-    // 1. Prüfen ob bereits eine Test-Familie existiert und ggf. löschen
-    console.log('🔍 Prüfe auf bestehende Test-Familie...')
+    // 1. Remove a leftover test family from an earlier run
+    console.log('🔍 checking for a leftover test family')
     const { data: existingFamily } = await supabase
       .from('families')
       .select('id')
@@ -35,17 +35,16 @@ async function main() {
       .single()
 
     if (existingFamily) {
-      console.log('🗑️ Lösche alte Test-Familie...')
+      console.log('🗑️ deleting leftover test family')
 
-      // Zuerst den zugehörigen Baum löschen
+      // Tree first, then the family
       await supabase.from('family_trees').delete().eq('family_id', existingFamily.id)
 
-      // Dann die Familie löschen
       await supabase.from('families').delete().eq('id', existingFamily.id)
     }
 
-    // 2. Neue Test-Familie erstellen
-    console.log('➕ Erstelle neue Test-Familie...')
+    // 2. Create a test family
+    console.log('➕ creating test family')
     const { data: newFamily, error: createError } = await supabase
       .from('families')
       .insert({
@@ -56,13 +55,13 @@ async function main() {
       .single()
 
     if (createError) {
-      throw new Error(`Fehler beim Erstellen der Familie: ${createError.message}`)
+      throw new Error(`creating the family failed: ${createError.message}`)
     }
 
-    console.log(`✅ Test-Familie erstellt mit ID: ${newFamily.id}`)
+    console.log(`✅ test family created: ${newFamily.id}`)
 
-    // 3. Test-Baum erstellen
-    console.log('🌳 Erstelle Test-Familienbaum...')
+    // 3. Create a test tree
+    console.log('🌳 creating test tree')
     const testTree = {
       version: 3,
       rootId: 'keep-alive-root',
@@ -73,7 +72,7 @@ async function main() {
           gender: 'male',
           childrenIds: [],
           profile: {
-            comments: `Automatisch erstellt am ${new Date().toISOString()}`,
+            comments: `Created automatically at ${new Date().toISOString()}`,
           },
         },
       },
@@ -86,25 +85,24 @@ async function main() {
     })
 
     if (treeError) {
-      throw new Error(`Fehler beim Erstellen des Baums: ${treeError.message}`)
+      throw new Error(`creating the tree failed: ${treeError.message}`)
     }
 
-    console.log('✅ Test-Familienbaum erstellt')
+    console.log('✅ test tree created')
 
-    // 4. Kurz warten und dann alles wieder löschen
-    console.log('⏳ Warte 2 Sekunden...')
+    // 4. Wait briefly, then clean up
+    console.log('⏳ waiting 2 seconds')
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
-    console.log('🗑️ Lösche Test-Familienbaum...')
+    console.log('🗑️ deleting test tree')
     await supabase.from('family_trees').delete().eq('family_id', newFamily.id)
 
-    console.log('🗑️ Lösche Test-Familie...')
+    console.log('🗑️ deleting test family')
     await supabase.from('families').delete().eq('id', newFamily.id)
 
-    console.log('✅ Bereinigung abgeschlossen')
-    console.log('🎉 Keep-Alive erfolgreich! Datenbank bleibt aktiv.')
+    console.log('✅ keep-alive done, database stays active')
   } catch (error) {
-    console.error('❌ Fehler im Keep-Alive Script:', error)
+    console.error('❌ keep-alive failed:', error)
     process.exit(1)
   }
 }

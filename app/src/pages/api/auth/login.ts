@@ -5,7 +5,7 @@ import { setSessionCookie } from '@/lib/session'
 import { clientIp, isLimited, recordAttempt } from '@/lib/rateLimit'
 import { logError } from '@/lib/log'
 
-/** Gleiche Rechenzeit auch bei unbekanntem Namen, damit man Namen nicht erraten kann. */
+/** Same response time for unknown names, so names cannot be probed. */
 const DUMMY_HASH = '$2b$10$AO0/dUpQlcXQaq9.vwJx9uB5XP25rPin.40YuKS9hGu.4zO.KuSpi'
 
 const FAILURES_PER_NAME = 8

@@ -21,19 +21,19 @@ import {
 } from '@/family/format'
 
 /**
- * Testfamilie (erfunden):
+ * Test family (made up):
  *
- *   Urgroßeltern  Anton ⚭ Berta
- *                     │
- *   Großeltern     Carl ⚭ Dora            Erich ⚭ Frida
- *                 ┌───┴────┐                   │
- *   Eltern      Gustav ⚭ Hanna         Ida ⚭ Jonas
- *                  │              │   │
- *   Ich         Kurt (ich)     Lena  Mia (Ida & Jonas)
+ *   Great-grandparents  Anton ⚭ Berta
+ *                           │
+ *   Grandparents         Carl ⚭ Dora            Erich ⚭ Frida
+ *                       ┌───┴────┐                   │
+ *   Parents           Gustav ⚭ Hanna         Ida ⚭ Jonas
+ *                        │              │   │
+ *   Me                Kurt (me)      Lena  Mia (Ida & Jonas)
  *
- * Gustav ist Sohn von Carl & Dora, Ida ist Tochter von Carl & Dora (also Gustavs Schwester).
- * Hanna ist Tochter von Erich & Frida. Kurt ist Sohn von Gustav & Hanna,
- * Lena ist Tochter nur von Hanna (Halbschwester), Mia ist Tochter von Ida & Jonas (Cousine).
+ * Gustav is the son of Carl & Dora, Ida their daughter (so Gustav's sister).
+ * Hanna is the daughter of Erich & Frida. Kurt is the son of Gustav & Hanna,
+ * Lena the daughter of Hanna only (half-sister), Mia the daughter of Ida & Jonas (cousin).
  */
 function family(): Tree {
   const m = (
@@ -78,7 +78,7 @@ const kin = (tree: Tree, me: string, other: string) => {
   return k ? kinshipLabel(k) : null
 }
 
-describe('Verwandtschaft aus Sicht von Kurt', () => {
+describe('kinship as seen from Kurt', () => {
   const t = family()
   it.each([
     ['gustav', 'Dein Vater'],
@@ -93,32 +93,32 @@ describe('Verwandtschaft aus Sicht von Kurt', () => {
     expect(kin(t, 'kurt', other)).toBe(expected)
   })
 
-  it('aus Sicht des Urgroßvaters ist Kurt der Urenkel', () => {
+  it('to the great-grandfather, Kurt is the great-grandson', () => {
     expect(kin(t, 'anton', 'kurt')).toBe('Dein Urenkel')
   })
 
-  it('Schwiegereltern und Schwager', () => {
+  it('parents-in-law and brother-in-law', () => {
     expect(kin(t, 'gustav', 'erich')).toBe('Dein Schwiegervater')
     expect(kin(t, 'hanna', 'ida')).toBe('Deine Schwägerin')
     expect(kin(t, 'carl', 'hanna')).toBe('Deine Schwiegertochter')
   })
 
-  it('niemand ist mit sich selbst verwandt', () => {
+  it('nobody is related to themselves', () => {
     expect(kin(t, 'kurt', 'kurt')).toBeNull()
   })
 
-  it('über den Ehepartner: kein „Dein“ vor der Kette', () => {
+  it('via the spouse: no "Dein" in front of the chain', () => {
     expect(kin(t, 'hanna', 'mia')).toBe('Nichte deines Mannes')
     expect(kin(t, 'erich', 'gustav')).toBe('Dein Schwiegersohn')
   })
 })
 
-describe('Beziehung zwischen zwei Personen', () => {
+describe('relation between two people', () => {
   const t = family()
   const ix = buildIndex(t)
   const names = (ids: string[]) => ids.map((id) => t.members[id].name.split(' ')[0])
 
-  it('Cousine: Weg über die gemeinsamen Großeltern', () => {
+  it('cousin: path via the shared grandparents', () => {
     const c = findConnection(ix, 'kurt', 'mia')!
     expect(names(c.path)).toEqual(['Kurt', 'Gustav', 'Carl', 'Ida', 'Mia'])
     expect(names(c.common).sort()).toEqual(['Carl', 'Dora'])
@@ -127,7 +127,7 @@ describe('Beziehung zwischen zwei Personen', () => {
     expect(kinshipSentence(c.reverse, { name: 'Kurt' }, { name: 'Mia' })).toBe('Kurt ist der Cousin von Mia.')
   })
 
-  it('direkte Linie ohne gemeinsame Vorfahren', () => {
+  it('direct line without common ancestors', () => {
     const c = findConnection(ix, 'kurt', 'anton')!
     expect(names(c.path)).toEqual(['Kurt', 'Gustav', 'Carl', 'Anton'])
     expect(c.common).toEqual([])
@@ -135,13 +135,13 @@ describe('Beziehung zwischen zwei Personen', () => {
     expect(kinshipSentence(c.reverse, 'you', { name: 'Anton' })).toBe('Du bist der Urenkel von Anton.')
   })
 
-  it('Tante und Neffe in beide Richtungen', () => {
+  it('aunt and nephew in both directions', () => {
     const c = findConnection(ix, 'kurt', 'ida')!
     expect(kinshipSentence(c.kinship, { name: 'Ida' }, { name: 'Kurt' })).toBe('Ida ist die Tante von Kurt.')
     expect(kinshipSentence(c.reverse, { name: 'Kurt' }, { name: 'Ida' })).toBe('Kurt ist der Neffe von Ida.')
   })
 
-  it('angeheiratet: Weg führt über den Ehepartner', () => {
+  it('in-law: the path goes through the spouse', () => {
     const c = findConnection(ix, 'hanna', 'mia')!
     expect(names(c.path)).toEqual(['Hanna', 'Gustav', 'Carl', 'Ida', 'Mia'])
     expect(kinshipSentence(c.kinship, { name: 'Mia' }, { name: 'Hanna' })).toBe(
@@ -149,7 +149,7 @@ describe('Beziehung zwischen zwei Personen', () => {
     )
   })
 
-  it('ohne gängige Bezeichnung: Schritt für Schritt', () => {
+  it('without a common term: step by step', () => {
     const c = findConnection(ix, 'hanna', 'jonas')!
     expect(c.detour).toBe(3)
     expect(c.path[0]).toBe('hanna')
@@ -160,7 +160,7 @@ describe('Beziehung zwischen zwei Personen', () => {
     )
   })
 
-  it('Zusatz nach dem Komma steht am Satzende', () => {
+  it('the suffix after the comma goes to the end of the sentence', () => {
     const tree = addRelative(t, 'mia', { relation: 'CHILD', name: 'Pia Weg', gender: 'FEMALE' }).tree
     const pia = Object.values(tree.members).find((m) => m.name === 'Pia Weg')!.id
     const c = findConnection(buildIndex(tree), 'kurt', pia)!
@@ -170,7 +170,7 @@ describe('Beziehung zwischen zwei Personen', () => {
     expect(kinshipLabel(c.kinship)).toBe('Deine Cousine, eine Generation versetzt')
   })
 
-  it('keine Verbindung und dieselbe Person', () => {
+  it('no connection, and the same person', () => {
     const tree = addRelative(t, 'kurt', { relation: 'SPOUSE', name: 'Nora Fremd', gender: 'FEMALE' }).tree
     const lone = { ...tree, members: { ...tree.members, solo: { ...tree.members.kurt, id: 'solo', spouseId: null } } }
     const ix2 = buildIndex(lone)
@@ -179,8 +179,8 @@ describe('Beziehung zwischen zwei Personen', () => {
   })
 })
 
-describe('Änderungen', () => {
-  it('Kind hinzufügen hängt es an beide Ehepartner', () => {
+describe('edits', () => {
+  it('adding a child links it to both spouses', () => {
     const { tree, id } = addRelative(family(), 'kurt', { relation: 'SPOUSE', name: 'Nora Alt', gender: 'FEMALE' })
     const r = addRelative(tree, 'kurt', { relation: 'CHILD', name: 'Otto Alt', gender: 'MALE' })
     expect(r.tree.members.kurt.childrenIds).toContain(r.id)
@@ -188,7 +188,7 @@ describe('Änderungen', () => {
     expect(r.tree.members[r.id].parentIds?.sort()).toEqual(['kurt', id].sort())
   })
 
-  it('verändert den Ausgangsbaum nicht', () => {
+  it('does not modify the original tree', () => {
     const t = family()
     const before = JSON.stringify(t)
     addRelative(t, 'kurt', { relation: 'CHILD', name: 'X', gender: 'MALE' })
@@ -196,49 +196,49 @@ describe('Änderungen', () => {
     expect(JSON.stringify(t)).toBe(before)
   })
 
-  it('ein drittes Elternteil wird abgelehnt', () => {
+  it('rejects a third parent', () => {
     expect(() => addRelative(family(), 'kurt', { relation: 'PARENT', name: 'X', gender: 'MALE' })).toThrow(
       /zwei Eltern/,
     )
   })
 
-  it('Elternteil hinzufügen und mit dem vorhandenen verheiraten', () => {
+  it('adds a parent and marries them to the existing one', () => {
     const { tree, id } = addRelative(family(), 'lena', {
       relation: 'PARENT',
       name: 'Paul Fremd',
       gender: 'MALE',
       marryExistingParent: true,
     })
-    // Hanna ist schon mit Gustav verheiratet, also keine zweite Ehe
+    // Hanna is already married to Gustav, so no second marriage
     expect(tree.members[id].spouseId).toBeNull()
     expect(tree.members.lena.parentIds?.sort()).toEqual(['hanna', id].sort())
   })
 
-  it('Ehepartner des einzigen Elternteils nachträglich als Elternteil eintragen', () => {
+  it('records the spouse of the only parent as a second parent', () => {
     const t = family()
-    // Lena ist nur Hannas Tochter, Hanna ist mit Gustav verheiratet
+    // Lena is Hanna's daughter only; Hanna is married to Gustav
     expect(spouseOfSingleParent(t, 'lena')).toBe('gustav')
-    expect(spouseOfSingleParent(t, 'kurt')).toBeNull() // hat schon zwei Eltern
+    expect(spouseOfSingleParent(t, 'kurt')).toBeNull() // already has two parents
     const next = addExistingParent(t, 'lena', 'gustav')
     expect(next.members.lena.parentIds?.sort()).toEqual(['gustav', 'hanna'])
     expect(next.members.gustav.childrenIds).toContain('lena')
     expect(t.members.gustav.childrenIds).not.toContain('lena')
   })
 
-  it('kein drittes Elternteil und keine Nachkommen als Eltern', () => {
+  it('no third parent and no descendants as parents', () => {
     expect(() => addExistingParent(family(), 'kurt', 'jonas')).toThrow(/zwei Eltern/)
     const t = addRelative(family(), 'lena', { relation: 'CHILD', name: 'Rudi', gender: 'MALE' })
     expect(() => addExistingParent(t.tree, 'lena', t.id)).toThrow(/nicht Elternteil/)
   })
 
-  it('Personen in der Mitte des Baums lassen sich nicht löschen', () => {
+  it('people in the middle of the tree cannot be deleted', () => {
     const t = family()
     expect(canDelete(t, 'carl')).toBe(false)
     expect(canDelete(t, 'kurt')).toBe(true)
     expect(canDelete(t, 'anton')).toBe(true)
   })
 
-  it('Löschen ganz oben hängt Kinder an den Ehepartner', () => {
+  it('deleting at the top moves children to the spouse', () => {
     const t = deletePerson(family(), 'anton')
     expect(t.members.anton).toBeUndefined()
     expect(t.members.berta.spouseId).toBeNull()
@@ -246,22 +246,22 @@ describe('Änderungen', () => {
     expect(t.rootId).toBe('berta')
   })
 
-  it('Namen und Geschlecht lassen sich ändern', () => {
+  it('name and gender can be changed', () => {
     const t = updatePerson(family(), 'kurt', { name: '  Kurt Karl Alt ', gender: 'MALE', profile: { job: 'Maler' } })
     expect(t.members.kurt.name).toBe('Kurt Karl Alt')
     expect(t.members.kurt.profile?.job).toBe('Maler')
   })
 })
 
-describe('Hilfsfunktionen', () => {
-  it('Geschwister und Linie', () => {
+describe('helpers', () => {
+  it('siblings and line', () => {
     const ix = buildIndex(family())
     expect(siblingsOf(ix, 'kurt')).toEqual(['lena'])
     const line = lineageOf(ix, 'gustav')
     expect([...line].sort()).toEqual(['anton', 'berta', 'carl', 'dora', 'gustav', 'hanna', 'kurt'].sort())
   })
 
-  it('Namen und Lebensdaten', () => {
+  it('names and life dates', () => {
     expect(splitName('Karl Friedrich Mustermann')).toEqual({ given: 'Karl Friedrich', surname: 'Mustermann' })
     const p = family().members.kurt
     expect(lifeYears({ ...p, profile: { birthDate: '1919-12-29', deathDate: '1989-03-31' } })).toBe('1919–1989')
@@ -269,7 +269,7 @@ describe('Hilfsfunktionen', () => {
   })
 })
 
-describe('Ungenaue Daten', () => {
+describe('partial dates', () => {
   it.each([
     ['25.12.1944', '1944-12-25'],
     ['5.3.1910', '1910-03-05'],
@@ -279,18 +279,18 @@ describe('Ungenaue Daten', () => {
     ['', null],
     ['31.02.1950', undefined],
     ['44', undefined],
-  ])('Eingabe %s → %s', (input, expected) => {
+  ])('input %s → %s', (input, expected) => {
     expect(parseDateInput(input)).toBe(expected)
   })
 
-  it('Anzeige und Bearbeiten', () => {
+  it('display and edit format', () => {
     expect(formatDate('1778')).toBe('1778')
     expect(formatDate('1778-05')).toBe('Mai 1778')
     expect(formatDate('1944-12-25')).toBe('25.12.1944')
     expect(toDateInput('1778-05')).toBe('05.1778')
   })
 
-  it('Alter wird bei Jahresangaben als ungefähr markiert', () => {
+  it('marks the age as approximate for year-only dates', () => {
     const p = family().members.kurt
     expect(ageOf({ ...p, profile: { birthDate: '1778', deathDate: '1846' } })).toEqual({ years: 68, approx: true })
     expect(ageOf({ ...p, profile: { birthDate: '1944-12-25', deathDate: '2024-04-04' } })).toEqual({
@@ -300,29 +300,29 @@ describe('Ungenaue Daten', () => {
   })
 })
 
-describe('Umfang der Linie', () => {
+describe('line scope', () => {
   const t = family()
   const ix = buildIndex(t)
   const view = (scope: Parameters<typeof lineageView>[2]) => [...lineageView(ix, 'kurt', scope)].sort()
 
-  it('nur direkt: Vorfahren ohne Geschwister', () => {
+  it('direct only: ancestors without siblings', () => {
     expect(view({ up: null, down: null, side: 0 })).toEqual(
       ['anton', 'berta', 'carl', 'dora', 'erich', 'frida', 'gustav', 'hanna', 'kurt'].sort(),
     )
   })
 
-  it('mit Geschwistern: Halbschwester und Tante, aber keine Cousine', () => {
+  it('with siblings: half-sister and aunt, but no cousin', () => {
     const v = view({ up: null, down: null, side: 1 })
     expect(v).toEqual(expect.arrayContaining(['lena', 'ida']))
     expect(v).not.toContain('mia')
     expect(v).not.toContain('jonas')
   })
 
-  it('mit Cousins: die Cousine und ihr Vater kommen dazu', () => {
+  it('with cousins: the cousin and her father are added', () => {
     expect(view({ up: null, down: null, side: 2 })).toEqual(expect.arrayContaining(['mia', 'jonas']))
   })
 
-  it('Generationen nach oben begrenzen', () => {
+  it('limits generations upwards', () => {
     const v = view({ up: 1, down: null, side: 1 })
     expect(v).toEqual(expect.arrayContaining(['gustav', 'hanna', 'lena']))
     expect(v).not.toContain('carl')
@@ -330,12 +330,12 @@ describe('Umfang der Linie', () => {
   })
 })
 
-describe('Umfang in Worten (für den Druck)', () => {
-  it('Generationen', () => {
+describe('scope in words (for print)', () => {
+  it('generations', () => {
     expect([0, 1, 3].map(generations)).toEqual(['keine', '1 Generation', '3 Generationen'])
   })
 
-  it('Linie', () => {
+  it('line', () => {
     expect(describeLineScope({ up: null, down: 0, side: 0 }, { up: 9, down: 2 })).toBe(
       'Vorfahren: alle 9 Generationen, Nachkommen: keine, ohne Seitenlinien',
     )

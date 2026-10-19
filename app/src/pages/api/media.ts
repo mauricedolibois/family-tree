@@ -10,7 +10,7 @@ export const config = { api: { bodyParser: false } }
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024
 const MAX_FILES = 10
-/** Erlaubte Dateitypen: Bilder, gängige Videos, PDFs */
+/** Allowed file types: images, common video formats, PDFs */
 const ALLOWED = /^(image\/(jpeg|png|webp|gif|heic|heif)|video\/(mp4|quicktime|webm)|application\/pdf)$/
 
 function parseForm(req: NextApiRequest): Promise<File[]> {
@@ -29,7 +29,7 @@ function parseForm(req: NextApiRequest): Promise<File[]> {
   })
 }
 
-/** Nur harmlose Zeichen im Dateinamen, damit der Speicherpfad sauber bleibt. */
+/** Keep only safe characters in file names so storage paths stay clean. */
 function safeName(original: string | null): string {
   const cleaned = (original || 'datei')
     .normalize('NFKD')

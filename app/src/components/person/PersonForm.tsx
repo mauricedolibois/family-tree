@@ -1,5 +1,5 @@
 // src/components/person/PersonForm.tsx
-// Angaben zu einer Person bearbeiten, inklusive Fotos und Dokumente.
+// Edit a person's details, including photos and documents.
 
 import { useRef, useState } from 'react'
 import clsx from 'clsx'
@@ -70,12 +70,12 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
     e.preventDefault()
     setError(null)
     const birthDate = parseDateInput(form.birthDate)
-    // Ausgeschaltet: kein Sterbedatum (das Eingetippte bleibt nur bis zum Speichern im Feld)
+    // Switched off: no date of death (anything typed only stays in the field until saving)
     const deathDate = dead ? parseDateInput(form.deathDate) : null
     if (birthDate === undefined || deathDate === undefined) {
       return setError('Bitte Daten als TT.MM.JJJJ eingeben – oder nur Monat und Jahr (MM.JJJJ) oder nur das Jahr.')
     }
-    // bei ungenauen Daten nur so genau vergleichen, wie beide bekannt sind
+    // with partial dates, compare only as precisely as both are known
     const precision = Math.min(birthDate?.length ?? 0, deathDate?.length ?? 0)
     if (birthDate && deathDate && deathDate.slice(0, precision) < birthDate.slice(0, precision)) {
       return setError('Das Sterbedatum liegt vor dem Geburtsdatum.')
@@ -100,8 +100,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
       })
       if (stepParent && alsoParent) next = addExistingParent(next, person.id, stepParent.id)
       await commit(next)
-      // Entfernte Dateien bleiben im Speicher, damit ältere gesicherte Stände ihre Bilder behalten.
-      // Aufgeräumt wird in der täglichen Sicherung (scripts/daily-backup.mjs).
+      // Removed files stay in storage so older backups keep their images.
+      // The daily backup job (scripts/daily-backup.mjs) cleans them up.
       notify({ message: 'Änderungen gespeichert.' })
       onDone()
     } catch (err) {

@@ -1,13 +1,14 @@
 // src/family/calendarLink.ts
 //
-// Welche Geburtstage ein Kalender-Abo enthält – steht als Parameter im Link,
-// damit jede und jeder sich die eigene Linie abonnieren kann:
+// Which birthdays a calendar subscription contains. The scope is part of the link,
+// so everyone can subscribe to their own line:
 //
-//   …/geburtstage.ics                                    ganze Familie
+//   …/geburtstage.ics                                    whole family
 //   …?linie=<id>&vorfahren=alle&nachkommen=2&seiten=cousins
 //
-// vorfahren/nachkommen: Anzahl Generationen oder „alle“ (Standard)
-// seiten: keine (Standard) | geschwister | cousins | alle – wie bei „Meine Linie“
+// vorfahren/nachkommen (ancestors/descendants): number of generations or "alle" (default)
+// seiten (collateral lines): keine (default) | geschwister | cousins | alle, as in "Meine Linie"
+// The parameter names are German on purpose: existing subscriptions use them.
 
 import { buildIndex, lineageView, subTree, type LineScope, type Tree } from './model'
 
@@ -17,7 +18,7 @@ const SIDE_WORDS = ['keine', 'geschwister', 'cousins', 'alle'] as const
 
 const MAX_GENERATIONS = 99
 
-/** Parameter für den Link, mit führendem „?“ – leer für die ganze Familie */
+/** Query string for the link, with leading "?"; empty for the whole family */
 export function calendarQuery(sel: CalendarSelection | null): string {
   if (!sel) return ''
   const gen = (n: number | null) => (n === null ? 'alle' : String(n))
@@ -36,7 +37,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 
 function generations(v: string | string[] | undefined): number | null {
   const s = first(v)
-  if (!s || !/^\d{1,2}$/.test(s)) return null // fehlt, „alle“ oder Unsinn: alle
+  if (!s || !/^\d{1,2}$/.test(s)) return null // missing, "alle" or garbage: all
   return Math.min(Number(s), MAX_GENERATIONS)
 }
 
@@ -48,7 +49,7 @@ function side(v: string | string[] | undefined): LineScope['side'] {
   return /^[0-3]$/.test(s) ? (Number(s) as LineScope['side']) : 0
 }
 
-/** Aus den Parametern des Links; null heißt ganze Familie */
+/** Parsed from the link parameters; null means the whole family */
 export function parseCalendarQuery(query: Query): CalendarSelection | null {
   const personId = (Array.isArray(query.linie) ? query.linie[0] : query.linie)?.trim()
   if (!personId) return null
@@ -59,8 +60,8 @@ export function parseCalendarQuery(query: Query): CalendarSelection | null {
 }
 
 /**
- * Die Personen des Abos. Gibt es die Person nicht (mehr), bleibt der Kalender leer –
- * lieber keine Termine als plötzlich die ganze Familie.
+ * People in the subscription. If the person no longer exists the calendar stays
+ * empty; better no events than suddenly the whole family.
  */
 export function calendarSubset(tree: Tree, sel: CalendarSelection | null): { tree: Tree; personName: string | null } {
   if (!sel) return { tree, personName: null }

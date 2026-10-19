@@ -1,5 +1,5 @@
 // src/components/ui/Button.tsx
-// Knöpfe des Style-Systems: primary (Leinen), secondary (Pergament), quiet (nur Text), danger.
+// Design-system buttons: primary (linen), secondary (parchment), quiet (text only), danger.
 
 import clsx from 'clsx'
 import { forwardRef, type ButtonHTMLAttributes } from 'react'

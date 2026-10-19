@@ -1,34 +1,34 @@
 // src/family/birthdays.ts
-// Wer hat als Nächstes Geburtstag? Nur Lebende mit vollständigem Geburtsdatum.
+// Whose birthday is next? Only living people with a complete date of birth.
 
 import type { Person, Tree } from './model'
 import { isDeceased } from './format'
 
 export type Birthday = {
   person: Person
-  /** Datum des nächsten Geburtstags (Ortszeit, 0 Uhr) */
+  /** Date of the next birthday (local time, midnight) */
   date: Date
-  /** Tage bis dahin: 0 = heute */
+  /** Days until then: 0 = today */
   days: number
-  /** So alt wird die Person */
+  /** Age the person turns */
   age: number
 }
 
-/** Ohne eingetragenes Sterbedatum, aber älter als das: vermutlich verstorben */
+/** No date of death recorded but older than this: most likely deceased */
 const MAX_AGE = 105
 const DAY = 86_400_000
 
 const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 
-/** Geburtstag in einem Jahr; der 29. Februar fällt in Nicht-Schaltjahren auf den 28. */
+/** Birthday in a given year; 29 February falls on the 28th in non-leap years */
 function birthdayIn(year: number, month: number, day: number): Date {
   const d = new Date(year, month - 1, day)
   return d.getMonth() === month - 1 ? d : new Date(year, month - 1, 28)
 }
 
 /**
- * Nächste Geburtstage, sortiert. Mit `occurrences` > 1 auch die der Folgejahre
- * (z. B. für den Kalender: dieses und nächstes Mal).
+ * Upcoming birthdays, sorted. With `occurrences` > 1 the following years too
+ * (the calendar uses this one and the next).
  */
 export function upcomingBirthdays(tree: Tree, now = new Date(), occurrences = 1): Birthday[] {
   const today = midnight(now)
@@ -50,7 +50,7 @@ export function upcomingBirthdays(tree: Tree, now = new Date(), occurrences = 1)
   return out.sort((a, b) => a.days - b.days || a.person.name.localeCompare(b.person.name, 'de'))
 }
 
-/** „heute“, „morgen“, „in 5 Tagen“ */
+/** "heute", "morgen", "in 5 Tagen" */
 export function daysText(days: number): string {
   if (days === 0) return 'heute'
   if (days === 1) return 'morgen'

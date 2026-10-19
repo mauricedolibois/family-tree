@@ -1,5 +1,5 @@
 // src/components/person/PersonDetails.tsx
-// Alles über eine Person auf einen Blick – und von hier aus durch die Familie.
+// Everything about a person at a glance, and the starting point to browse the family.
 
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
@@ -37,7 +37,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
   const ageText = age ? `${age.approx ? 'etwa ' : ''}${age.years} Jahre` : null
   const media = p.media ?? []
 
-  /** Beziehungsansicht: von dir zu dieser Person, sonst mit ihr beginnen */
+  /** Relation view: from you to this person, otherwise starting with them */
   const showRelationTo = () => {
     showRelation(meId && meId !== person.id ? { from: meId, to: person.id } : { from: person.id, to: null })
     select(null)
@@ -61,7 +61,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Kopf */}
+      {/* Header */}
       <div className="flex items-center gap-4">
         <span data-tour="portrait">
           <Portrait person={person} size="lg" />
@@ -106,7 +106,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         )}
       </div>
 
-      {/* Lebensdaten */}
+      {/* Life dates */}
       <dl className="grid grid-cols-[auto,1fr] gap-x-5 gap-y-2 text-[15px]">
         <Fact
           label="Geboren"
@@ -178,7 +178,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         </section>
       )}
 
-      {/* Familie */}
+      {/* Family */}
       <section className="flex flex-col gap-4">
         <h3 className="ornament-heading">Familie</h3>
         <Relatives

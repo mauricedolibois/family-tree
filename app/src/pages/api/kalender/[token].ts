@@ -1,7 +1,7 @@
-// Kalender-Abo der Geburtstage (iCalendar). Ohne Anmeldung, geschützt durch den
-// geheimen Schlüssel im Link – Kalender-Apps können sich nicht einloggen.
-// Mit ?linie=…&vorfahren=…&nachkommen=…&seiten=… nur die Linie einer Person
-// (siehe src/family/calendarLink.ts).
+// Birthday calendar subscription (iCalendar). No login, protected by the secret
+// token in the link, because calendar apps cannot sign in.
+// ?linie=…&vorfahren=…&nachkommen=…&seiten=… limits it to one person's line
+// (see src/family/calendarLink.ts).
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getFamilyByCalendarToken, loadFamilyTree } from '@/lib/db'

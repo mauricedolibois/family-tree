@@ -1,38 +1,37 @@
 // src/family/kinship.ts
 //
-// „Wie sind wir verwandt?“ – beschreibt eine Person aus Sicht einer anderen
-// mit den üblichen deutschen Verwandtschaftsbezeichnungen und findet den Weg
-// zwischen beiden durch den Baum.
+// "How are we related?" Describes one person from another's point of view
+// using the usual German kinship terms, and finds the path between them.
 
 import { ancestorsOf, childrenOf, isHalfSibling, parentsOf, spouseOf, type Gender, type TreeIndex } from './model'
 
-/** Ein Verwandtschaftswort und das Geschlecht der Person, die es bezeichnet */
+/** A kinship word and the gender of the person it refers to */
 export type KinWord = { term: string; gender: Gender }
 
 export type Kinship = KinWord & {
-  /** über Heirat statt Abstammung */
+  /** related by marriage rather than descent */
   byMarriage: boolean
   /**
-   * Personen dazwischen, von B aus in Richtung A gelesen:
-   * „Ehemann [der Cousine]“, „Tochter [des Bruders] [des Ehemanns]“
+   * People in between, read from B towards A:
+   * "Ehemann [der Cousine]", "Tochter [des Bruders] [des Ehemanns]"
    */
   via: KinWord[]
 }
 
 export type Connection = {
-  /** B aus Sicht von A */
+  /** B as seen from A */
   kinship: Kinship
-  /** A aus Sicht von B */
+  /** A as seen from B */
   reverse: Kinship
-  /** Alle Personen auf dem Weg, von A nach B */
+  /** Everyone on the path from A to B */
   path: string[]
-  /** Nächste gemeinsame Vorfahren (Paar oder Einzelperson); leer, wenn einer vom anderen abstammt oder bei Heirat */
+  /** Closest common ancestors (a couple or one person); empty if one descends from the other or for in-laws */
   common: string[]
-  /** Ohne gängige Bezeichnung: Zahl der Personen zwischen A und B */
+  /** When there is no common term: number of people between A and B */
   detour: number | null
 }
 
-const MAX_NAMED_UR = 3 // bis „Urururgroßvater“, danach Generationen zählen
+const MAX_NAMED_UR = 3 // up to "Urururgroßvater", beyond that count generations
 
 function pick(gender: Gender, male: string, female: string) {
   return gender === 'FEMALE' ? female : male
@@ -42,14 +41,14 @@ function kin(term: string, gender: Gender, byMarriage = false, via: KinWord[] = 
   return { term, gender, byMarriage, via }
 }
 
-/** Abstand jeder Person zu ihren Vorfahren, inklusive sich selbst (0) */
+/** Distance from a person to each ancestor, including the person itself (0) */
 function withSelf(ix: TreeIndex, id: string) {
   const m = ancestorsOf(ix, id)
   m.set(id, 0)
   return m
 }
 
-/** Nächste gemeinsame Vorfahren: Schritte von A und von B nach oben, und wer es ist */
+/** Closest common ancestors: steps up from A and from B, and who they are */
 type Common = { up: number; down: number; ids: string[] }
 
 function closestCommon(ix: TreeIndex, a: string, b: string): Common | null {
@@ -76,12 +75,12 @@ function urPrefix(n: number) {
   return 'Ur'.repeat(n)
 }
 
-/** withUr(2, 'Großonkel') → „Ururgroßonkel“ */
+/** withUr(2, 'Großonkel') → "Ururgroßonkel" */
 function withUr(n: number, word: string) {
   return n === 0 ? word : urPrefix(n) + word.charAt(0).toLowerCase() + word.slice(1)
 }
 
-/** Blutsverwandtschaft: Begriff für B aus Sicht von A, oder null */
+/** Blood relation: term for B as seen from A, or null */
 function bloodTerm(ix: TreeIndex, a: string, b: string, common = closestCommon(ix, a, b)): string | null {
   const person = ix.byId.get(b)
   if (!person || !common) return null
@@ -90,7 +89,7 @@ function bloodTerm(ix: TreeIndex, a: string, b: string, common = closestCommon(i
 
   if (up === 0 && down === 0) return null
 
-  // B ist Vorfahr von A
+  // B is an ancestor of A
   if (down === 0) {
     if (up === 1) return pick(g, 'Vater', 'Mutter')
     if (up === 2) return pick(g, 'Großvater', 'Großmutter')
@@ -98,7 +97,7 @@ function bloodTerm(ix: TreeIndex, a: string, b: string, common = closestCommon(i
     return `${pick(g, 'Vorfahr', 'Vorfahrin')}, ${up} Generationen zurück`
   }
 
-  // B ist Nachkomme von A
+  // B is a descendant of A
   if (up === 0) {
     if (down === 1) return pick(g, 'Sohn', 'Tochter')
     if (down === 2) return pick(g, 'Enkel', 'Enkelin')
@@ -110,21 +109,21 @@ function bloodTerm(ix: TreeIndex, a: string, b: string, common = closestCommon(i
     return isHalfSibling(ix, a, b) ? pick(g, 'Halbbruder', 'Halbschwester') : pick(g, 'Bruder', 'Schwester')
   }
 
-  // Nichte/Neffe und weiter nach unten
+  // Nephew/niece and further down
   if (up === 1) {
     if (down === 2) return pick(g, 'Neffe', 'Nichte')
     if (down - 3 <= MAX_NAMED_UR) return withUr(down - 3, pick(g, 'Großneffe', 'Großnichte'))
     return `${pick(g, 'Nachfahre', 'Nachfahrin')} eines Geschwisters`
   }
 
-  // Onkel/Tante und weiter nach oben
+  // Uncle/aunt and further up
   if (down === 1) {
     if (up === 2) return pick(g, 'Onkel', 'Tante')
     if (up - 3 <= MAX_NAMED_UR) return withUr(up - 3, pick(g, 'Großonkel', 'Großtante'))
     return `${pick(g, 'Onkel', 'Tante')}, ${up - 1} Generationen zurück`
   }
 
-  // Cousin/Cousine n. Grades, ggf. um Generationen versetzt
+  // nth cousin, possibly removed by some generations
   const degree = Math.min(up, down) - 1
   const removed = Math.abs(up - down)
   const base = pick(g, 'Cousin', 'Cousine')
@@ -133,7 +132,7 @@ function bloodTerm(ix: TreeIndex, a: string, b: string, common = closestCommon(i
   return `${named}, ${removed === 1 ? 'eine Generation' : `${removed} Generationen`} versetzt`
 }
 
-/** Von einer Person über ihre Eltern hinauf bis zu einem Vorfahren: [from, …, to] */
+/** From a person up through their parents to an ancestor: [from, …, to] */
 function climb(ix: TreeIndex, from: string, to: string): string[] {
   const prev = new Map<string, string | null>([[from, null]])
   let frontier = [from]
@@ -153,7 +152,7 @@ function climb(ix: TreeIndex, from: string, to: string): string[] {
   return path.reverse()
 }
 
-/** Weg A → gemeinsamer Vorfahr → B; bevorzugt einen Vorfahren, dessen Ehepartner auch gemeinsam ist */
+/** Path A → common ancestor → B; prefers an ancestor whose spouse is a common ancestor too */
 function bloodPath(ix: TreeIndex, a: string, b: string, c: Common) {
   const top =
     c.ids.find((id) => {
@@ -170,7 +169,7 @@ function bloodPath(ix: TreeIndex, a: string, b: string, c: Common) {
 
 type Found = { kinship: Kinship; path: string[]; common: string[] }
 
-/** Benannte Verwandtschaft von B aus Sicht von A, samt Weg durch den Baum */
+/** Named relation of B as seen from A, with the path through the tree */
 function relate(ix: TreeIndex, a: string, b: string): Found | null {
   if (a === b) return null
   const other = ix.byId.get(b)
@@ -183,7 +182,7 @@ function relate(ix: TreeIndex, a: string, b: string): Found | null {
   const term = blood && bloodTerm(ix, a, b, blood)
   if (blood && term) return { kinship: kin(term, g), ...bloodPath(ix, a, b, blood) }
 
-  // B ist mit einem Blutsverwandten von A verheiratet
+  // B is married to a blood relative of A
   const otherSpouse = spouseOf(ix, b)
   const viaOtherSpouse = otherSpouse ? closestCommon(ix, a, otherSpouse) : null
   if (otherSpouse && viaOtherSpouse) {
@@ -201,7 +200,7 @@ function relate(ix: TreeIndex, a: string, b: string): Found | null {
     }
   }
 
-  // B ist mit dem Ehepartner von A blutsverwandt
+  // B is a blood relative of A's spouse
   const mySpouse = spouseOf(ix, a)
   const viaMySpouse = mySpouse ? closestCommon(ix, mySpouse, b) : null
   if (mySpouse && viaMySpouse) {
@@ -222,14 +221,14 @@ function relate(ix: TreeIndex, a: string, b: string): Found | null {
 }
 
 /**
- * Beschreibt Person `otherId` aus Sicht von `meId`.
- * Liefert null, wenn es dieselbe Person ist oder es keine gängige Bezeichnung gibt.
+ * Describes `otherId` as seen from `meId`.
+ * Returns null for the same person or when there is no common term.
  */
 export function describeKinship(ix: TreeIndex, meId: string, otherId: string): Kinship | null {
   return relate(ix, meId, otherId)?.kinship ?? null
 }
 
-/** Kürzester Weg über Eltern, Kinder und Ehepartner, oder null ohne Verbindung */
+/** Shortest path via parents, children and spouses, or null if unconnected */
 export function shortestPath(ix: TreeIndex, a: string, b: string): string[] | null {
   if (!ix.byId.has(a) || !ix.byId.has(b)) return null
   const prev = new Map<string, string | null>([[a, null]])
@@ -252,7 +251,7 @@ export function shortestPath(ix: TreeIndex, a: string, b: string): string[] | nu
   return path.reverse()
 }
 
-/** Einen Weg Schritt für Schritt benennen: „Ehemann der Schwester des Ehemanns“ */
+/** Name a path step by step: "Ehemann der Schwester des Ehemanns" */
 function chainKinship(ix: TreeIndex, path: string[]): Kinship {
   const words: KinWord[] = []
   for (let i = 1; i < path.length; i++) {
@@ -261,7 +260,7 @@ function chainKinship(ix: TreeIndex, path: string[]): Kinship {
     const next = path[i + 1]
     const g = ix.byId.get(cur)!.gender
     const isParent = parentsOf(ix, prev).includes(cur)
-    // Hinauf zum Elternteil und gleich zu dessen Kind: Geschwister
+    // Up to a parent and straight down to their child: a sibling
     if (isParent && next && childrenOf(ix, cur).includes(next)) {
       const ng = ix.byId.get(next)!.gender
       const half = isHalfSibling(ix, prev, next)
@@ -276,9 +275,9 @@ function chainKinship(ix: TreeIndex, path: string[]): Kinship {
 }
 
 /**
- * Wie hängen A und B zusammen? Mit Bezeichnung in beide Richtungen und dem Weg
- * durch den Baum. Ohne gängige Bezeichnung wird der kürzeste Weg Schritt für
- * Schritt beschrieben. null, wenn es keine Verbindung gibt.
+ * How are A and B connected? Terms in both directions plus the path through
+ * the tree. Without a common term the shortest path is described step by step.
+ * null if they are not connected at all.
  */
 export function findConnection(ix: TreeIndex, a: string, b: string): Connection | null {
   if (a === b || !ix.byId.has(a) || !ix.byId.has(b)) return null
@@ -298,7 +297,7 @@ export function findConnection(ix: TreeIndex, a: string, b: string): Connection 
   }
 }
 
-/** „Onkel“ ↔ „Tante“ usw., wenn der angeheiratete Partner das andere Geschlecht hat */
+/** "Onkel" ↔ "Tante" etc. when the in-law has the other gender */
 function swapGender(term: string, g: Gender): string {
   const pairs: Array<[string, string]> = [
     ['onkel', 'tante'],
@@ -311,7 +310,7 @@ function swapGender(term: string, g: Gender): string {
   return term
 }
 
-// ── In Worte fassen ──────────────────────────────────────────────────────────
+// ── Putting it into words ────────────────────────────────────────────────────
 
 const article = (g: Gender) => pick(g, 'der', 'die')
 const ofArticle = (g: Gender) => pick(g, 'des', 'der')
@@ -320,7 +319,7 @@ const ofYour = (g: Gender) => pick(g, 'deines', 'deiner')
 
 const IRREGULAR_GENITIVE: Record<string, string> = { Mann: 'Mannes', Sohn: 'Sohnes' }
 
-/** „des Cousins 2. Grades“, „des Neffen“, „der Cousine“ – nur das Wort, ohne Artikel */
+/** "des Cousins 2. Grades", "des Neffen", "der Cousine": the word only, without article */
 function genitive({ term, gender }: KinWord): string {
   if (gender === 'FEMALE') return term
   const [first, ...rest] = term.split(' ')
@@ -328,13 +327,13 @@ function genitive({ term, gender }: KinWord): string {
   return [gen, ...rest].join(' ')
 }
 
-/** „Cousin 2. Grades, eine Generation versetzt“ → Hauptwort und Zusatz */
+/** "Cousin 2. Grades, eine Generation versetzt" → head and suffix */
 function splitTerm(term: string): [string, string] {
   const i = term.indexOf(', ')
   return i < 0 ? [term, ''] : [term.slice(0, i), term.slice(i + 2)]
 }
 
-/** „der Schwester des Ehemanns“ – bei `yours` gehört die letzte Person zu „dir“ */
+/** "der Schwester des Ehemanns"; with `yours` the last person belongs to "you" */
 function viaChain(via: KinWord[], yours: boolean): string {
   return via
     .map((v, i) => `${yours && i === via.length - 1 ? ofYour(v.gender) : ofArticle(v.gender)} ${genitive(v)}`)
@@ -343,25 +342,25 @@ function viaChain(via: KinWord[], yours: boolean): string {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** Aus deiner Sicht, z. B. im Infoblatt: „Dein Urgroßvater“, „Ehemann deiner Cousine“ */
+/** From your point of view, e.g. on the info sheet: "Dein Urgroßvater", "Ehemann deiner Cousine" */
 export function kinshipLabel(k: Kinship): string {
   const [head, tail] = splitTerm(k.term)
   const core = k.via.length ? `${head} ${viaChain(k.via, true)}` : `${capitalize(your(k.gender))} ${head}`
   return tail ? `${core}, ${tail}` : core
 }
 
-/** Ohne Bezug auf jemanden, als Überschrift: „Cousin 2. Grades“ + „eine Generation versetzt“ */
+/** Without reference to anyone, as a heading: "Cousin 2. Grades" + "eine Generation versetzt" */
 export function kinshipTitle(k: Kinship): { title: string; note: string } {
   const [head, tail] = splitTerm(k.term)
   return { title: k.via.length ? `${head} ${viaChain(k.via, false)}` : head, note: tail }
 }
 
-/** Eine Person mit Namen oder „du“ */
+/** A named person or "you" */
 export type Party = { name: string } | 'you'
 
 /**
- * Ganzer Satz, Subjekt ist B, Objekt ist A:
- * „Ida ist die Tante von Kurt.“, „Ida ist deine Tante.“, „Du bist die Tante von Kurt.“
+ * Full sentence with B as subject and A as object:
+ * "Ida ist die Tante von Kurt.", "Ida ist deine Tante.", "Du bist die Tante von Kurt."
  */
 export function kinshipSentence(k: Kinship, subject: Party, object: Party): string {
   const [head, tail] = splitTerm(k.term)

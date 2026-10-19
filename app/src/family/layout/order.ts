@@ -1,9 +1,9 @@
 // src/family/layout/order.ts
 //
-// Reihenfolge der Kästen von links nach rechts, so wie man einen Stammbaum von
-// Hand zeichnen würde: Vorfahren des Mannes links, der Frau rechts, Geschwister
-// und ihre Familien außen, Nachkommen darunter. ELK nimmt das als Vorliebe und
-// weicht nur ab, wenn sich sonst Linien kreuzen würden.
+// Left-to-right box order the way one would draw a family tree by hand: the
+// husband's ancestors on the left, the wife's on the right, siblings and their
+// families on the outside, descendants below. ELK takes this as a preference and
+// only deviates when lines would otherwise cross.
 
 import { ancestorsOf, parentsOf, type TreeIndex } from '../model'
 import type { Unit } from './graph'
@@ -27,7 +27,7 @@ export function genealogicalOrder(
     seq.push(u)
   }
 
-  /** Kästen der Kinder eines Kastens, nach Geburt der Kinder */
+  /** Boxes of a box's children, ordered by the children's birth */
   const childUnits = (u: string): string[] => {
     const kids = new Set(units.get(u)!.members.flatMap((m) => ix.children.get(m) ?? []))
     const out: string[] = []
@@ -38,7 +38,7 @@ export function genealogicalOrder(
     return out
   }
 
-  /** Eltern-Kästen einer Person (meist einer, bei getrennten Eltern zwei) */
+  /** Parent boxes of a person (usually one, two for separated parents) */
   const parentUnits = (person: string): string[] => [
     ...new Set(
       parentsOf(ix, person)
@@ -47,7 +47,7 @@ export function genealogicalOrder(
     ),
   ]
 
-  /** Ein Paar: Herkunft der linken Person links, der rechten rechts, dazwischen das Paar */
+  /** A couple: left partner's family on the left, right partner's on the right, the couple between */
   function couple(u: string, kids: boolean) {
     if (placed.has(u)) return
     const [left, right] = units.get(u)!.members
@@ -57,7 +57,7 @@ export function genealogicalOrder(
     if (right) up(right, 'right')
   }
 
-  /** Eltern und Geschwister einer Person auf der angegebenen Seite */
+  /** A person's parents and siblings on the given side */
   function up(person: string, side: Side) {
     const own = unitOf.get(person)
     for (const p of parentUnits(person)) {
@@ -70,7 +70,7 @@ export function genealogicalOrder(
     }
   }
 
-  /** Eine Seitenlinie mit allen Nachkommen; angeheiratete Herkunft nach außen */
+  /** A collateral line with all descendants; in-laws' families go outside */
   function down(u: string, side: Side) {
     if (placed.has(u)) return
     const members = units.get(u)!.members
@@ -80,7 +80,7 @@ export function genealogicalOrder(
     if (side === 'right') for (const m of members) up(m, 'right')
   }
 
-  // Ausgangspunkt: die gewünschte Person, sonst das Paar mit den meisten Vorfahren
+  // Start at the requested person, otherwise the couple with the most ancestors
   const ancestorCount = (u: string) => units.get(u)!.members.reduce((n, m) => n + ancestorsOf(ix, m).size, 0)
   const all = [...units.keys()]
   const focus =
@@ -88,7 +88,7 @@ export function genealogicalOrder(
     all.reduce<string | null>((best, u) => (best === null || ancestorCount(u) > ancestorCount(best) ? u : best), null)
   if (focus) couple(focus, true)
 
-  // Was nicht verbunden ist, kommt danach (nach Geburt)
+  // Anything unconnected follows, by birth
   for (const u of all) if (!placed.has(u)) couple(u, true)
   return seq
 }

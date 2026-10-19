@@ -7,7 +7,7 @@ variables:
   DOCKER_CONTEXT: "${CI_PROJECT_DIR}/app/"
   DOCKERFILE: "${CI_PROJECT_DIR}/app/Dockerfile"
 
-# Tests, Typen und Lint – bei jedem Merge Request und vor jedem Deploy von main.
+# Tests, types, lint and formatting on every merge request and before every deploy of main.
 test:
   stage: test
   image: node:20-alpine
@@ -28,8 +28,8 @@ test:
     - npm run check-format
     - npm test -- --ci
 
-# Sicherheitslücken in den Laufzeit-Abhängigkeiten. Warnt nur (gelb), blockiert kein Deploy.
-# Läuft auch in geplanten Pipelines (Build → Pipeline schedules, z. B. wöchentlich).
+# Known vulnerabilities in runtime dependencies. Only warns (yellow), never blocks a deploy.
+# Also runs in scheduled pipelines (Build → Pipeline schedules, e.g. weekly).
 audit:
   stage: test
   image: node:20-alpine

@@ -1,5 +1,5 @@
 // src/components/ui/Portrait.tsx
-// Foto oder Initialen. Wie in klassischen Ahnentafeln: Männer eckig, Frauen rund.
+// Photo or initials. As in classic pedigree charts: square for men, round for women.
 
 import clsx from 'clsx'
 import { useState } from 'react'
@@ -22,7 +22,7 @@ export function Portrait({
   className?: string
 }) {
   const url = person.profile?.titleImageUrl
-  // Fehlt die Datei, lieber die Initialen zeigen als ein kaputtes Bild
+  // If the file is missing, show initials rather than a broken image
   const [broken, setBroken] = useState<string | null>(null)
   const shape = person.gender === 'FEMALE' ? 'rounded-full' : size === 'lg' ? 'rounded-[14px]' : 'rounded-[7px]'
   return (

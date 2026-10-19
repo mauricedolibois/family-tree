@@ -4,9 +4,9 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 let cachedAdmin: SupabaseClient | null = null
 
 /**
- * Erst beim ersten Aufruf anlegen: Beim Docker-Build (CI) gibt es keine
- * Umgebungsvariablen, ein Client auf Modulebene würde `next build` abbrechen.
- * SUPABASE_URL wie im bestehenden prod.env; NEXT_PUBLIC_SUPABASE_URL geht auch.
+ * Created on first use: the Docker build in CI has no environment variables,
+ * and a client at module level would make `next build` fail.
+ * Reads SUPABASE_URL as in prod.env; NEXT_PUBLIC_SUPABASE_URL works as well.
  */
 export function getSupaAdmin(): SupabaseClient {
   if (cachedAdmin) return cachedAdmin

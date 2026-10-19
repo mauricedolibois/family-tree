@@ -1,8 +1,8 @@
 // src/components/print/ExportSheet.tsx
 //
-// PDF-Export: Linie, Beziehung oder ganze Familie als Blatt in A4 bis A1,
-// hoch oder quer. Gedruckt bzw. als PDF gesichert wird über den Druckdialog
-// des Browsers – so bleibt alles gestochen scharf (Vektoren, echte Schriften).
+// PDF export: a line, a relation or the whole family on one sheet, A4 to A1,
+// portrait or landscape. Printing or saving as PDF goes through the browser's
+// print dialog, which keeps everything crisp (vectors, real fonts).
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, Printer } from 'lucide-react'
@@ -24,16 +24,16 @@ type Content = 'line' | 'relation' | 'all'
 type Orientation = 'portrait' | 'landscape'
 type Paper = 'A4' | 'A3' | 'A2' | 'A1'
 
-/** Papiergrößen in mm, hochkant (Breite, Höhe) */
+/** Paper sizes in mm, portrait (width, height) */
 const PAPER: Record<Paper, [number, number]> = { A4: [210, 297], A3: [297, 420], A2: [420, 594], A1: [594, 841] }
 const PAPERS = Object.keys(PAPER) as Paper[]
 const PX_PER_MM = 96 / 25.4
-/** Schriftgröße der Vornamen auf den Karten (px bei Maßstab 1) */
+/** Font size of given names on the cards (px at scale 1) */
 const NAME_PX = 16.5
-/** Ab dieser Größe gilt der Druck als gut lesbar */
+/** From this size on the print counts as easy to read */
 const READABLE_PT = 6.5
 
-/** Maße eines Blatts in mm; alles wächst mit dem Papier mit */
+/** Sheet dimensions in mm; everything scales with the paper */
 function sheetGeometry(paper: Paper, orientation: Orientation) {
   const [short, long] = PAPER[paper]
   const [w, h] = orientation === 'portrait' ? [short, long] : [long, short]
@@ -55,7 +55,7 @@ function sheetGeometry(paper: Paper, orientation: Orientation) {
   }
 }
 
-/** Maßstab, in dem der Baum auf das Blatt passt (Baum-Pixel → CSS-Pixel) */
+/** Scale at which the tree fits the sheet (tree pixels → CSS pixels) */
 function treeScale(layout: TreeLayout, paper: Paper, orientation: Orientation) {
   const g = sheetGeometry(paper, orientation)
   return Math.min((g.treeW * PX_PER_MM) / layout.width, (g.treeH * PX_PER_MM) / layout.height, 1.25 * g.k)
@@ -67,7 +67,7 @@ function bestOrientation(layout: TreeLayout, paper: Paper): Orientation {
   return treeScale(layout, paper, 'landscape') >= treeScale(layout, paper, 'portrait') ? 'landscape' : 'portrait'
 }
 
-/** Kleinstes Papier, auf dem die Namen gut lesbar sind (sonst das größte) */
+/** Smallest paper on which names are easy to read (otherwise the largest) */
 function bestPaper(layout: TreeLayout): Paper {
   return PAPERS.find((p) => namePt(treeScale(layout, p, bestOrientation(layout, p))) >= READABLE_PT) ?? 'A1'
 }
@@ -90,7 +90,7 @@ function ExportDialog() {
   const [orientationChoice, setOrientationChoice] = useState<Orientation | null>(null)
   const [paperChoice, setPaperChoice] = useState<Paper | null>(null)
 
-  // Was gedruckt wird: Ausschnitt, hervorgehobene Personen, Person im Mittelpunkt
+  // What gets printed: the excerpt, highlighted people, the person at the centre
   const view = useMemo(() => {
     if (content === 'line' && linePerson) {
       return {
@@ -115,7 +115,7 @@ function ExportDialog() {
   const scale = layout ? treeScale(layout, paper, orientation) : 1
   const pt = namePt(scale)
 
-  // Beim Drucken immer im Tageslicht
+  // Always print in the daylight theme
   useEffect(() => {
     const root = document.documentElement
     const prev = root.dataset.theme
@@ -162,7 +162,7 @@ function ExportDialog() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-auto md:flex-row md:overflow-hidden print:block print:overflow-visible">
-        {/* Einstellungen */}
+        {/* Settings */}
         <aside className="shrink-0 p-3 md:w-[380px] md:overflow-auto md:p-4 print:hidden">
           <div className="parchment flex flex-col gap-4 rounded-card border border-gilt/60 p-4 shadow-card">
             <Segmented dense label="Inhalt" value={content} options={options} onChange={chooseContent} />
@@ -205,7 +205,7 @@ function ExportDialog() {
           </div>
         </aside>
 
-        {/* Vorschau – beim Drucken das Blatt selbst */}
+        {/* Preview; when printing, the sheet itself */}
         <Preview widthMm={geo.w} heightMm={geo.h}>
           <Sheet
             geo={geo}
@@ -221,7 +221,7 @@ function ExportDialog() {
   )
 }
 
-/** Blatt verkleinert in den verfügbaren Platz einpassen; beim Drucken in Originalgröße */
+/** Fit the scaled-down sheet into the available space; full size when printing */
 function Preview({ widthMm, heightMm, children }: { widthMm: number; heightMm: number; children: React.ReactNode }) {
   const box = useRef<HTMLDivElement>(null)
   const [space, setSpace] = useState({ w: 360, h: 600 })
@@ -333,7 +333,7 @@ function Sheet({
         } as React.CSSProperties
       }
     >
-      {/* Doppelter Goldrahmen */}
+      {/* Double gold frame */}
       <div
         className="relative flex h-full flex-col"
         style={{ border: `${0.45 * geo.k}mm solid rgb(var(--gilt))`, padding: mm(geo.pad) }}
@@ -440,7 +440,7 @@ function Sheet({
 
 const noop = () => {}
 
-/** ⚭ als zwei verschlungene Ringe, wie im Baum */
+/** ⚭ as two interlocking rings, as in the tree */
 function Rings() {
   return (
     <svg viewBox="0 0 16 10" style={{ width: '1.3em', height: '0.85em' }} aria-hidden>

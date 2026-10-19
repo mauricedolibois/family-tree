@@ -1,5 +1,5 @@
 // src/components/ui/Choice.tsx
-// Auswahl aus wenigen Möglichkeiten (z. B. Mann/Frau) und An/Aus-Schalter.
+// Choice between a few options (e.g. man/woman) and an on/off switch.
 
 import clsx from 'clsx'
 import { useId } from 'react'
@@ -17,7 +17,7 @@ export function Segmented<T extends string>({
   value: T
   options: Option<T>[]
   onChange: (v: T) => void
-  /** schmaler, für vier und mehr Möglichkeiten auf dem Handy */
+  /** narrower, for four or more options on phones */
   dense?: boolean
 }) {
   const id = useId()
@@ -40,7 +40,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             className={clsx(
               'flex h-9 min-w-0 items-center justify-center gap-2 rounded-[7px] transition-colors',
-              // dicht: Breite nach Inhalt, damit lange Wörter nicht anstoßen
+              // dense: width follows content so long words do not touch the edges
               dense ? 'flex-auto px-2 text-sm' : 'flex-1 text-[15px]',
               value === o.value
                 ? 'bg-linen font-medium text-gilt-soft shadow-[inset_0_0_0_1px_rgb(var(--gilt)/0.5)]'

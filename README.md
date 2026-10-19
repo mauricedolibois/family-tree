@@ -1,131 +1,142 @@
-# Stammbaum
+# Family Tree
 
-Ein privater Familien-Stammbaum im Stil einer alten Familienbibliothek: Pergament, Tinte, Blattgold.
-Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum gemeinsam, am Handy wie am Computer.
+A private family tree styled like an old family library: parchment, ink and gold leaf.
+Each family signs in with its family name and password and maintains its tree together, on phones and computers alike.
 
-## Was die App kann
+The user interface is currently German; translations follow (see [Roadmap](#roadmap)).
 
-- **Übersichtlicher Baum ohne Linien-Knoten.** Die Anordnung berechnet [ELK](https://eclipse.dev/elk/) im Hintergrund (Web Worker): Generationen in Zeilen, Paare nebeneinander, Geschwister samt Familien nach Alter. Die Reihenfolge folgt einer Ahnentafel: Herkunft des Mannes links, der Frau rechts, Seitenzweige außen (`app/src/family/layout/order.ts`).
-- **Goldene Linie:** Tippt man eine Person an, leuchten ihre Vorfahren und Nachkommen auf.
-- **Ansichten:** ganze Familie, „Meine Linie“ oder die Linie einer beliebigen Person. Wie weit die Linie reicht, lässt sich einstellen: Generationen nach oben und unten, dazu Geschwister, Cousins oder alle Blutsverwandten.
-- **Beziehung:** zwei Personen wählen, der Baum zeigt nur noch den Weg zwischen ihnen, dazu die Bezeichnung in beide Richtungen und die gemeinsamen Vorfahren.
-- **„Wie sind wir verwandt?“** Mit „Das bin ich“ zeigt jede Person, wer sie für dich ist, z. B. „Dein Urgroßvater“ oder „Deine Cousine 2. Grades“. Das wird nur auf dem eigenen Gerät gemerkt und live berechnet, nicht in den Daten gespeichert.
-- **Suche**, die direkt zur Person springt.
-- **Einführung beim ersten Besuch:** „Wer bist du?“, dann Schritt für Schritt am eigenen Eintrag – Angaben ergänzen, Foto, Kind hinzufügen, die eigene Linie, die Beziehungsansicht. Jeder Schritt lässt sich ausprobieren oder überspringen; neu starten über das Menü.
-- **Personen hinzufügen** direkt aus dem Infoblatt: Kind, Ehepartner, Elternteil.
-- **Fotos und Dokumente** pro Person; Fotos werden vor dem Hochladen verkleinert.
-- **Tageslicht und Kerzenlicht** (heller und dunkler Modus).
-- **Nächste Geburtstage** im Menü: alle Lebenden mit vollständigem Geburtsdatum nach Monaten, mit Alter und – nach „Das bin ich“ – der Verwandtschaft; ein Tipp springt zur Person.
-- **Geburtstage als Kalender-Abo** (Kalender-Knopf bei „Nächste Geburtstage“ und am Ende der Einführung): für iPhone/Mac, Google Kalender oder als Link für Outlook u. a. Ganztägige Termine „🎂 Name (Alter)“ mit Erinnerung um 9 Uhr; neue Einträge kommen von selbst dazu. Wahlweise die ganze Familie oder nur die eigene Linie – Person und Umfang stehen im Link:
+## Features
+
+- **Clear tree without connector nodes.** [ELK](https://eclipse.dev/elk/) computes the layout in a web worker: generations in rows, couples side by side, siblings and their families ordered by age. The order follows a pedigree chart: the husband's family on the left, the wife's on the right, side branches on the outside (`app/src/family/layout/order.ts`).
+- **Gold line:** tapping a person highlights their ancestors and descendants.
+- **Views:** the whole family, "my line", or the line of any person. The reach of a line is adjustable: generations up and down, plus siblings, cousins or all blood relatives.
+- **Relation:** pick two people and the tree shows only the path between them, with the kinship term in both directions and their common ancestors.
+- **"How are we related?"** After choosing "that's me", every person shows who they are to you, e.g. "your great-grandfather" or "your second cousin". This is remembered on the device only and computed live, never stored with the data.
+- **Search** that jumps straight to the person.
+- **Guided tour on the first visit:** "who are you?", then step by step on your own entry: complete details, add a photo, add a child, your own line, the relation view. Every step can be tried or skipped; restart it from the menu.
+- **Add relatives** right from the info sheet: child, spouse, parent.
+- **Photos and documents** per person; photos are scaled down before upload.
+- **Daylight and candlelight** (light and dark theme).
+- **Upcoming birthdays** in the menu: all living people with a complete date of birth, grouped by month, with their age and, after "that's me", the kinship; a tap jumps to the person.
+- **Birthdays as a calendar subscription** (calendar button under "upcoming birthdays" and at the end of the tour): for iPhone/Mac, Google Calendar, or as a link for Outlook and others. All-day events "🎂 Name (age)" with a reminder at 9 a.m.; new entries appear automatically. Either the whole family or only your own line; person and scope are part of the link:
 
   ```
-  /api/kalender/<schlüssel>.ics?linie=<id>&vorfahren=alle&nachkommen=2&seiten=cousins
+  /api/kalender/<token>.ics?linie=<id>&vorfahren=alle&nachkommen=2&seiten=cousins
   ```
 
-  `vorfahren`/`nachkommen`: Anzahl Generationen oder `alle`; `seiten`: `keine`, `geschwister`, `cousins` oder `alle`. Ohne `linie` die ganze Familie.
+  `vorfahren`/`nachkommen` (ancestors/descendants): number of generations or `alle` (all); `seiten` (collateral lines): `keine` (none), `geschwister` (siblings), `cousins` or `alle`. Without `linie` the whole family. The route and parameter names stay German so existing subscriptions keep working.
 
-- **Verstorben, Datum unbekannt:** Schalter „Ist verstorben“ beim Bearbeiten (bzw. „Bereits verstorben“ beim Hinzufügen); das Sterbedatum ist dann freiwillig. Auf der Karte steht z. B. „1888–†“, die Person fällt aus Geburtstagen und Kalender heraus.
-- **Als PDF exportieren** über das Menü: eigene Linie, Beziehung oder ganze Familie, hoch oder quer, A4 bis A1. Druckfertiges Blatt mit Goldrahmen, Titel und Datum; gesichert wird über den Druckdialog („Als PDF sichern“), dadurch bleibt alles vektorscharf.
-- **Herkunftsflagge** bei jeder Person mit eingetragenem Land.
-- **Sicherung herunterladen** als JSON über das Menü.
+- **Deceased, date unknown:** an "is deceased" switch when editing ("already deceased" when adding); the date of death becomes optional. The card shows e.g. "1888–†" and the person drops out of birthdays and the calendar.
+- **Export as PDF** from the menu: your line, a relation or the whole family, portrait or landscape, A4 to A1. A print-ready sheet with gold frame, title and date, saved through the print dialog ("Save as PDF") so everything stays vector-sharp.
+- **Country flag** for every person with a country of origin.
+- **Download a backup** as JSON from the menu.
 
-## Sicherheit und Daten
+## Security and data
 
-- Anmeldung mit signiertem Sitzungs-Cookie (HMAC), Bremse gegen Passwort-Raten.
-- Der Server prüft jeden Baum vor dem Speichern. Gespeichert wird nur, wenn niemand den Baum zwischendurch auf einem anderen Gerät geändert hat.
-- Automatische Sicherungen: vor **jeder** Änderung (mit Notiz, was danach geändert wurde, z. B. „bearbeitet: Karl Niehren“) und täglich per Cron auf dem Server (siehe [Deployment](#deployment)). Die Sicherungen vor Änderungen bleiben 90 Tage, die täglichen ein Jahr, von Hand angelegte für immer.
-- Zurückholen im Notfall, im SQL-Editor von Supabase (Schema `verwaltung`, nicht über die API erreichbar):
+- Sign-in with a signed session cookie (HMAC) and throttling against password guessing.
+- The server validates every tree before saving, and only saves if nobody changed the tree on another device in the meantime.
+- Automatic backups: before **every** change (with a note about what changed, e.g. "bearbeitet: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
+- Emergency restore from the Supabase SQL editor (schema `verwaltung`, not reachable through the API; the names are German):
 
   ```sql
-  select * from verwaltung.staende limit 20;         -- letzte gesicherte Stände
-  select verwaltung.wiederherstellen(NUMMER);         -- nur Vorschau: was würde passieren?
-  select verwaltung.wiederherstellen(NUMMER, true);   -- wirklich zurückholen (der aktuelle Stand wird vorher gesichert)
-  select verwaltung.sichern('vor dem Familienfest');  -- jetzt von Hand sichern
+  select * from verwaltung.staende limit 20;         -- latest backups
+  select verwaltung.wiederherstellen(NUMMER);         -- preview only: what would happen?
+  select verwaltung.wiederherstellen(NUMMER, true);   -- actually restore (the current version is backed up first)
+  select verwaltung.sichern('vor dem Familienfest');  -- manual backup now
   ```
 
-  `NUMMER` durch die `id` aus der Liste ersetzen – es steht absichtlich dort, damit sich die Zeilen nicht versehentlich unverändert ausführen lassen. Ohne `true` zeigt die Funktion nur eine Vorschau und ändert nichts.
+  Replace `NUMMER` with the `id` from the list. The placeholder is there on purpose so the lines cannot be run unchanged by accident. Without `true` the function only shows a preview and changes nothing.
 
-- Fotos und Dokumente werden nicht sofort gelöscht, wenn jemand sie entfernt: Die tägliche Sicherung löscht eine Datei erst, wenn weder der aktuelle Baum noch eine Sicherung sie kennt (und sie älter als eine Woche ist). Zurückgeholte Stände behalten so ihre Bilder. Fehlt doch einmal eine Datei, zeigt die App die Initialen bzw. „Bild fehlt“.
+- Photos and documents are not deleted right away when someone removes them: the daily backup only deletes a file once neither the current tree nor any backup refers to it (and it is older than a week), so restored versions keep their images. If a file is missing anyway, the app shows initials or "Bild fehlt" (image missing).
 
-- Kalender-Apps können sich nicht anmelden, deshalb ist das Abo nur durch einen geheimen Schlüssel im Link geschützt (`families.calendar_token`). Wer den Link hat, sieht Namen und Geburtstage; „Neuen Link erzeugen“ macht den alten ungültig.
+- Calendar apps cannot sign in, so the subscription is protected only by a secret token in the link (`families.calendar_token`). Anyone with the link sees names and birthdays; "create new link" invalidates the old one.
 
-- Die Datenbank (Supabase) wird nur serverseitig mit dem Service-Role-Key angesprochen; öffentliche Rollen haben keine Rechte.
+- The database (Supabase) is only accessed server side with the service role key; the public roles have no rights.
 
-## Entwicklung
+## Development
 
 ```bash
 cd app
 npm ci
 npm run dev        # http://localhost:3000
-npm test           # Tests (Verwandtschaft, Layout, Sitzung, Prüfung der Daten)
+npm test           # tests (kinship, layout, session, data validation)
 npm run typecheck
 npm run lint       # ESLint 9 (eslint.config.mjs)
 npm run format     # Prettier
 ```
 
-Dieselben Prüfungen laufen in der CI bei jedem Merge Request und vor jedem Deploy (Job `test`).
+The same checks run in CI on every merge request and before every deploy (job `test`).
 
-Benötigte Umgebungsvariablen (lokal in `app/.env.local`, auf dem Server in `prod.env`, Vorlage: `example.env`):
+Environment variables (locally in `app/.env.local`, on the server in `prod.env`, template: `example.env`):
 
 ```
 SUPABASE_URL=…
 SUPABASE_SERVICE_ROLE_KEY=…
-# optional, sonst aus dem Service-Role-Key abgeleitet:
+# optional, derived from the service role key otherwise:
 SESSION_SECRET=…
-# optional: Anlegen neuer Stammbäume abschalten (Standard: erlaubt)
+# optional: disable creating new trees (default: allowed)
 ALLOW_REGISTRATION=false
-# optional: Anzahl eigener Reverse-Proxys vor der App (Standard 1 = ein nginx; 0 = ohne Proxy)
+# optional: number of own reverse proxies in front of the app (default 1 = one nginx; 0 = none)
 TRUSTED_PROXIES=1
 ```
 
+Code comments, test names and documentation are in English. User-facing text is German for now.
+
 ## Deployment
 
-Über GitLab CI (`.gitlab-ci.yml`):
+Through GitLab CI (`.gitlab-ci.yml`):
 
-1. Merge Request oder Push auf `main` → Job `test` (Typecheck, Lint, Formatierung, Tests) und Job `audit` (`npm audit`, nur Warnung).
-2. Push auf `main`, wenn `test` grün ist → Kaniko baut `app/Dockerfile` und schiebt das Image nach `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
-3. Danach kopiert der Job `deploy` `docker-compose.yml` und `deploy_tools/deploy_prod.sh` auf den Server und startet den Container neu (`prod.env` liegt dort in `~/family-tree/`).
+1. Merge request or push to `main` → job `test` (typecheck, lint, formatting, tests) and job `audit` (`npm audit`, warning only).
+2. Push to `main` once `test` passes → Kaniko builds `app/Dockerfile` and pushes the image to `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
+3. The `deploy` job then copies `docker-compose.yml` and `deploy_tools/deploy_prod.sh` to the server and restarts the container (`prod.env` lives in `~/family-tree/` there).
 
-Das Image enthält nur den eigenständigen Next-Server (`output: 'standalone'`), läuft als Benutzer `node` und meldet über `/api/health` seinen Zustand an Docker (`docker ps` zeigt `healthy`).
+The image contains only the standalone Next server (`output: 'standalone'`), runs as user `node` and reports its state to Docker through `/api/health` (`docker ps` shows `healthy`).
 
-Optional in GitLab unter *Build → Pipeline schedules* einen wöchentlichen Zeitplan für `main` anlegen: Geplante Pipelines führen nur `audit` aus und warnen bei neuen kritischen Sicherheitslücken – kein Build, kein Deploy.
+Optionally add a weekly schedule for `main` in GitLab under *Build → Pipeline schedules*: scheduled pipelines only run `audit` and warn about new critical vulnerabilities. No build, no deploy.
 
-Supabase läuft selbst gehostet auf demselben Host (`supabase-project/`).
+Supabase is self-hosted on the same host (`supabase-project/`).
 
-**Datenbank-Migrationen** (`supabase/migrations/`): Die App läuft auch ohne sie mit dem Stand von `main` weiter. Erst mit ihnen kommen die Sicherung vor jeder Änderung, die Bremse gegen Passwort-Raten und das Kalender-Abo dazu. Einspielen, der Reihe nach, direkt in den Datenbank-Container:
+**Database migrations** (`supabase/migrations/`): the app also runs without them, on the feature level of the original deployment. They add the pre-change backups, sign-in throttling and the calendar subscription. Apply them in order, directly in the database container:
 
 ```bash
 for f in supabase/migrations/*.sql; do docker exec -i supabase-db psql -U postgres -v ON_ERROR_STOP=1 < "$f"; done
 ```
 
-Die Migrationen lassen sich gefahrlos mehrfach ausführen.
+Alternatively paste them into the Supabase Studio SQL editor. Running them more than once is safe.
 
-**Hinweise:**
+**Notes:**
 
-- Optional `SESSION_SECRET` (mind. 32 Zeichen) in `prod.env` ergänzen. Ohne wird er aus dem Service-Role-Key abgeleitet. Nach dem Update müssen sich alle einmal neu anmelden.
-- Die App muss über HTTPS erreichbar sein, weil das Sitzungs-Cookie in Produktion als `Secure` gesetzt wird.
-- nginx muss die Besucher-IP in `X-Forwarded-For` anhängen (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, in `proxy_params` schon enthalten). Die App wertet nur den letzten Eintrag aus, den Anfang kann der Besucher fälschen.
-- Steht HTTP-Auth vor der App, braucht `location /api/kalender/` ein `auth_basic off;` – Kalender-Apps können sich nicht anmelden, der Link ist durch seinen geheimen Schlüssel geschützt.
+- Optionally set `SESSION_SECRET` (at least 32 characters) in `prod.env`. Without it the key is derived from the service role key. Changing it signs everyone out once.
+- The app must be served over HTTPS because the session cookie is `Secure` in production.
+- nginx has to append the visitor IP to `X-Forwarded-For` (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, already part of `proxy_params`). The app only trusts the last entry; the visitor can forge the beginning.
+- With HTTP basic auth in front of the app, `location /api/kalender/` needs `auth_basic off;`. Calendar apps cannot sign in; the link is protected by its secret token.
 
-**Tägliche Sicherung** (braucht die Migrationen): per Cron auf dem Server im App-Container, mit `prod.env` und Netzwerk der laufenden App, z. B. `crontab -e`:
+**Daily backup** (requires the migrations): via cron on the server inside the app container, using `prod.env` and the running app's network, e.g. `crontab -e`:
 
 ```
 0 3 * * * cd ~/family-tree && docker compose --env-file prod.env run --rm app node scripts/daily-backup.mjs >> ~/family-tree/backup.log 2>&1
 ```
 
-`app/scripts/keep-alive.mjs` ist nur für kostenlose Supabase-Cloud-Projekte nötig, die nach 7 Tagen ohne Zugriff pausiert werden. Selbst gehostet braucht es das nicht.
+`app/scripts/keep-alive.mjs` is only needed for free Supabase cloud projects, which are paused after 7 days without activity. Self-hosted instances do not need it.
 
-## Aufbau
+## Project structure
 
-| Ordner                     | Inhalt                                                                                 |
-| -------------------------- | -------------------------------------------------------------------------------------- |
-| `app/src/family/`              | Stammbaum-Logik ohne Oberfläche: Beziehungen, Verwandtschaftsnamen, Bearbeiten, Layout |
-| `app/src/components/tree/`     | Baum-Ansicht: Karten, Linien, Zoom                                                     |
-| `app/src/components/person/`   | Infoblatt, Bearbeiten, Personen hinzufügen                                             |
-| `app/src/components/print/`    | PDF-Export (Druckblatt)                                                                |
-| `app/src/components/relation/` | Beziehungsansicht: zwei Personen wählen, Bezeichnung                                   |
-| `app/src/components/app/`      | Datenzustand, Kopfzeile, Suche                                                         |
-| `app/src/components/ui/`       | Bausteine des Style-Systems                                                            |
-| `app/src/styles/tokens.css`    | Farben des Style-Systems „Pergament & Tinte“                                           |
-| `app/src/pages/api/`           | Anmeldung, Stammbaum, Uploads                                                          |
-| `supabase/migrations/`     | Datenbank-Änderungen                                                                   |
+| Folder                         | Contents                                                              |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `app/src/family/`              | Tree logic without UI: relations, kinship terms, editing, layout      |
+| `app/src/components/tree/`     | Tree view: cards, lines, zoom                                         |
+| `app/src/components/person/`   | Info sheet, editing, adding relatives                                 |
+| `app/src/components/print/`    | PDF export (print sheet)                                              |
+| `app/src/components/relation/` | Relation view: pick two people, kinship term                          |
+| `app/src/components/app/`      | Data state, header, search                                            |
+| `app/src/components/ui/`       | Design-system building blocks                                         |
+| `app/src/styles/tokens.css`    | Colours of the "parchment & ink" design system                        |
+| `app/src/pages/api/`           | Sign-in, tree, uploads, calendar                                      |
+| `app/scripts/`                 | Maintenance scripts (daily backup, keep-alive)                        |
+| `supabase/migrations/`         | Database changes                                                      |
+
+## Roadmap
+
+1. English codebase (comments, tests, documentation).
+2. Multilingual interface: German, English, French, Spanish.
+3. Personal accounts: sign-in with email, admins, invitation links, several trees per user, optional email verification and outgoing mail via SMTP.

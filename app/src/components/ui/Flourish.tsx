@@ -1,5 +1,5 @@
 // src/components/ui/Flourish.tsx
-// Zierlinie wie in alten Büchern: zwei Ranken um eine Raute.
+// Ornamental rule as in old books: two scrolls around a diamond.
 
 import clsx from 'clsx'
 

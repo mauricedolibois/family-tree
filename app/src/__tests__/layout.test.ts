@@ -10,7 +10,7 @@ import type { Tree } from '@/family/model'
 const elk = new ELK()
 const run = (g: unknown) => elk.layout(g as never) as never
 
-/** Mehrere Generationen mit eingeheirateten Familien (erfunden) */
+/** Several generations with in-law families (made up) */
 function bigFamily(): Tree {
   let t = starterTree()
   const root = t.rootId
@@ -47,13 +47,13 @@ function bigFamily(): Tree {
 }
 
 describe('Layout', () => {
-  it('ordnet einen Baum ohne Linienkreuzungen an', async () => {
+  it('lays out a tree without crossing lines', async () => {
     const layout = await computeTreeLayout(bigFamily(), run)
     expect(layout.cards).toHaveLength(Object.keys(bigFamily().members).length)
     expect(countCrossings(layout)).toBe(0)
   })
 
-  it('Ehepartner stehen direkt nebeneinander auf einer Höhe', async () => {
+  it('spouses sit directly next to each other at the same height', async () => {
     const t = bigFamily()
     const layout = await computeTreeLayout(t, run)
     const box = new Map(layout.cards.map((c) => [c.id, c]))
@@ -66,7 +66,7 @@ describe('Layout', () => {
     expect(layout.marriages.length).toBeGreaterThan(0)
   })
 
-  it('Kinder stehen unter ihren Eltern', async () => {
+  it('children sit below their parents', async () => {
     const t = bigFamily()
     const layout = await computeTreeLayout(t, run)
     const box = new Map(layout.cards.map((c) => [c.id, c]))
@@ -74,7 +74,7 @@ describe('Layout', () => {
       for (const c of p.childrenIds) expect(box.get(c)!.y).toBeGreaterThan(box.get(p.id)!.y)
   })
 
-  it('Geschwister ohne eigene Familie stehen nach Alter', async () => {
+  it('siblings without their own family are ordered by age', async () => {
     const t = bigFamily()
     const layout = await computeTreeLayout(t, run)
     const box = new Map(layout.cards.map((c) => [c.id, c]))
@@ -90,7 +90,7 @@ describe('Layout', () => {
     expect(byX).toEqual(byBirth)
   })
 
-  it('Geschwister mit eigener Familie stehen ebenfalls nach Alter', async () => {
+  it('siblings with their own family are ordered by age as well', async () => {
     let t = starterTree()
     const add = (
       ref: string,
@@ -122,14 +122,14 @@ describe('Layout', () => {
     expect(countCrossings(layout)).toBe(0)
   })
 
-  it('Seitenzweige ohne weitere Verbindung stehen außen', async () => {
+  it('side branches without further links sit on the outside', async () => {
     let t = starterTree()
     const add = (ref: string, relation: 'CHILD' | 'SPOUSE' | 'PARENT', name: string, gender: 'MALE' | 'FEMALE') => {
       const r = addRelative(t, ref, { relation, name, gender })
       t = r.tree
       return r.id
     }
-    // Opa → Sohn A (verheiratet mit W, deren Vater auch im Baum ist) und Sohn B mit eigener Familie
+    // Grandpa → son A (married to W, whose father is in the tree too) and son B with his own family
     const a = t.rootId
     const w = t.members[a].spouseId!
     const opa = add(a, 'PARENT', 'Opa', 'MALE')
@@ -139,7 +139,7 @@ describe('Layout', () => {
     add(b, 'CHILD', 'Kind von B', 'FEMALE')
     const layout = await computeTreeLayout(t, run)
     const x = new Map(layout.cards.map((c) => [c.id, c.x]))
-    // A steht zwischen seinem Bruder und der Familie seiner Frau
+    // A sits between his brother and his wife's family
     expect(x.get(b)!).toBeLessThan(x.get(a)!)
     expect(x.get(a)!).toBeLessThan(x.get(w)!)
     expect(countCrossings(layout)).toBe(0)

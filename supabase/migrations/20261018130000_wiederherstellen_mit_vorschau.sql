@@ -1,8 +1,8 @@
--- Zurückholen in zwei Schritten: erst Vorschau, dann bewusst bestätigen.
--- (Am 18.10.2026 wurde eine Beispielzeile versehentlich unverändert ausgeführt.)
+-- Restore in two steps: preview first, then confirm explicitly.
+-- (On 2026-10-18 an example line was run unchanged by accident.)
 --
---   select verwaltung.wiederherstellen(17);         -- zeigt nur, was passieren würde
---   select verwaltung.wiederherstellen(17, true);   -- holt Stand 17 wirklich zurück
+--   select verwaltung.wiederherstellen(17);         -- preview only
+--   select verwaltung.wiederherstellen(17, true);   -- actually restores backup 17
 
 create or replace function verwaltung.wiederherstellen(stand_id bigint, wirklich boolean)
 returns text
@@ -49,7 +49,7 @@ begin
 end
 $$;
 
--- Ohne Bestätigung nur Vorschau
+-- Without confirmation: preview only
 create or replace function verwaltung.wiederherstellen(stand_id bigint)
 returns text
 language sql

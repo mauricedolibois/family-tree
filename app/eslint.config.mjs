@@ -1,5 +1,5 @@
-// ESLint 9 (Flat Config). Übernimmt die bisherigen Regeln aus .eslintrc.json:
-// Next.js-Empfehlungen plus Prettier (Formatierung prüft Prettier, nicht ESLint).
+// ESLint 9 flat config with the rules of the former .eslintrc.json:
+// Next.js recommendations plus Prettier (Prettier checks formatting, not ESLint).
 import { FlatCompat } from '@eslint/eslintrc'
 
 const compat = new FlatCompat({ baseDirectory: import.meta.dirname })

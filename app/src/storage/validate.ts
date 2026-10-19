@@ -1,8 +1,7 @@
 // src/storage/validate.ts
 //
-// Prüft einen Stammbaum, bevor der Server ihn speichert. Kaputte oder
-// manipulierte Daten werden abgelehnt, statt den echten Baum zu überschreiben.
-// Zurück kommt eine bereinigte Kopie, die nur bekannte Felder enthält.
+// Checks a tree before the server stores it. Broken or tampered data is rejected
+// instead of overwriting the real tree. Returns a clean copy with known fields only.
 
 import type { MediaKind, StoredMedia, StoredMemberV3, StoredProfile, StoredTree } from './schema'
 
@@ -17,7 +16,7 @@ export const LIMITS = {
 
 const GENDERS = new Set(['MALE', 'FEMALE'])
 const MEDIA_KINDS = new Set<MediaKind>(['image', 'video', 'pdf', 'other'])
-/** Ganzes Datum, nur Monat und Jahr oder nur das Jahr (alte Quellen sind oft ungenau) */
+/** Full date, month and year, or year only (old records are often vague) */
 const ISO_DATE = /^\d{4}(-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?)?$/
 
 export type ValidationResult = { ok: true; tree: StoredTree } | { ok: false; error: string }
@@ -43,7 +42,7 @@ function optDate(v: unknown, field: string): string | null {
   return s
 }
 
-/** Ja/Nein; fehlt es, heißt das nein */
+/** Yes/no; missing means no */
 function optFlag(v: unknown, field: string): boolean {
   if (v === undefined || v === null) return false
   if (typeof v !== 'boolean') throw new Invalid(`${field}: Ja oder Nein erwartet`)
@@ -56,7 +55,7 @@ function url(v: unknown, field: string): string {
   return s
 }
 
-/** Verweise auf Personen, die es nicht (mehr) gibt, werden still entfernt. */
+/** Links to people who do not exist (any more) are dropped silently. */
 function idList(v: unknown, field: string, ids: Set<string>): string[] {
   if (v === undefined || v === null) return []
   if (!Array.isArray(v)) throw new Invalid(`${field}: Liste erwartet`)

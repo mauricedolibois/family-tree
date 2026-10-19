@@ -1,6 +1,6 @@
 // src/components/tree/ViewModes.tsx
-// Umschalter zwischen ganzer Familie, einer Linie und der Beziehung zweier Personen –
-// wie Register-Reiter eines Buchs.
+// Switch between the whole family, one line and the relation of two people,
+// styled like the index tabs of a book.
 
 import clsx from 'clsx'
 import { SlidersHorizontal, X } from 'lucide-react'
@@ -25,7 +25,7 @@ export function ViewModes({
 
   const openRelation = () => {
     if (relation) return
-    // Mit dir und der gerade gewählten Person vorbelegen, soweit vorhanden
+    // Prefill with you and the currently selected person, where available
     showRelation({ from: meId, to: selectedId && selectedId !== meId ? selectedId : null })
     select(null)
   }

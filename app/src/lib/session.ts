@@ -1,26 +1,25 @@
 // src/lib/session.ts
 //
-// Signierte Sitzung statt roher Familien-ID im Cookie.
+// Signed session cookie instead of a raw family id.
 //
-// Vorher stand im Cookie nur die Familien-ID. Die ist aber kein Geheimnis
-// (sie steckt z. B. in jeder Foto-URL), wer sie kannte, war eingeloggt.
-// Jetzt enthält das Cookie die ID plus Ablaufdatum, signiert mit HMAC-SHA256.
-// Ohne den Server-Schlüssel lässt sich kein gültiges Cookie bauen.
+// The family id is not a secret (it is part of every photo URL), so a cookie
+// holding just the id let anyone in who knew it. The cookie now carries the id
+// and an expiry, signed with HMAC-SHA256; it cannot be forged without the key.
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import type { IncomingMessage, ServerResponse } from 'http'
 import { parse, serialize } from 'cookie'
 
 export const SESSION_COOKIE = 'ft_session'
-/** Altes, unsigniertes Cookie – wird nur noch gelöscht, nie mehr gelesen. */
+/** Old unsigned cookie: only ever cleared, never read. */
 const LEGACY_COOKIE = 'fid'
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 90 // 90 Tage
+const MAX_AGE_SECONDS = 60 * 60 * 24 * 90 // 90 days
 
 type SessionPayload = { fid: string; exp: number }
 
 /**
- * Schlüssel zum Signieren. Bevorzugt SESSION_SECRET; sonst wird er aus dem
- * Service-Role-Key abgeleitet, damit keine neue Umgebungsvariable nötig ist.
+ * Signing key. Prefers SESSION_SECRET; otherwise derived from the service role
+ * key so no extra environment variable is required.
  */
 function getSecret(): string {
   const explicit = process.env.SESSION_SECRET
@@ -40,7 +39,7 @@ export function createSessionToken(fid: string, now = Date.now()): string {
   return `${data}.${sign(data)}`
 }
 
-/** Liefert die Familien-ID, wenn das Token echt und nicht abgelaufen ist. */
+/** Returns the family id if the token is genuine and not expired. */
 export function verifySessionToken(token: string | undefined | null, now = Date.now()): string | null {
   if (!token) return null
   const dot = token.indexOf('.')
@@ -60,7 +59,7 @@ export function verifySessionToken(token: string | undefined | null, now = Date.
   }
 }
 
-/** Familien-ID aus der Anfrage (API-Route oder getServerSideProps). */
+/** Family id from the request (API route or getServerSideProps). */
 export function getFamilyIdFromReq(req: Pick<IncomingMessage, 'headers'>): string | null {
   const header = req.headers.cookie
   if (!header) return null

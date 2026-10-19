@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.setHeader(VERSION_HEADER, loaded.version)
         return res.status(200).json(loaded.tree)
       }
-      // Neue Familie: mit einem kleinen Startbaum beginnen
+      // New family: start with a small starter tree
       const starter = starterTree()
       const saved = await saveFamilyTree(fid, starter, null)
       if (saved.status === 'conflict') return res.status(409).json({ error: 'conflict' })

@@ -1,9 +1,9 @@
 // src/components/intro/Tour.tsx
 //
-// Die Einführung: Beim allerersten Besuch (pro Gerät) fragt die Chronik
-// „Wer bist du?“ und führt dann Schritt für Schritt durch die App – am eigenen
-// Eintrag. Jeder Schritt lässt sich ausprobieren oder überspringen, die ganze
-// Einführung jederzeit beenden. Über das Menü lässt sie sich neu starten.
+// Guided tour. On the very first visit (per device) the chronicle asks
+// "who are you?" and then walks through the app step by step using the visitor's
+// own entry. Every step can be tried or skipped, the whole tour ended at any
+// time, and it can be restarted from the menu.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
@@ -23,7 +23,7 @@ const EDGE = 12
 
 type Rect = { x: number; y: number; w: number; h: number }
 
-/** Startet die Einführung beim ersten Besuch und zeigt sie, solange sie läuft */
+/** Starts the tour on the first visit and renders it while it runs */
 export function Tour() {
   const { tourOpen, setTourOpen } = useView()
 
@@ -32,7 +32,7 @@ export function Tour() {
     try {
       seen = !!localStorage.getItem(SEEN_KEY)
     } catch {
-      /* ohne Speicher lieber nicht jedes Mal stören */
+      /* without storage, rather not pester on every visit */
     }
     if (seen) return
     const t = setTimeout(() => setTourOpen(true), 700)
@@ -46,7 +46,7 @@ function markSeen() {
   try {
     localStorage.setItem(SEEN_KEY, '1')
   } catch {
-    /* egal */
+    /* storage unavailable: ignore */
   }
 }
 
@@ -54,7 +54,7 @@ function TourRunner() {
   const { index } = useFamily()
   const view = useView()
   const { meId, setMe, setTourOpen, focusOn, select, showLine, showRelation } = view
-  const [me, setChosen] = useState<string | null | undefined>(undefined) // undefined: noch auf der Begrüßung
+  const [me, setChosen] = useState<string | null | undefined>(undefined) // undefined: still on the welcome screen
   const [stepId, setStepId] = useState<string | null>(null)
 
   const actions = useMemo(
@@ -96,12 +96,12 @@ function TourRunner() {
     if (id) setMe(id)
     setChosen(id)
   }
-  // Nach der Wahl mit dem ersten Schritt beginnen
+  // Start with the first step once a person is chosen
   useEffect(() => {
     if (steps.length && !stepId) setStepId(steps[0].id)
   }, [steps, stepId])
 
-  // Schritt betreten: Aktion ausführen, auf Erledigung achten
+  // Entering a step: run its action and watch for completion
   useEffect(() => {
     if (!step) return
     step.enter?.()
@@ -110,10 +110,10 @@ function TourRunner() {
       if (step.doneWhen?.()) go(step.doneTo)
     }, 250)
     return () => clearInterval(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur beim Wechsel des Schritts
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the step changes
   }, [step?.id])
 
-  // Gesuchtes im Infoblatt in Sicht holen, sobald es da ist
+  // Scroll the target in the info sheet into view once it exists
   useEffect(() => {
     if (!step?.scrollTo) return
     const sel = step.scrollTo
@@ -149,7 +149,7 @@ function TourRunner() {
   )
 }
 
-/** Im Infoblatt so scrollen, dass das Element mittig sichtbar ist (die Seite selbst bleibt stehen) */
+/** Scroll within the info sheet so the element is centred (the page itself does not move) */
 function scrollWithinSheet(el: HTMLElement) {
   const scroller = el.closest('[data-tour-scroll]') as HTMLElement | null
   if (!scroller) return
@@ -158,7 +158,7 @@ function scrollWithinSheet(el: HTMLElement) {
   scroller.scrollTo({ top: scroller.scrollTop + (r.top - s.top) - s.height / 2 + r.height / 2, behavior: 'smooth' })
 }
 
-// ── Begrüßung: Wer bist du? ──────────────────────────────────────────────────
+// ── Welcome: who are you? ─────────────────────────────────────────────────────
 
 function Welcome({
   knownId,
@@ -273,7 +273,7 @@ function Welcome({
   )
 }
 
-// ── Ein Schritt: Markierung und Erklärung ────────────────────────────────────
+// ── One step: highlight and explanation ───────────────────────────────────────
 
 function StepView({
   step,
@@ -313,10 +313,10 @@ function StepView({
   )
 }
 
-/** Abgedunkelte Seite mit leuchtendem, bedienbarem Ausschnitt */
+/** Dimmed page with a glowing, interactive cut-out */
 function Spotlight({ hole }: { hole: Rect | null }) {
   if (!hole) {
-    // Ziel noch nicht da (z. B. Infoblatt öffnet gerade): alles sperren
+    // Target not there yet (e.g. the info sheet is opening): block everything
     return <div className="fixed inset-0 z-[90] bg-linen-deep/50" />
   }
   const vw = window.innerWidth
@@ -330,7 +330,7 @@ function Spotlight({ hole }: { hole: Rect | null }) {
   const block = 'fixed z-[90]'
   return (
     <>
-      {/* Sperren rund um den Ausschnitt – der Ausschnitt selbst bleibt bedienbar */}
+      {/* Blockers around the cut-out; the cut-out itself stays usable */}
       <div className={block} style={{ left: 0, top: 0, width: vw, height: r.y }} />
       <div className={block} style={{ left: 0, top: r.y + r.h, width: vw, bottom: 0 }} />
       <div className={block} style={{ left: 0, top: r.y, width: r.x, height: r.h }} />
@@ -349,7 +349,7 @@ function Spotlight({ hole }: { hole: Rect | null }) {
   )
 }
 
-/** Pulsierender Goldring um das, worauf es ankommt */
+/** Pulsing gold ring around what matters */
 function GoldRing({ rect }: { rect: Rect }) {
   return (
     <div
@@ -389,7 +389,7 @@ function Bubble({
 
   const style = placeBubble(step, hole, height)
   const last = position === total - 1
-  // Platzsparend, wenn die Erklärung über dem Geschehen liegt (freies Umsehen, großer Ausschnitt)
+  // Compact when the explanation covers the action (free look-around, large cut-out)
   const compact =
     typeof window !== 'undefined' && (step.mode === 'free' || (!!hole && hole.h > window.innerHeight * 0.55))
 
@@ -404,7 +404,7 @@ function Bubble({
         compact ? 'px-4 pb-3 pt-2.5' : 'px-5 pb-4 pt-3.5',
         step.mode === 'modal'
           ? 'relative w-full max-w-md text-center'
-          : // !fixed: .gilt-frame setzt position: relative
+          : // !fixed: .gilt-frame sets position: relative
             '!fixed transition-[top,left] duration-300 ease-settle',
       )}
       style={step.mode === 'modal' ? undefined : style}
@@ -463,7 +463,7 @@ function Bubble({
   )
 }
 
-/** Fortschritt als Goldpunkte, der aktuelle als Raute */
+/** Progress as gold dots, the current one as a diamond */
 function Progress({ position, total }: { position: number; total: number }) {
   return (
     <span className="flex items-center gap-1.5" aria-label={`Schritt ${position + 1} von ${total}`}>
@@ -484,7 +484,7 @@ function Progress({ position, total }: { position: number; total: number }) {
   )
 }
 
-/** Wo die Erklärung steht: neben dem Ausschnitt, sonst unten bzw. oben am Rand */
+/** Where the explanation goes: next to the cut-out, otherwise at the bottom or top edge */
 function placeBubble(step: Step, hole: Rect | null, height: number): React.CSSProperties {
   if (typeof window === 'undefined') return {}
   const vw = window.innerWidth
@@ -502,11 +502,11 @@ function placeBubble(step: Step, hole: Rect | null, height: number): React.CSSPr
   const left = Math.min(Math.max(EDGE, hole.x + hole.w / 2 - width / 2), vw - width - EDGE)
   if (below + height <= vh - EDGE) return { width, left, top: below }
   if (above >= EDGE) return { width, left, top: above }
-  // Großer Ausschnitt (z. B. das ganze Infoblatt): Erklärung oben an den Rand
+  // Large cut-out (e.g. the whole info sheet): explanation at the top edge
   return { width, left: (vw - width) / 2, top: EDGE }
 }
 
-/** Umriss der passenden Elemente, laufend nachgeführt (Infoblatt gleitet, Baum scrollt …) */
+/** Outline of the matching elements, tracked continuously (sheet slides, tree scrolls …) */
 function useRect(selectors: Array<string | undefined>): Rect | null {
   const key = selectors.filter(Boolean).join('|')
   const [rect, setRect] = useState<Rect | null>(null)
@@ -546,13 +546,13 @@ function unionRect(selectors: string[]): Rect | null {
             b: Math.max(box.b, r.bottom),
           }
         : { l: r.left, t: r.top, r: r.right, b: r.bottom }
-      break // pro Selektor das erste sichtbare Element
+      break // first visible element per selector
     }
   }
   return box ? { x: box.l, y: box.t, w: box.r - box.l, h: box.b - box.t } : null
 }
 
-/** Vierzackiger Stern wie das Funkeln an der Goldlinie */
+/** Four-pointed star like the sparkles on the gold line */
 function Star({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>

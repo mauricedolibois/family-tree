@@ -1,5 +1,5 @@
 // src/components/tree/LineScopeCard.tsx
-// Wie weit die Linie reicht: Generationen nach oben und unten, Seitenlinien.
+// How far a line reaches: generations up and down, collateral lines.
 
 import { useMemo } from 'react'
 import { Minus, Plus, Printer, X } from 'lucide-react'
@@ -85,7 +85,7 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
   )
 }
 
-/** Generationen zählen; null heißt „alle“ */
+/** Generation count; null means all */
 function Stepper({
   label,
   value,

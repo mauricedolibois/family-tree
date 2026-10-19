@@ -1,5 +1,5 @@
 // src/components/person/PersonPanel.tsx
-// Infoblatt zur gewählten Person: am Handy von unten, am Desktop rechts.
+// Info sheet for the selected person: a bottom sheet on phones, a side panel on desktop.
 
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, X } from 'lucide-react'
@@ -16,12 +16,12 @@ export function PersonPanel() {
   const { index } = useFamily()
   const { selectedId, select } = useView()
   const [mode, setMode] = useState<Mode>({ kind: 'details' })
-  /** Am Handy: halb offen (Baum bleibt sichtbar) oder ganz offen */
+  /** On phones: half open (tree stays visible) or fully open */
   const [expanded, setExpanded] = useState(false)
   const pendingEdit = useRef<string | null>(null)
   const scroller = useRef<HTMLDivElement>(null)
 
-  // Beim Wechsel der Person zurück zur Übersicht (außer „Angaben ergänzen“)
+  // Back to the overview when the person changes (except for "complete details")
   useEffect(() => {
     if (selectedId && pendingEdit.current === selectedId) {
       pendingEdit.current = null
@@ -38,7 +38,7 @@ export function PersonPanel() {
     if (mode.kind !== 'details') setExpanded(true)
   }, [mode])
 
-  // Escape schließt das Blatt bzw. geht einen Schritt zurück
+  // Escape closes the sheet or goes back one step
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || !selectedId) return
@@ -64,7 +64,7 @@ export function PersonPanel() {
         'md:absolute md:inset-x-auto md:bottom-3 md:right-3 md:top-3 md:max-h-none md:w-[420px] md:rounded-panel md:border md:shadow-lifted'
       }
     >
-      {/* Goldrahmen wie auf einer Buchseite */}
+      {/* Gold frame like on a book page */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-2 rounded-t-[14px] border border-gilt/35 md:rounded-[14px]"

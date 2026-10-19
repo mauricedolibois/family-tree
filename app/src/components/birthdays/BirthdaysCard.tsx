@@ -1,6 +1,6 @@
 // src/components/birthdays/BirthdaysCard.tsx
-// „Nächste Geburtstage“ (über das Menü): wer als Nächstes feiert, nach Monaten; ein Tipp springt zur Person.
-// Der Kalender-Knopf blättert auf eine eigene Seite zum Abonnieren – egal, wie weit man gescrollt hat.
+// "Upcoming birthdays" (from the menu): who celebrates next, grouped by month; a tap jumps to the person.
+// The calendar button flips to a separate subscription page, regardless of the scroll position.
 
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
@@ -21,7 +21,7 @@ export function BirthdaysCard() {
   const { meId, showLine, focusOn } = useView()
   const [subscribe, setSubscribe] = useState(false)
 
-  // Gruppen nach Monat, in Reihenfolge der nächsten Geburtstage
+  // Groups by month, in order of the next birthdays
   const groups = useMemo(() => {
     const thisYear = new Date().getFullYear()
     const out: Array<{ label: string; items: Birthday[] }> = []
@@ -34,7 +34,7 @@ export function BirthdaysCard() {
     return out
   }, [tree])
 
-  /** Mit „Das bin ich“: wer die Person für dich ist */
+  /** With "that's me" set: who the person is to you */
   const relationTo = (id: string) => {
     if (!meId) return null
     if (id === meId) return 'Du'
@@ -97,7 +97,7 @@ export function BirthdaysCard() {
         </div>
       )}
 
-      {/* Liste bleibt stehen (versteckt), damit man nach dem Zurück wieder an derselben Stelle ist */}
+      {/* The list stays mounted (hidden) so going back returns to the same spot */}
       <div className={clsx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2', subscribe && 'hidden')}>
         {groups.length === 0 && (
           <p className="px-2 py-4 font-serif text-[16px] leading-snug text-ink-muted">
@@ -144,7 +144,7 @@ function BirthdayRow({ b, relation, onOpen }: { b: Birthday; relation: string | 
           b.days === 0 && 'bg-gilt-soft/60',
         )}
       >
-        {/* Kalenderblatt */}
+        {/* Calendar leaf */}
         <span className="flex w-11 shrink-0 flex-col items-center rounded-control border border-card-rule bg-card py-1 leading-none">
           <span className="font-serif text-[12px] text-ink-muted">{WEEKDAY.format(b.date)}</span>
           <span className="mt-0.5 font-display text-[1.3rem] text-ink">{b.date.getDate()}</span>

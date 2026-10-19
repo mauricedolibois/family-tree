@@ -1,5 +1,5 @@
 // src/components/app/useTheme.ts
-// Tageslicht oder Kerzenlicht – wird pro Gerät gemerkt.
+// Daylight or candlelight theme, remembered per device.
 
 import { useCallback, useEffect, useState } from 'react'
 
@@ -23,7 +23,7 @@ export function useTheme() {
       try {
         localStorage.setItem(THEME_KEY, next)
       } catch {
-        /* egal */
+        /* storage unavailable: ignore */
       }
       return next
     })
