@@ -7,19 +7,17 @@
     "build": "next build",
     "start": "next start",
     "prod": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --pretty --noEmit",
     "test": "jest",
     "format": "prettier --write .",
-    "check-format": "prettier --check .",
-    "prepare": "husky install"
+    "check-format": "prettier --check ."
   },
   "dependencies": {
     "@fontsource-variable/eb-garamond": "^5.3.0",
     "@fontsource/atkinson-hyperlegible-next": "^5.3.0",
     "@fontsource/im-fell-english": "^5.3.0",
     "@supabase/supabase-js": "^2.56.1",
-    "autoprefixer": "^10.4.21",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.0.0",
     "cookie": "^1.0.2",
@@ -27,29 +25,29 @@
     "formidable": "^3.5.4",
     "lucide-react": "^0.542.0",
     "next": "15.5.27",
-    "postcss": "^8.5.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-zoom-pan-pinch": "^3.7.0",
-    "tailwindcss": "^3.4.17"
+    "react-zoom-pan-pinch": "^3.7.0"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "3.3.7",
     "@testing-library/dom": "^9.3.1",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
-    "@testing-library/user-event": "^14.4.3",
     "@types/formidable": "^3.4.5",
     "@types/node": "^24.3.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "eslint": "^8.57.1",
+    "autoprefixer": "^10.4.21",
+    "eslint": "9.39.5",
     "eslint-config-next": "15.5.27",
     "eslint-config-prettier": "^8.9.0",
-    "husky": "^8.0.0",
     "jest": "^29.6.2",
     "jest-environment-jsdom": "^29.6.2",
+    "postcss": "^8.5.6",
     "prettier": "^3.0.0",
     "prettier-plugin-tailwindcss": "^0.4.1",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3"
   }
 }
