@@ -1,10 +1,46 @@
 stages:
+  - test
   - build-docker
   - deploy
 
 variables:
   DOCKER_CONTEXT: "${CI_PROJECT_DIR}/app/"
   DOCKERFILE: "${CI_PROJECT_DIR}/app/Dockerfile"
+
+# Tests, Typen und Lint – bei jedem Merge Request und vor jedem Deploy von main.
+test:
+  stage: test
+  image: node:20-alpine
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  cache:
+    key:
+      files: [app/package-lock.json]
+    paths: [app/.npm/]
+  script:
+    - cd app
+    - npm ci --cache .npm --prefer-offline --no-audit --no-fund
+    - npm run typecheck
+    - npm run lint
+    - npm run check-format
+    - npm test -- --ci
+
+# Sicherheitslücken in den Laufzeit-Abhängigkeiten. Warnt nur (gelb), blockiert kein Deploy.
+# Läuft auch in geplanten Pipelines (Build → Pipeline schedules, z. B. wöchentlich).
+audit:
+  stage: test
+  image: node:20-alpine
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - cd app
+    - npm audit --omit=dev --audit-level=critical
 
 docker_build:
   stage: build-docker
@@ -16,14 +52,17 @@ docker_build:
       --context "${DOCKER_CONTEXT}"
       --dockerfile "${DOCKERFILE}"
       --destination "${CI_REGISTRY_IMAGE}/family-tree:latest"
-      --build-arg "NODE_ENV=production"
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
 
 deploy:
   stage: deploy
   image: ubuntu:22.04
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
   before_script:
     - apt-get -yq update
