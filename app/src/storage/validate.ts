@@ -26,8 +26,8 @@ class Invalid extends Error {}
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
 
 function str(v: unknown, field: string, max: number): string {
-  if (typeof v !== 'string') throw new Invalid(`${field}: Text erwartet`)
-  if (v.length > max) throw new Invalid(`${field}: zu lang`)
+  if (typeof v !== 'string') throw new Invalid(`${field}: expected text`)
+  if (v.length > max) throw new Invalid(`${field}: too long`)
   return v
 }
 
@@ -38,30 +38,30 @@ function optStr(v: unknown, field: string, max: number): string | null {
 
 function optDate(v: unknown, field: string): string | null {
   const s = optStr(v, field, 10)
-  if (s !== null && !ISO_DATE.test(s)) throw new Invalid(`${field}: Datum als JJJJ-MM-TT, JJJJ-MM oder JJJJ erwartet`)
+  if (s !== null && !ISO_DATE.test(s)) throw new Invalid(`${field}: expected a date as YYYY-MM-DD, YYYY-MM or YYYY`)
   return s
 }
 
 /** Yes/no; missing means no */
 function optFlag(v: unknown, field: string): boolean {
   if (v === undefined || v === null) return false
-  if (typeof v !== 'boolean') throw new Invalid(`${field}: Ja oder Nein erwartet`)
+  if (typeof v !== 'boolean') throw new Invalid(`${field}: expected true or false`)
   return v
 }
 
 function url(v: unknown, field: string): string {
   const s = str(v, field, LIMITS.url)
-  if (!/^https?:\/\//i.test(s)) throw new Invalid(`${field}: ungültige URL`)
+  if (!/^https?:\/\//i.test(s)) throw new Invalid(`${field}: invalid URL`)
   return s
 }
 
 /** Links to people who do not exist (any more) are dropped silently. */
 function idList(v: unknown, field: string, ids: Set<string>): string[] {
   if (v === undefined || v === null) return []
-  if (!Array.isArray(v)) throw new Invalid(`${field}: Liste erwartet`)
+  if (!Array.isArray(v)) throw new Invalid(`${field}: expected a list`)
   const out: string[] = []
   for (const id of v) {
-    if (typeof id !== 'string') throw new Invalid(`${field}: ID als Text erwartet`)
+    if (typeof id !== 'string') throw new Invalid(`${field}: ID als expected text`)
     if (ids.has(id) && !out.includes(id)) out.push(id)
   }
   return out
@@ -69,12 +69,12 @@ function idList(v: unknown, field: string, ids: Set<string>): string[] {
 
 function media(v: unknown, field: string): StoredMedia[] {
   if (v === undefined || v === null) return []
-  if (!Array.isArray(v)) throw new Invalid(`${field}: Liste erwartet`)
-  if (v.length > LIMITS.mediaPerMember) throw new Invalid(`${field}: zu viele Dateien`)
+  if (!Array.isArray(v)) throw new Invalid(`${field}: expected a list`)
+  if (v.length > LIMITS.mediaPerMember) throw new Invalid(`${field}: too many files`)
   return v.map((m, i) => {
-    if (!isObj(m)) throw new Invalid(`${field}[${i}]: Objekt erwartet`)
+    if (!isObj(m)) throw new Invalid(`${field}[${i}]: expected an object`)
     const kind = m.kind as MediaKind
-    if (!MEDIA_KINDS.has(kind)) throw new Invalid(`${field}[${i}].kind: unbekannt`)
+    if (!MEDIA_KINDS.has(kind)) throw new Invalid(`${field}[${i}].kind: unknown`)
     return {
       id: str(m.id, `${field}[${i}].id`, 100),
       url: url(m.url, `${field}[${i}].url`),
@@ -87,7 +87,7 @@ function media(v: unknown, field: string): StoredMedia[] {
 
 function profile(v: unknown, field: string): StoredProfile {
   if (v === undefined || v === null) v = {}
-  if (!isObj(v)) throw new Invalid(`${field}: Objekt erwartet`)
+  if (!isObj(v)) throw new Invalid(`${field}: expected an object`)
   const title = v.titleImageUrl
   return {
     birthDate: optDate(v.birthDate, `${field}.birthDate`),
@@ -106,25 +106,25 @@ function profile(v: unknown, field: string): StoredProfile {
 
 export function validateStoredTree(input: unknown): ValidationResult {
   try {
-    if (!isObj(input)) throw new Invalid('Stammbaum: Objekt erwartet')
-    if (input.version !== 3) throw new Invalid('Stammbaum: Version 3 erwartet')
-    if (!isObj(input.members)) throw new Invalid('members: Objekt erwartet')
+    if (!isObj(input)) throw new Invalid('tree: expected an object')
+    if (input.version !== 3) throw new Invalid('tree: expected version 3')
+    if (!isObj(input.members)) throw new Invalid('members: expected an object')
 
     const entries = Object.entries(input.members)
-    if (entries.length === 0) throw new Invalid('members: Stammbaum ist leer')
-    if (entries.length > LIMITS.members) throw new Invalid('members: zu viele Personen')
+    if (entries.length === 0) throw new Invalid('members: tree is empty')
+    if (entries.length > LIMITS.members) throw new Invalid('members: too many people')
     const ids = new Set(entries.map(([key]) => key))
 
     const rootId = str(input.rootId, 'rootId', 100)
-    if (!ids.has(rootId)) throw new Invalid('rootId: Person fehlt')
+    if (!ids.has(rootId)) throw new Invalid('rootId: person missing')
 
     const members: Record<string, StoredMemberV3> = {}
     for (const [key, raw] of entries) {
       const f = `members.${key}`
-      if (!isObj(raw)) throw new Invalid(`${f}: Objekt erwartet`)
-      if (raw.id !== key) throw new Invalid(`${f}.id: passt nicht zum Schlüssel`)
+      if (!isObj(raw)) throw new Invalid(`${f}: expected an object`)
+      if (raw.id !== key) throw new Invalid(`${f}.id: does not match its key`)
       const gender = raw.gender
-      if (typeof gender !== 'string' || !GENDERS.has(gender)) throw new Invalid(`${f}.gender: unbekannt`)
+      if (typeof gender !== 'string' || !GENDERS.has(gender)) throw new Invalid(`${f}.gender: unknown`)
       const rawSpouse =
         raw.spouseId === undefined || raw.spouseId === null ? null : str(raw.spouseId, `${f}.spouseId`, 100)
       const spouseId = rawSpouse !== null && ids.has(rawSpouse) && rawSpouse !== key ? rawSpouse : null

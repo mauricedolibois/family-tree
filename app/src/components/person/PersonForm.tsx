@@ -14,10 +14,14 @@ import { Button } from '@/components/ui/Button'
 import { Segmented, Toggle } from '@/components/ui/Choice'
 import { MediaImage } from '@/components/ui/MediaImage'
 import { uploadFiles } from './upload'
+import { errorText } from '@/i18n/errors'
+import { SUGGESTED_COUNTRIES, countryName } from '@/i18n/countries'
+import { useI18n } from '@/i18n/I18nProvider'
 
 export function PersonForm({ person, onDone }: { person: Person; onDone: () => void }) {
   const { tree, commit, saving } = useFamily()
   const { notify } = useToast()
+  const { t, locale } = useI18n()
   const p = person.profile ?? {}
 
   const [name, setName] = useState(person.name)
@@ -27,8 +31,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
   const stepParent = stepParentId ? tree.members[stepParentId] : null
   const [alsoParent, setAlsoParent] = useState(false)
   const [form, setForm] = useState({
-    birthDate: toDateInput(p.birthDate),
-    deathDate: toDateInput(p.deathDate),
+    birthDate: toDateInput(p.birthDate, locale),
+    deathDate: toDateInput(p.deathDate, locale),
     birthPlace: p.birthPlace ?? '',
     maidenName: p.maidenName ?? '',
     city: p.city ?? '',
@@ -55,7 +59,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
       const firstImage = added.find((m) => m.kind === 'image')
       if (!titleUrl && firstImage) setTitleUrl(firstImage.url)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Hochladen fehlgeschlagen.')
+      setError(errorText(e, t, locale, t.errors.upload.failed))
     } finally {
       setUploading(false)
     }
@@ -73,12 +77,12 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
     // Switched off: no date of death (anything typed only stays in the field until saving)
     const deathDate = dead ? parseDateInput(form.deathDate) : null
     if (birthDate === undefined || deathDate === undefined) {
-      return setError('Bitte Daten als TT.MM.JJJJ eingeben – oder nur Monat und Jahr (MM.JJJJ) oder nur das Jahr.')
+      return setError(t.form.dateInvalid(t.format.datePlaceholder))
     }
     // with partial dates, compare only as precisely as both are known
     const precision = Math.min(birthDate?.length ?? 0, deathDate?.length ?? 0)
     if (birthDate && deathDate && deathDate.slice(0, precision) < birthDate.slice(0, precision)) {
-      return setError('Das Sterbedatum liegt vor dem Geburtsdatum.')
+      return setError(t.form.deathBeforeBirth)
     }
     try {
       let next = updatePerson(tree, person.id, {
@@ -102,21 +106,21 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
       await commit(next)
       // Removed files stay in storage so older backups keep their images.
       // The daily backup job (scripts/daily-backup.mjs) cleans them up.
-      notify({ message: 'Änderungen gespeichert.' })
+      notify({ message: t.form.saved })
       onDone()
     } catch (err) {
       if (err instanceof TreeConflictError) return
-      setError(err instanceof Error ? err.message : 'Speichern fehlgeschlagen.')
+      setError(errorText(err, t, locale, t.errors.saveFailed))
     }
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5" data-tour="edit-form">
-      <h2 className="font-display text-[1.5rem] leading-tight text-ink">{person.name} bearbeiten</h2>
+      <h2 className="font-display text-[1.5rem] leading-tight text-ink">{t.form.editTitle(person.name)}</h2>
 
       <div>
         <label htmlFor="pf-name" className="field-label">
-          Vor- und Nachname
+          {t.form.fullName}
         </label>
         <input
           id="pf-name"
@@ -128,96 +132,84 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
       </div>
 
       <Segmented<Gender>
-        label="Geschlecht"
+        label={t.form.gender}
         value={gender}
         onChange={setGender}
         options={[
-          { value: 'MALE', label: 'Mann' },
-          { value: 'FEMALE', label: 'Frau' },
+          { value: 'MALE', label: t.form.man },
+          { value: 'FEMALE', label: t.form.woman },
         ]}
       />
 
       <Toggle checked={dead} onChange={setDead}>
-        Ist verstorben
+        {t.form.deceased}
       </Toggle>
 
       {stepParent && (
         <Toggle checked={alsoParent} onChange={setAlsoParent}>
-          {stepParent.name} ist auch {stepParent.gender === 'FEMALE' ? 'die Mutter' : 'der Vater'}
+          {t.form.alsoParent(stepParent.name, stepParent.gender === 'FEMALE')}
         </Toggle>
       )}
 
       <p className="-mb-2 text-sm text-ink-faint">
-        Ist nur das Jahr bekannt, reicht z. B. „1822“.
-        {dead && ' Ist das Sterbedatum unbekannt, bleibt das Feld einfach leer.'}
+        {t.form.yearOnlyHint}
+        {dead && t.form.deathUnknownHint}
       </p>
       <div className="grid grid-cols-2 gap-3">
         <div className={clsx(!dead && 'col-span-2')}>
           <label htmlFor="pf-born" className="field-label">
-            Geboren
+            {t.person.born}
           </label>
           <input
             id="pf-born"
             className="field"
             value={form.birthDate}
             onChange={set('birthDate')}
-            placeholder="TT.MM.JJJJ"
+            placeholder={t.format.datePlaceholder}
             autoComplete="off"
           />
         </div>
         {dead && (
           <div>
             <label htmlFor="pf-died" className="field-label">
-              Gestorben
+              {t.person.died}
             </label>
             <input
               id="pf-died"
               className="field"
               value={form.deathDate}
               onChange={set('deathDate')}
-              placeholder="unbekannt"
+              placeholder={t.form.unknown}
               autoComplete="off"
             />
           </div>
         )}
         <div>
           <label htmlFor="pf-birthplace" className="field-label">
-            Geburtsort
+            {t.form.birthPlace}
           </label>
           <input id="pf-birthplace" className="field" value={form.birthPlace} onChange={set('birthPlace')} />
         </div>
         <div>
           <label htmlFor="pf-maiden" className="field-label">
-            Geburtsname
+            {t.person.maidenName}
           </label>
           <input id="pf-maiden" className="field" value={form.maidenName} onChange={set('maidenName')} />
         </div>
         <div>
           <label htmlFor="pf-city" className="field-label">
-            Wohnort
+            {t.person.city}
           </label>
           <input id="pf-city" className="field" value={form.city} onChange={set('city')} />
         </div>
         <div>
           <label htmlFor="pf-country" className="field-label">
-            Land
+            {t.person.country}
           </label>
           <input id="pf-country" className="field" value={form.country} onChange={set('country')} list="pf-countries" />
           <datalist id="pf-countries">
-            {[
-              'Deutschland',
-              'Frankreich',
-              'Luxemburg',
-              'USA',
-              'Österreich',
-              'Schweiz',
-              'Niederlande',
-              'Belgien',
-              'Italien',
-              'Polen',
-              'Spanien',
-            ].map((c) => (
-              <option key={c} value={c} />
+            {SUGGESTED_COUNTRIES.map((code) => (
+              <option key={code} value={countryName(code, locale)} />
             ))}
           </datalist>
         </div>
@@ -225,26 +217,26 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
 
       <div>
         <label htmlFor="pf-job" className="field-label">
-          Beruf
+          {t.person.job}
         </label>
         <input id="pf-job" className="field" value={form.job} onChange={set('job')} />
       </div>
 
       <div>
         <label htmlFor="pf-notes" className="field-label">
-          Notizen
+          {t.person.notes}
         </label>
         <textarea
           id="pf-notes"
           className="field min-h-[9rem] resize-y leading-relaxed"
           value={form.comments}
           onChange={set('comments')}
-          placeholder="Geschichten, Quellen, Hochzeit …"
+          placeholder={t.form.notesPlaceholder}
         />
       </div>
 
       <section>
-        <p className="field-label">Fotos und Dokumente</p>
+        <p className="field-label">{t.person.media}</p>
         <ul className="grid grid-cols-3 gap-2">
           {media.map((m) => {
             const isTitle = m.url === titleUrl
@@ -261,7 +253,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
                   ) : (
                     <span className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-ink-muted">
                       <FileText className="h-6 w-6" />
-                      <span className="line-clamp-2 break-all">{m.title ?? 'Datei'}</span>
+                      <span className="line-clamp-2 break-all">{m.title ?? t.person.file}</span>
                     </span>
                   )}
                 </div>
@@ -270,8 +262,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
                     <button
                       type="button"
                       onClick={() => setTitleUrl(m.url)}
-                      aria-label={isTitle ? 'Ist Profilbild' : 'Als Profilbild verwenden'}
-                      title={isTitle ? 'Profilbild' : 'Als Profilbild verwenden'}
+                      aria-label={isTitle ? t.form.isProfilePhoto : t.form.useAsProfilePhoto}
+                      title={isTitle ? t.form.profilePhoto : t.form.useAsProfilePhoto}
                       className={clsx(
                         'grid h-7 w-7 place-items-center rounded-full shadow',
                         isTitle ? 'bg-gilt text-linen-deep' : 'bg-card/90 text-ink-muted',
@@ -285,8 +277,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
                   <button
                     type="button"
                     onClick={() => removeMedia(m)}
-                    aria-label="Entfernen"
-                    title="Entfernen"
+                    aria-label={t.form.removeFile}
+                    title={t.form.removeFile}
                     className="grid h-7 w-7 place-items-center rounded-full bg-card/90 text-danger shadow"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -304,7 +296,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
               className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line/70 text-sm text-ink-muted hover:border-linen hover:text-linen"
             >
               <ImagePlus className="h-6 w-6" />
-              {uploading ? 'Lädt …' : 'Hinzufügen'}
+              {uploading ? t.form.uploading : t.form.addFile}
             </button>
           </li>
         </ul>
@@ -319,7 +311,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
             e.target.value = ''
           }}
         />
-        <p className="mt-1.5 text-sm text-ink-faint">Der Stern markiert das Profilbild im Baum.</p>
+        <p className="mt-1.5 text-sm text-ink-faint">{t.form.starHint}</p>
       </section>
 
       {error && (
@@ -333,10 +325,10 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         data-tour="form-actions"
       >
         <Button type="submit" variant="primary" disabled={saving || uploading} className="flex-1">
-          {saving ? 'Wird gespeichert …' : 'Speichern'}
+          {saving ? t.form.saving : t.form.save}
         </Button>
         <Button variant="quiet" onClick={onDone} data-tour="form-cancel">
-          Abbrechen
+          {t.form.cancel}
         </Button>
       </div>
     </form>

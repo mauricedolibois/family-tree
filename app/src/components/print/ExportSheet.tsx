@@ -19,6 +19,8 @@ import { describeRelation } from '@/components/relation/RelationCard'
 import { Segmented } from '@/components/ui/Choice'
 import { Button } from '@/components/ui/Button'
 import { Flourish } from '@/components/ui/Flourish'
+import { INTL_TAG } from '@/i18n/locales'
+import { useI18n } from '@/i18n/I18nProvider'
 
 type Content = 'line' | 'relation' | 'all'
 type Orientation = 'portrait' | 'landscape'
@@ -80,6 +82,7 @@ export function ExportSheet() {
 function ExportDialog() {
   const { tree, index, familyName } = useFamily()
   const { setExportOpen, lineId, meId, relation, lineScope } = useView()
+  const { t, locale } = useI18n()
   const close = () => setExportOpen(false)
 
   const linePerson = lineId ?? meId
@@ -134,11 +137,11 @@ function ExportDialog() {
   const options: Array<{ value: Content; label: string }> = []
   if (linePerson) {
     const p = index.byId.get(linePerson)
-    const label = linePerson === meId ? 'Meine Linie' : `Linie von ${p ? splitName(p.name).given || p.name : '…'}`
+    const label = linePerson === meId ? t.print.myLine : t.print.lineOf(p ? splitName(p.name).given || p.name : '…')
     options.push({ value: 'line', label })
   }
-  if (pair) options.push({ value: 'relation', label: 'Beziehung' })
-  options.push({ value: 'all', label: 'Ganze Familie' })
+  if (pair) options.push({ value: 'relation', label: t.print.relation })
+  options.push({ value: 'all', label: t.print.wholeFamily })
 
   const chooseContent = (c: Content) => {
     setContent(c)
@@ -156,37 +159,37 @@ function ExportDialog() {
           onClick={close}
           className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-card/90 hover:bg-white/10"
         >
-          <ArrowLeft className="h-4 w-4" /> Zurück
+          <ArrowLeft className="h-4 w-4" /> {t.print.back}
         </button>
-        <h1 className="font-display text-[1.35rem] text-gilt-soft">Als PDF exportieren</h1>
+        <h1 className="font-display text-[1.35rem] text-gilt-soft">{t.print.title}</h1>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-auto md:flex-row md:overflow-hidden print:block print:overflow-visible">
         {/* Settings */}
         <aside className="shrink-0 p-3 md:w-[380px] md:overflow-auto md:p-4 print:hidden">
           <div className="parchment flex flex-col gap-4 rounded-card border border-gilt/60 p-4 shadow-card">
-            <Segmented dense label="Inhalt" value={content} options={options} onChange={chooseContent} />
+            <Segmented dense label={t.print.content} value={content} options={options} onChange={chooseContent} />
             <Segmented
-              label="Format"
+              label={t.print.format}
               value={orientation}
               options={[
-                { value: 'portrait', label: 'Hoch' },
-                { value: 'landscape', label: 'Quer' },
+                { value: 'portrait', label: t.print.portrait },
+                { value: 'landscape', label: t.print.landscape },
               ]}
               onChange={setOrientationChoice}
             />
             <Segmented
               dense
-              label="Papier"
+              label={t.print.paper}
               value={paper}
               options={PAPERS.map((p) => ({ value: p, label: p }))}
               onChange={setPaperChoice}
             />
             <p className="text-sm leading-snug text-ink-muted" aria-live="polite">
               {layout
-                ? `Namen in etwa ${pt.toLocaleString('de-DE', { maximumFractionDigits: 1 })} pt.` +
-                  (pt < READABLE_PT ? ' Für gut lesbaren Druck größeres Papier wählen.' : ' Gut lesbar.')
-                : 'Der Baum wird angeordnet …'}
+                ? t.print.namePt(pt.toLocaleString(INTL_TAG[locale], { maximumFractionDigits: 1 })) +
+                  (pt < READABLE_PT ? t.print.choosebigger : t.print.readable)
+                : t.print.layingOut}
             </p>
             <div>
               <Button
@@ -196,11 +199,9 @@ function ExportDialog() {
                 onClick={() => window.print()}
                 disabled={!layout}
               >
-                Drucken oder als PDF sichern
+                {t.print.print}
               </Button>
-              <p className="mt-2 text-sm leading-snug text-ink-faint">
-                Im Druckdialog als Drucker „Als PDF sichern“ wählen. Papiergröße und Ausrichtung sind schon eingestellt.
-              </p>
+              <p className="mt-2 text-sm leading-snug text-ink-faint">{t.print.printHint}</p>
             </div>
           </div>
         </aside>
@@ -264,6 +265,7 @@ function useHeading(
 ): Heading {
   const { index } = useFamily()
   const { lineScope } = useView()
+  const { t, locale } = useI18n()
   return useMemo(() => {
     const count = Object.keys(tree.members).length
     const generations = layout ? new Set(layout.cards.map((c) => c.y)).size : 0
@@ -272,33 +274,33 @@ function useHeading(
       const depth = lineDepth(index, linePerson)
       const pedigree = lineScope.side === 0 && (lineScope.down === 0 || depth.down === 0)
       return {
-        kicker: `Stammbaum ${familyName}`,
-        title: `${pedigree ? 'Ahnentafel' : 'Linie'} von ${p?.name ?? ''}`,
-        lines: [`${describeLineScope(lineScope, depth)}. ${count} Personen in ${generations} Generationen.`],
-        legendLine: pedigree ? null : 'direkte Linie',
+        kicker: t.print.kicker(familyName),
+        title: pedigree ? t.print.pedigreeOf(p?.name ?? '') : t.print.lineOf(p?.name ?? ''),
+        lines: [`${describeLineScope(lineScope, depth, locale)}. ${t.print.peopleInGenerations(count, generations)}`],
+        legendLine: pedigree ? null : t.print.directLine,
       }
     }
     if (content === 'relation' && pair) {
       const a = index.byId.get(pair.from)
       const b = index.byId.get(pair.to)
       const c = findConnection(index, pair.from, pair.to)
-      const text = a && b && c ? describeRelation(index, c, a, b, null) : null
+      const text = a && b && c ? describeRelation(index, c, a, b, null, locale) : null
       return {
-        kicker: `Stammbaum ${familyName}`,
-        title: `${a?.name ?? ''} und ${b?.name ?? ''}`,
+        kicker: t.print.kicker(familyName),
+        title: t.relation.pair(a?.name ?? '', b?.name ?? ''),
         lines: text
           ? [[text.forward, text.backward].filter(Boolean).join(' '), text.common ?? ''].filter(Boolean)
-          : ['Im Stammbaum gibt es keine Verbindung zwischen den beiden.'],
+          : [t.print.noConnection],
         legendLine: null,
       }
     }
     return {
-      kicker: 'Die ganze Familie',
-      title: `Stammbaum ${familyName}`,
-      lines: [`${count} Personen in ${generations} Generationen.`],
+      kicker: t.print.wholeFamilyKicker,
+      title: t.print.kicker(familyName),
+      lines: [t.print.peopleInGenerations(count, generations)],
       legendLine: null,
     }
-  }, [content, tree, layout, linePerson, pair, familyName, index, lineScope])
+  }, [content, tree, layout, linePerson, pair, familyName, index, lineScope, t, locale])
 }
 
 function Sheet({
@@ -316,8 +318,9 @@ function Sheet({
   highlight: Set<string> | null
   heading: Heading
 }) {
+  const { t, locale } = useI18n()
   const mm = (v: number) => `${v}mm`
-  const today = new Date().toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })
+  const today = new Date().toLocaleDateString(INTL_TAG[locale], { day: 'numeric', month: 'long', year: 'numeric' })
   const adopted = layout?.connectors.some((c) => c.adopted)
 
   return (
@@ -400,7 +403,7 @@ function Sheet({
               </div>
             </div>
           ) : (
-            <p className="font-serif italic text-ink-muted">Der Baum wird angeordnet …</p>
+            <p className="font-serif italic text-ink-muted">{t.print.layingOut}</p>
           )}
         </div>
 
@@ -410,7 +413,7 @@ function Sheet({
         >
           <span className="flex items-center" style={{ gap: '1.4em' }}>
             <span className="flex items-center" style={{ gap: '0.4em' }}>
-              <Rings /> verheiratet
+              <Rings /> {t.print.married}
             </span>
             {heading.legendLine && (
               <span className="flex items-center" style={{ gap: '0.4em' }}>
@@ -427,11 +430,11 @@ function Sheet({
                   className="inline-block"
                   style={{ width: '1.8em', borderTop: '0.12em dashed rgb(var(--line))' }}
                 />
-                adoptiert
+                {t.print.adopted}
               </span>
             )}
           </span>
-          <span>Stand: {today}</span>
+          <span>{t.print.asOf(today)}</span>
         </footer>
       </div>
     </article>

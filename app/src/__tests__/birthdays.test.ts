@@ -66,7 +66,7 @@ describe('upcoming birthdays', () => {
   })
 
   it('in words', () => {
-    expect([0, 1, 5].map(daysText)).toEqual(['heute', 'morgen', 'in 5 Tagen'])
+    expect([0, 1, 5].map((d) => daysText(d))).toEqual(['heute', 'morgen', 'in 5 Tagen'])
   })
 })
 

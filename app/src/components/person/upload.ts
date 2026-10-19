@@ -3,6 +3,7 @@
 
 import type { MediaKind, StoredMedia } from '@/storage/schema'
 import { newId } from '@/family/edit'
+import { UploadError } from '@/i18n/errors'
 
 const MAX_EDGE = 2000
 const JPEG_QUALITY = 0.86
@@ -38,10 +39,9 @@ export async function uploadFiles(files: File[]): Promise<StoredMedia[]> {
   const form = new FormData()
   for (const f of prepared) form.append('file', f)
   const res = await fetch('/api/media', { method: 'POST', body: form })
-  if (res.status === 413) throw new Error('Die Datei ist zu groß (höchstens 20 MB).')
-  if (res.status === 400)
-    throw new Error('Dieser Dateityp wird nicht unterstützt. Erlaubt sind Fotos, Videos und PDFs.')
-  if (!res.ok) throw new Error('Hochladen fehlgeschlagen.')
+  if (res.status === 413) throw new UploadError('tooLarge')
+  if (res.status === 400) throw new UploadError('unsupported')
+  if (!res.ok) throw new UploadError('failed')
   const { urls } = (await res.json()) as { urls: string[] }
   return urls.map((url, i) => ({
     id: newId(),

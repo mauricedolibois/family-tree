@@ -3,7 +3,7 @@
 A private family tree styled like an old family library: parchment, ink and gold leaf.
 Each family signs in with its family name and password and maintains its tree together, on phones and computers alike.
 
-The user interface is currently German; translations follow (see [Roadmap](#roadmap)).
+The interface speaks German, English, French and Spanish; see [docs/i18n.md](docs/i18n.md).
 
 ## Features
 
@@ -17,6 +17,7 @@ The user interface is currently German; translations follow (see [Roadmap](#road
 - **Add relatives** right from the info sheet: child, spouse, parent.
 - **Photos and documents** per person; photos are scaled down before upload.
 - **Daylight and candlelight** (light and dark theme).
+- **Four languages:** German, English, French and Spanish, including kinship terms, dates and the calendar subscription. Chosen on the sign-in page or in the menu, otherwise taken from the browser.
 - **Upcoming birthdays** in the menu: all living people with a complete date of birth, grouped by month, with their age and, after "that's me", the kinship; a tap jumps to the person.
 - **Birthdays as a calendar subscription** (calendar button under "upcoming birthdays" and at the end of the tour): for iPhone/Mac, Google Calendar, or as a link for Outlook and others. All-day events "🎂 Name (age)" with a reminder at 9 a.m.; new entries appear automatically. Either the whole family or only your own line; person and scope are part of the link:
 
@@ -24,7 +25,7 @@ The user interface is currently German; translations follow (see [Roadmap](#road
   /api/kalender/<token>.ics?linie=<id>&vorfahren=alle&nachkommen=2&seiten=cousins
   ```
 
-  `vorfahren`/`nachkommen` (ancestors/descendants): number of generations or `alle` (all); `seiten` (collateral lines): `keine` (none), `geschwister` (siblings), `cousins` or `alle`. Without `linie` the whole family. The route and parameter names stay German so existing subscriptions keep working.
+  `vorfahren`/`nachkommen` (ancestors/descendants): number of generations or `alle` (all); `seiten` (collateral lines): `keine` (none), `geschwister` (siblings), `cousins` or `alle`. Without `linie` the whole family. `lang` (`en`, `fr`, `es`) sets the language of the event texts; without it they are German. The route and parameter names stay German so existing subscriptions keep working.
 
 - **Deceased, date unknown:** an "is deceased" switch when editing ("already deceased" when adding); the date of death becomes optional. The card shows e.g. "1888–†" and the person drops out of birthdays and the calendar.
 - **Export as PDF** from the menu: your line, a relation or the whole family, portrait or landscape, A4 to A1. A print-ready sheet with gold frame, title and date, saved through the print dialog ("Save as PDF") so everything stays vector-sharp.
@@ -80,7 +81,7 @@ ALLOW_REGISTRATION=false
 TRUSTED_PROXIES=1
 ```
 
-Code comments, test names and documentation are in English. User-facing text is German for now.
+Code comments, test names and documentation are in English. User-facing texts live in `app/src/i18n/messages/` ([docs/i18n.md](docs/i18n.md)).
 
 ## Deployment
 
@@ -130,6 +131,7 @@ Alternatively paste them into the Supabase Studio SQL editor. Running them more 
 | `app/src/components/relation/` | Relation view: pick two people, kinship term                          |
 | `app/src/components/app/`      | Data state, header, search                                            |
 | `app/src/components/ui/`       | Design-system building blocks                                         |
+| `app/src/i18n/`                | Languages: detection, texts, provider                                 |
 | `app/src/styles/tokens.css`    | Colours of the "parchment & ink" design system                        |
 | `app/src/pages/api/`           | Sign-in, tree, uploads, calendar                                      |
 | `app/scripts/`                 | Maintenance scripts (daily backup, keep-alive)                        |
@@ -137,6 +139,6 @@ Alternatively paste them into the Supabase Studio SQL editor. Running them more 
 
 ## Roadmap
 
-1. English codebase (comments, tests, documentation).
-2. Multilingual interface: German, English, French, Spanish.
+1. ~~English codebase (comments, tests, documentation).~~
+2. ~~Multilingual interface: German, English, French, Spanish.~~
 3. Personal accounts: sign-in with email, admins, invitation links, several trees per user, optional email verification and outgoing mail via SMTP.

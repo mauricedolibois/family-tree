@@ -8,15 +8,26 @@ import '@fontsource/atkinson-hyperlegible-next/400.css'
 import '@fontsource/atkinson-hyperlegible-next/500.css'
 import '@fontsource/atkinson-hyperlegible-next/600.css'
 import '../styles/globals.css'
+import { I18nProvider, useI18n } from '@/i18n/I18nProvider'
+import { isLocale } from '@/i18n/locales'
+
+function DefaultTitle() {
+  const { t } = useI18n()
+  return (
+    <Head>
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>{t.app.title}</title>
+    </Head>
+  )
+}
 
 export default function App({ Component, pageProps }: AppProps) {
+  // Pages with getServerSideProps pass the request's language; static pages detect it on the client
+  const locale = isLocale(pageProps.locale) ? pageProps.locale : undefined
   return (
-    <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <title>Stammbaum</title>
-      </Head>
+    <I18nProvider initial={locale}>
+      <DefaultTitle />
       <Component {...pageProps} />
-    </>
+    </I18nProvider>
   )
 }

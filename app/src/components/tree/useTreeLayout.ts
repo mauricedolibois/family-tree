@@ -10,7 +10,7 @@ import type { TreeLayout } from '@/family/layout/types'
 /** @param focusId person the layout is arranged around (line, relation) */
 export function useTreeLayout(tree: Tree, focusId: string | null = null) {
   const [layout, setLayout] = useState<TreeLayout | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(false)
   const run = useRef(0)
 
   useEffect(() => {
@@ -22,11 +22,11 @@ export function useTreeLayout(tree: Tree, focusId: string | null = null) {
         const next = await computeTreeLayout(tree, runElkInWorker, focusId)
         if (!cancelled && id === run.current) {
           setLayout(next)
-          setError(null)
+          setError(false)
         }
       } catch (e) {
         console.error('[useTreeLayout]', e)
-        if (!cancelled) setError('Der Baum konnte nicht angeordnet werden.')
+        if (!cancelled) setError(true)
       }
     })()
     return () => {

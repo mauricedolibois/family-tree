@@ -7,10 +7,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { buildIndex, type Tree, type TreeIndex } from '@/family/model'
 import { TREE_VERSION_HEADER } from '@/storage/version'
+import { useI18n } from '@/i18n/I18nProvider'
 
 export class TreeConflictError extends Error {
   constructor() {
-    super('Der Stammbaum wurde inzwischen auf einem anderen Gerät geändert.')
+    super('the tree was changed on another device')
   }
 }
 
@@ -29,7 +30,7 @@ const Ctx = createContext<FamilyCtx | null>(null)
 
 export function useFamily(): FamilyCtx {
   const ctx = useContext(Ctx)
-  if (!ctx) throw new Error('useFamily außerhalb von FamilyProvider')
+  if (!ctx) throw new Error('useFamily must be used inside FamilyProvider')
   return ctx
 }
 
@@ -54,7 +55,7 @@ export function FamilyProvider({ familyName, children }: { familyName: string; c
       setConflict(false)
       setStatus('ready')
     } catch (e) {
-      console.error('[FamilyProvider] Laden fehlgeschlagen', e)
+      console.error('[FamilyProvider] loading failed', e)
       setStatus('error')
     }
   }, [])
@@ -80,9 +81,9 @@ export function FamilyProvider({ familyName, children }: { familyName: string; c
       }
       if (res.status === 401) {
         window.location.href = '/auth'
-        throw new Error('Nicht angemeldet')
+        throw new Error('not signed in')
       }
-      if (!res.ok) throw new Error(`Speichern fehlgeschlagen (${res.status})`)
+      if (!res.ok) throw new Error(`saving failed (${res.status})`)
       version.current = res.headers.get(TREE_VERSION_HEADER)
       setTree(next)
     } finally {
@@ -108,33 +109,33 @@ export function FamilyProvider({ familyName, children }: { familyName: string; c
 }
 
 function LoadingScreen() {
+  const { t } = useI18n()
   return (
     <div className="desk grid h-dvh place-items-center" role="status" aria-live="polite">
       <div className="parchment flex flex-col items-center gap-4 rounded-panel border border-gilt/50 px-10 py-8 shadow-lifted">
         <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-linen-tint border-t-linen motion-reduce:animate-none" />
-        <p className="font-serif text-lg text-ink-muted">Stammbaum wird geladen</p>
+        <p className="font-serif text-lg text-ink-muted">{t.family.loading}</p>
       </div>
     </div>
   )
 }
 
 function LoadError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useI18n()
   return (
     <div className="desk grid h-dvh place-items-center p-6">
       <div
         className="parchment max-w-sm rounded-panel border border-gilt/50 p-8 text-center shadow-lifted"
         role="alert"
       >
-        <p className="font-serif text-xl text-ink">Der Stammbaum konnte nicht geladen werden.</p>
-        <p className="mt-2 text-ink-muted">
-          Deine Daten sind sicher. Prüfe die Internetverbindung und versuche es noch einmal.
-        </p>
+        <p className="font-serif text-xl text-ink">{t.family.loadFailed}</p>
+        <p className="mt-2 text-ink-muted">{t.family.loadFailedHint}</p>
         <button
           type="button"
           onClick={onRetry}
           className="mt-6 rounded-control bg-linen px-5 py-2.5 font-medium text-white hover:bg-linen-hover"
         >
-          Erneut laden
+          {t.family.reload}
         </button>
       </div>
     </div>
@@ -142,20 +143,19 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
 }
 
 function ConflictBanner({ onReload }: { onReload: () => void }) {
+  const { t } = useI18n()
   return (
     <div
       role="alert"
       className="fixed inset-x-3 top-3 z-[60] mx-auto flex max-w-xl flex-wrap items-center gap-3 rounded-card bg-gilt-soft px-4 py-3 text-sm text-gilt-deep shadow-lifted"
     >
-      <span className="flex-1">
-        Der Stammbaum wurde inzwischen auf einem anderen Gerät geändert. Deine letzte Änderung wurde nicht gespeichert.
-      </span>
+      <span className="flex-1">{t.family.conflict}</span>
       <button
         type="button"
         onClick={onReload}
         className="rounded-control bg-gilt-deep px-3 py-1.5 font-medium text-white"
       >
-        Aktuellen Stand laden
+        {t.family.loadLatest}
       </button>
     </div>
   )

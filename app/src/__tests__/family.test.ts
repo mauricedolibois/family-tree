@@ -1,5 +1,7 @@
 import { buildIndex, lineageOf, lineageView, siblingsOf, type Tree } from '@/family/model'
 import { describeKinship, findConnection, kinshipLabel, kinshipSentence, kinshipTitle } from '@/family/kinship'
+import { WORDS } from '@/family/kinship/words'
+import type { Locale } from '@/i18n/locales'
 import {
   addExistingParent,
   addRelative,
@@ -179,6 +181,116 @@ describe('relation between two people', () => {
   })
 })
 
+describe('kinship in other languages', () => {
+  const t = family()
+  const ix = buildIndex(t)
+  const label = (locale: Locale, me: string, other: string) => kinshipLabel(describeKinship(ix, me, other)!, locale)
+  const connect = (a: string, b: string) => findConnection(ix, a, b)!
+
+  it.each([
+    ['gustav', 'Your father', 'Ton père', 'Tu padre'],
+    ['dora', 'Your grandmother', 'Ta grand-mère', 'Tu abuela'],
+    ['anton', 'Your great-grandfather', 'Ton arrière-grand-père', 'Tu bisabuelo'],
+    ['ida', 'Your aunt', 'Ta tante', 'Tu tía'],
+    ['jonas', 'Your uncle by marriage', 'Ton oncle par alliance', 'Tu tío político'],
+    ['mia', 'Your cousin', 'Ta cousine', 'Tu prima'],
+    ['lena', 'Your half-sister', 'Ta demi-sœur', 'Tu media hermana'],
+  ])('Kurt → %s', (other, en, fr, es) => {
+    expect(label('en', 'kurt', other)).toBe(en)
+    expect(label('fr', 'kurt', other)).toBe(fr)
+    expect(label('es', 'kurt', other)).toBe(es)
+  })
+
+  it('a chain through your spouse', () => {
+    expect(label('en', 'hanna', 'mia')).toBe('Niece of your husband')
+    expect(label('fr', 'hanna', 'mia')).toBe('Nièce de ton mari')
+    expect(label('es', 'hanna', 'mia')).toBe('Sobrina de tu marido')
+  })
+
+  it('sentences in both directions', () => {
+    const c = connect('kurt', 'mia')
+    const mia = { name: 'Mia' }
+    const kurt = { name: 'Kurt' }
+    expect(kinshipSentence(c.kinship, mia, kurt, 'en')).toBe('Mia is Kurt’s cousin.')
+    expect(kinshipSentence(c.reverse, kurt, mia, 'en')).toBe('Kurt is Mia’s cousin.')
+    expect(kinshipSentence(c.kinship, mia, kurt, 'fr')).toBe('Mia est la cousine de Kurt.')
+    expect(kinshipSentence(c.reverse, kurt, mia, 'fr')).toBe('Kurt est le cousin de Mia.')
+    expect(kinshipSentence(c.kinship, mia, kurt, 'es')).toBe('Mia es la prima de Kurt.')
+    expect(kinshipSentence(c.reverse, kurt, mia, 'es')).toBe('Kurt es el primo de Mia.')
+  })
+
+  it('"you" as subject and object, French elision before names', () => {
+    const c = connect('kurt', 'anton')
+    const anton = { name: 'Anton' }
+    expect(kinshipSentence(c.kinship, anton, 'you', 'en')).toBe('Anton is your great-grandfather.')
+    expect(kinshipSentence(c.reverse, 'you', anton, 'en')).toBe('You are Anton’s great-grandson.')
+    expect(kinshipSentence(c.kinship, anton, 'you', 'fr')).toBe('Anton est ton arrière-grand-père.')
+    expect(kinshipSentence(c.reverse, 'you', anton, 'fr')).toBe('Tu es l’arrière-petit-fils d’Anton.')
+    expect(kinshipSentence(c.kinship, anton, 'you', 'es')).toBe('Anton es tu bisabuelo.')
+    expect(kinshipSentence(c.reverse, 'you', anton, 'es')).toBe('Tú eres el bisnieto de Anton.')
+    expect(kinshipSentence(connect('kurt', 'ida').reverse, { name: 'Kurt' }, { name: 'Ida' }, 'fr')).toBe(
+      'Kurt est le neveu d’Ida.',
+    )
+  })
+
+  it('in-law chains with articles', () => {
+    const c = connect('hanna', 'mia')
+    expect(kinshipSentence(c.kinship, { name: 'Mia' }, { name: 'Hanna' }, 'en')).toBe(
+      'Mia is the niece of Hanna’s husband.',
+    )
+    expect(kinshipSentence(c.kinship, { name: 'Mia' }, { name: 'Hanna' }, 'fr')).toBe(
+      'Mia est la nièce du mari de Hanna.',
+    )
+    expect(kinshipSentence(c.kinship, { name: 'Mia' }, { name: 'Hanna' }, 'es')).toBe(
+      'Mia es la sobrina del marido de Hanna.',
+    )
+  })
+
+  it('step by step without a common term', () => {
+    const c = connect('hanna', 'jonas')
+    const jonas = { name: 'Jonas' }
+    expect(kinshipTitle(c.kinship, 'en').title).toBe('Husband of the sister of the husband')
+    expect(kinshipSentence(c.kinship, jonas, 'you', 'en')).toBe('Jonas is the husband of the sister of your husband.')
+    expect(kinshipTitle(c.kinship, 'fr').title).toBe('Époux de la sœur de l’époux')
+    expect(kinshipSentence(c.kinship, jonas, 'you', 'fr')).toBe('Jonas est l’époux de la sœur de ton époux.')
+    expect(kinshipTitle(c.kinship, 'es').title).toBe('Esposo de la hermana del esposo')
+    expect(kinshipSentence(c.kinship, jonas, 'you', 'es')).toBe('Jonas es el esposo de la hermana de tu esposo.')
+  })
+
+  it('a generation apart goes to the end', () => {
+    const tree = addRelative(t, 'mia', { relation: 'CHILD', name: 'Pia Weg', gender: 'FEMALE' }).tree
+    const pia = Object.values(tree.members).find((m) => m.name === 'Pia Weg')!.id
+    const c = findConnection(buildIndex(tree), 'kurt', pia)!
+    const p = { name: 'Pia' }
+    const k = { name: 'Kurt' }
+    expect(kinshipSentence(c.kinship, p, k, 'en')).toBe('Pia is Kurt’s cousin, once removed.')
+    expect(kinshipLabel(c.kinship, 'en')).toBe('Your cousin, once removed')
+    expect(kinshipSentence(c.kinship, p, k, 'fr')).toBe('Pia est la cousine de Kurt, à une génération d’écart.')
+    expect(kinshipLabel(c.kinship, 'fr')).toBe('Ta cousine, à une génération d’écart')
+    expect(kinshipSentence(c.kinship, p, k, 'es')).toBe('Pia es la prima de Kurt, con una generación de diferencia.')
+    expect(kinshipLabel(c.kinship, 'es')).toBe('Tu prima, con una generación de diferencia')
+  })
+
+  it('distant relations', () => {
+    const term = (locale: Locale, rel: Parameters<(typeof WORDS)['de']['term']>[0], female = false) =>
+      WORDS[locale].term(rel, female ? 'FEMALE' : 'MALE')
+    expect(term('en', { kind: 'cousin', degree: 2, removed: 2 })).toEqual({
+      head: 'second cousin',
+      note: 'twice removed',
+    })
+    expect(term('fr', { kind: 'cousin', degree: 2, removed: 0 }, true).head).toBe('cousine issue de germain')
+    expect(term('es', { kind: 'cousin', degree: 3, removed: 0 }, true).head).toBe('prima tercera')
+    expect(term('es', { kind: 'pibling', greats: 1 }, true).head).toBe('tía abuela')
+    expect(term('fr', { kind: 'nibling', greats: 2 }).head).toBe('arrière-petit-neveu')
+    expect(term('es', { kind: 'grandparent', greats: 2 }).head).toBe('tatarabuelo')
+    expect(term('de', { kind: 'pibling', greats: 2 }).head).toBe('Urgroßonkel')
+    expect(term('de', { kind: 'byMarriage', of: { kind: 'piblingAncestor', generations: 5 } }, true)).toEqual({
+      head: 'Tante',
+      note: '5 Generationen zurück (angeheiratet)',
+    })
+  })
+})
+
 describe('edits', () => {
   it('adding a child links it to both spouses', () => {
     const { tree, id } = addRelative(family(), 'kurt', { relation: 'SPOUSE', name: 'Nora Alt', gender: 'FEMALE' })
@@ -332,7 +444,7 @@ describe('line scope', () => {
 
 describe('scope in words (for print)', () => {
   it('generations', () => {
-    expect([0, 1, 3].map(generations)).toEqual(['keine', '1 Generation', '3 Generationen'])
+    expect([0, 1, 3].map((n) => generations(n))).toEqual(['keine', '1 Generation', '3 Generationen'])
   })
 
   it('line', () => {

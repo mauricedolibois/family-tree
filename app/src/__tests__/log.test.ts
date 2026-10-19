@@ -8,7 +8,7 @@ describe('describeError', () => {
 
   it('still shows errors without a message', () => {
     expect(describeError({ code: 'PGRST205', status: 404 })).toBe('code=PGRST205 | status=404')
-    expect(describeError({})).toBe('unbekannter Fehler')
+    expect(describeError({})).toBe('unknown error')
   })
 
   it('names special error classes', () => {
@@ -20,6 +20,6 @@ describe('describeError', () => {
     expect(describeError('nur Text')).toBe('nur Text')
     const loop: Record<string, unknown> = {}
     loop.self = loop
-    expect(describeError(loop)).toBe('unbekannter Fehler')
+    expect(describeError(loop)).toBe('unknown error')
   })
 })

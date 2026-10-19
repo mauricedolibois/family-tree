@@ -21,7 +21,7 @@ export function describeError(err: unknown): string {
     } catch {
       // circular objects: fall through
     }
-    return name + (Object.prototype.toString.call(err) === '[object Object]' ? 'unbekannter Fehler' : String(err))
+    return name + (Object.prototype.toString.call(err) === '[object Object]' ? 'unknown error' : String(err))
   }
   return String(err)
 }

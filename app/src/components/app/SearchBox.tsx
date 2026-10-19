@@ -9,12 +9,14 @@ import { useView } from './ViewProvider'
 import { lifeYears } from '@/family/format'
 import { searchPeople } from '@/family/search'
 import { Portrait } from '@/components/ui/Portrait'
+import { useI18n } from '@/i18n/I18nProvider'
 
 const MAX_RESULTS = 8
 
 export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?: () => void }) {
   const { tree } = useFamily()
   const { focusOn } = useView()
+  const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [open, setOpen] = useState(false)
@@ -57,7 +59,7 @@ export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?:
   return (
     <div className="relative w-full">
       <label className="relative block">
-        <span className="sr-only">Person suchen</span>
+        <span className="sr-only">{t.search.label}</span>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-faint" />
         <input
           ref={input}
@@ -67,7 +69,7 @@ export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?:
           aria-controls={listId}
           aria-autocomplete="list"
           autoComplete="off"
-          placeholder="Person suchen"
+          placeholder={t.search.label}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -82,7 +84,7 @@ export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?:
         {query && (
           <button
             type="button"
-            aria-label="Suche leeren"
+            aria-label={t.search.clear}
             onClick={() => setQuery('')}
             className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-ink-faint hover:text-ink"
           >
@@ -97,7 +99,7 @@ export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?:
           role="listbox"
           className="absolute inset-x-0 top-12 z-50 max-h-[60vh] overflow-auto rounded-card border border-card-rule bg-card p-1 shadow-lifted"
         >
-          {results.length === 0 && <li className="px-3 py-3 text-sm text-ink-muted">Niemand gefunden.</li>}
+          {results.length === 0 && <li className="px-3 py-3 text-sm text-ink-muted">{t.relation.nobody}</li>}
           {results.map((p, i) => (
             <li key={p.id} role="option" aria-selected={i === active}>
               <button

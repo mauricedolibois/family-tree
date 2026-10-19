@@ -43,7 +43,7 @@ const Ctx = createContext<ViewCtx | null>(null)
 
 export function useView(): ViewCtx {
   const ctx = useContext(Ctx)
-  if (!ctx) throw new Error('useView außerhalb von ViewProvider')
+  if (!ctx) throw new Error('useView must be used inside ViewProvider')
   return ctx
 }
 

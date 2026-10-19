@@ -4,19 +4,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { parentsOf, spouseOf, type Gender, type Person } from '@/family/model'
-import { addRelative, EditError, updatePerson, type Relation } from '@/family/edit'
+import { addRelative, updatePerson, type Relation } from '@/family/edit'
 import { parseDateInput, splitName } from '@/family/format'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { useToast } from '@/components/app/Toast'
 import { Button } from '@/components/ui/Button'
 import { Segmented, Toggle } from '@/components/ui/Choice'
-
-const TITLES: Record<Relation, string> = {
-  CHILD: 'Kind hinzufügen',
-  SPOUSE: 'Ehepartner hinzufügen',
-  PARENT: 'Elternteil hinzufügen',
-}
+import { errorText } from '@/i18n/errors'
+import { useI18n } from '@/i18n/I18nProvider'
 
 type Props = {
   person: Person
@@ -30,6 +26,7 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
   const { tree, index, commit, saving } = useFamily()
   const { focusOn } = useView()
   const { notify } = useToast()
+  const { t, locale } = useI18n()
   const nameInput = useRef<HTMLInputElement>(null)
 
   const spouseId = spouseOf(index, person.id)
@@ -63,10 +60,10 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!name.trim()) return setError('Bitte einen Namen eingeben.')
-    if (!gender) return setError('Bitte wähle Mann oder Frau.')
+    if (!name.trim()) return setError(t.errors.edit.nameRequired())
+    if (!gender) return setError(t.relative.chooseGender)
     const born = parseDateInput(birthDate)
-    if (born === undefined) return setError('Bitte das Geburtsdatum als TT.MM.JJJJ eingeben – oder nur das Jahr.')
+    if (born === undefined) return setError(t.relative.birthInvalid(t.format.datePlaceholder))
     try {
       const added = addRelative(tree, person.id, {
         relation,
@@ -84,9 +81,9 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
       const newName = name.trim()
       onDone()
       notify({
-        message: `${newName} wurde hinzugefügt.`,
+        message: t.relative.added(newName),
         action: {
-          label: 'Angaben ergänzen',
+          label: t.relative.completeDetails,
           run: () => {
             focusOn(added.id)
             onEditNew(added.id)
@@ -95,24 +92,20 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
       })
     } catch (err) {
       if (err instanceof TreeConflictError) return
-      setError(err instanceof EditError || err instanceof Error ? err.message : 'Speichern fehlgeschlagen.')
+      setError(errorText(err, t, locale, t.errors.saveFailed))
     }
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5" data-tour="relative-form">
       <div>
-        <h2 className="font-display text-[1.5rem] leading-tight text-ink">{TITLES[relation]}</h2>
-        <p className="mt-1 text-[15px] text-ink-muted">
-          {relation === 'CHILD' && <>Kind von {person.name}</>}
-          {relation === 'SPOUSE' && <>Ehepartner von {person.name}</>}
-          {relation === 'PARENT' && <>Mutter oder Vater von {person.name}</>}
-        </p>
+        <h2 className="font-display text-[1.5rem] leading-tight text-ink">{t.relative.title[relation]}</h2>
+        <p className="mt-1 text-[15px] text-ink-muted">{t.relative.subtitle[relation](person.name)}</p>
       </div>
 
       <div>
         <label htmlFor="rel-name" className="field-label">
-          Vor- und Nachname
+          {t.form.fullName}
         </label>
         <input
           id="rel-name"
@@ -124,56 +117,52 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
           autoCapitalize="words"
           enterKeyHint="done"
         />
-        {relation === 'SPOUSE' && (
-          <p className="mt-1.5 text-sm text-ink-faint">
-            Bei Frauen am besten den Geburtsnamen, z. B. „Anna Maria Schmidt“.
-          </p>
-        )}
+        {relation === 'SPOUSE' && <p className="mt-1.5 text-sm text-ink-faint">{t.relative.spouseNameHint}</p>}
       </div>
 
       <Segmented<Gender | ''>
-        label="Geschlecht"
+        label={t.form.gender}
         value={gender}
         onChange={setGender}
         options={[
-          { value: 'MALE', label: 'Mann' },
-          { value: 'FEMALE', label: 'Frau' },
+          { value: 'MALE', label: t.form.man },
+          { value: 'FEMALE', label: t.form.woman },
         ]}
       />
 
       <div>
         <label htmlFor="rel-born" className="field-label">
-          Geburtsdatum <span className="font-normal text-ink-faint">(falls bekannt)</span>
+          {t.relative.birthDate} <span className="font-normal text-ink-faint">{t.relative.ifKnown}</span>
         </label>
         <input
           id="rel-born"
           className="field"
           value={birthDate}
           onChange={(e) => setBirthDate(e.target.value)}
-          placeholder="TT.MM.JJJJ oder nur das Jahr"
+          placeholder={t.relative.birthPlaceholder(t.format.datePlaceholder)}
           autoComplete="off"
         />
       </div>
 
       <Toggle checked={dead} onChange={setDead}>
-        Bereits verstorben
+        {t.relative.alreadyDeceased}
       </Toggle>
 
       {relation === 'CHILD' && (
         <div className="flex flex-col gap-2">
           {spouse && (
             <Toggle checked={alsoChildOfSpouse} onChange={setAlsoChildOfSpouse}>
-              Auch Kind von {spouse.name}
+              {t.relative.alsoChildOf(spouse.name)}
             </Toggle>
           )}
           <Toggle checked={adopted} onChange={setAdopted}>
-            Adoptiert
+            {t.relative.adopted}
           </Toggle>
         </div>
       )}
       {relation === 'PARENT' && lonelyParent && (
         <Toggle checked={marry} onChange={setMarry}>
-          Verheiratet mit {lonelyParent.name}
+          {t.relative.marriedTo(lonelyParent.name)}
         </Toggle>
       )}
 
@@ -185,10 +174,10 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
 
       <div className="flex gap-2">
         <Button type="submit" variant="primary" disabled={saving} className="flex-1">
-          {saving ? 'Wird gespeichert …' : 'Hinzufügen'}
+          {saving ? t.form.saving : t.relative.add}
         </Button>
         <Button variant="quiet" onClick={onDone} data-tour="form-cancel">
-          Abbrechen
+          {t.form.cancel}
         </Button>
       </div>
     </form>

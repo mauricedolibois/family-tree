@@ -8,37 +8,29 @@ import { generations } from '@/family/format'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { Segmented } from '@/components/ui/Choice'
+import type { Messages } from '@/i18n/messages'
+import { useI18n } from '@/i18n/I18nProvider'
 
-export const SIDE_OPTIONS: Array<{ value: `${LineScope['side']}`; label: string }> = [
-  { value: '0', label: 'Keine' },
-  { value: '1', label: 'Geschwister' },
-  { value: '2', label: 'Cousins' },
-  { value: '3', label: 'Alle' },
-]
-
-const SIDE_HINT: Record<LineScope['side'], string> = {
-  0: 'Nur Vorfahren und Nachkommen.',
-  1: 'Dazu die Geschwister – auch die der Vorfahren, also Onkel, Tanten und Großonkel.',
-  2: 'Dazu deren Kinder: Neffen, Nichten, Cousins und Cousinen.',
-  3: 'Alle Blutsverwandten mit ihren Familien.',
-}
+export const sideOptions = (t: Messages): Array<{ value: `${LineScope['side']}`; label: string }> =>
+  ([0, 1, 2, 3] as const).map((side) => ({ value: `${side}`, label: t.scope.side[side] }))
 
 export function LineScopeCard({ personId, count, onClose }: { personId: string; count: number; onClose: () => void }) {
   const { index } = useFamily()
   const { lineScope, setLineScope, setExportOpen } = useView()
+  const { t } = useI18n()
   const depth = useMemo(() => lineDepth(index, personId), [index, personId])
 
   return (
     <section
-      aria-label="Linie anpassen"
+      aria-label={t.views.adjustLine}
       className="parchment pointer-events-auto relative w-full rounded-card border border-gilt/60 p-3 pt-2 shadow-card md:w-[380px]"
     >
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-[1.2rem] text-ink">Wie weit soll die Linie reichen?</h2>
+        <h2 className="font-display text-[1.2rem] text-ink">{t.scope.title}</h2>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Schließen"
+          aria-label={t.sheet.close}
           className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
         >
           <X className="h-4 w-4" />
@@ -47,13 +39,13 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
 
       <div className="mt-1 flex flex-col gap-1">
         <Stepper
-          label="Vorfahren"
+          label={t.scope.ancestors}
           value={lineScope.up}
           max={depth.up}
           onChange={(up) => setLineScope({ ...lineScope, up })}
         />
         <Stepper
-          label="Nachkommen"
+          label={t.scope.descendants}
           value={lineScope.down}
           max={depth.down}
           onChange={(down) => setLineScope({ ...lineScope, down })}
@@ -63,13 +55,13 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
       <div className="mt-2">
         <Segmented
           dense
-          label="Seitenlinien"
+          label={t.scope.sideLines}
           value={`${lineScope.side}`}
-          options={SIDE_OPTIONS}
+          options={sideOptions(t)}
           onChange={(v) => setLineScope({ ...lineScope, side: Number(v) as LineScope['side'] })}
         />
         <p className="mt-1.5 text-sm leading-snug text-ink-muted">
-          {SIDE_HINT[lineScope.side]} <span className="tabular-nums">{count} Personen.</span>
+          {t.scope.sideHint[lineScope.side]} <span className="tabular-nums">{t.scope.people(count)}</span>
         </p>
       </div>
 
@@ -79,7 +71,7 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
         className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-control border border-gilt/60 text-[15px] text-ink hover:bg-gilt-soft/40"
       >
         <Printer className="h-4 w-4 text-gilt-deep" />
-        Diese Linie als PDF
+        {t.scope.printLine}
       </button>
     </section>
   )
@@ -97,20 +89,26 @@ function Stepper({
   max: number
   onChange: (v: number | null) => void
 }) {
+  const { t, locale } = useI18n()
   const current = value === null ? max : Math.min(value, max)
-  const text = max === 0 ? 'keine' : value === null || current >= max ? `alle ${max}` : generations(current)
+  const text =
+    max === 0
+      ? generations(0, locale)
+      : value === null || current >= max
+      ? t.scope.allOf(max)
+      : generations(current, locale)
   const less = () => onChange(Math.max(0, current - 1))
   const more = () => onChange(current + 1 >= max ? null : current + 1)
   return (
     <div className="flex items-center gap-2">
       <span className="flex-1 text-[15px] text-ink">{label}</span>
-      <StepButton label={`Weniger ${label}`} onClick={less} disabled={max === 0 || current === 0}>
+      <StepButton label={t.scope.less(label)} onClick={less} disabled={max === 0 || current === 0}>
         <Minus className="h-4 w-4" />
       </StepButton>
       <span className="w-[8.5rem] text-center font-serif text-[16px] tabular-nums text-ink" aria-live="polite">
         {text}
       </span>
-      <StepButton label={`Mehr ${label}`} onClick={more} disabled={max === 0 || current >= max}>
+      <StepButton label={t.scope.more(label)} onClick={more} disabled={max === 0 || current >= max}>
         <Plus className="h-4 w-4" />
       </StepButton>
     </div>

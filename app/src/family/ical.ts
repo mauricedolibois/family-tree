@@ -6,6 +6,8 @@
 
 import { upcomingBirthdays } from './birthdays'
 import type { Tree } from './model'
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/locales'
+import { MESSAGES } from '@/i18n/messages'
 
 const CRLF = '\r\n'
 
@@ -49,8 +51,14 @@ const stamp = (d: Date) =>
 
 export function birthdayCalendar(
   tree: Tree,
-  { calendarName, now = new Date(), occurrences = 2 }: { calendarName: string; now?: Date; occurrences?: number },
+  {
+    calendarName,
+    now = new Date(),
+    occurrences = 2,
+    locale = DEFAULT_LOCALE,
+  }: { calendarName: string; now?: Date; occurrences?: number; locale?: Locale },
 ): string {
+  const t = MESSAGES[locale].calendar
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -73,12 +81,12 @@ export function birthdayCalendar(
       `DTSTART;VALUE=DATE:${dateValue(b.date)}`,
       `DTEND;VALUE=DATE:${dateValue(end)}`,
       `SUMMARY:${escapeText(`🎂 ${name} (${b.age})`)}`,
-      `DESCRIPTION:${escapeText(`${name} wird ${b.age}.`)}`,
+      `DESCRIPTION:${escapeText(t.turns(name, b.age))}`,
       'TRANSP:TRANSPARENT',
       // Reminder at 9 a.m. on the birthday
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
-      `DESCRIPTION:${escapeText(`${name} hat heute Geburtstag (${b.age})`)}`,
+      `DESCRIPTION:${escapeText(t.birthdayToday(name, b.age))}`,
       'TRIGGER:PT9H',
       'END:VALARM',
       'END:VEVENT',

@@ -25,7 +25,7 @@ function getSecret(): string {
   const explicit = process.env.SESSION_SECRET
   if (explicit && explicit.length >= 32) return explicit
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) throw new Error('SESSION_SECRET oder SUPABASE_SERVICE_ROLE_KEY fehlt')
+  if (!serviceKey) throw new Error('SESSION_SECRET or SUPABASE_SERVICE_ROLE_KEY is missing')
   return createHmac('sha256', serviceKey).update('family-tree/session/v1').digest('hex')
 }
 
