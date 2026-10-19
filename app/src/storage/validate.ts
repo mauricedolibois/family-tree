@@ -92,6 +92,8 @@ function profile(v: unknown, field: string): StoredProfile {
   const title = v.titleImageUrl
   return {
     birthDate: optDate(v.birthDate, `${field}.birthDate`),
+    birthPlace: optStr(v.birthPlace, `${field}.birthPlace`, LIMITS.shortText),
+    maidenName: optStr(v.maidenName, `${field}.maidenName`, LIMITS.shortText),
     deathDate: optDate(v.deathDate, `${field}.deathDate`),
     ...(optFlag(v.deceased, `${field}.deceased`) ? { deceased: true } : {}),
     country: optStr(v.country, `${field}.country`, LIMITS.shortText),

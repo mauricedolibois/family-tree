@@ -5,7 +5,7 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 
 ## Was die App kann
 
-- **Übersichtlicher Baum ohne Linien-Knoten.** Die Anordnung berechnet [ELK](https://eclipse.dev/elk/) im Hintergrund (Web Worker): Generationen in Zeilen, Paare nebeneinander, Geschwister samt Familien nach Alter. Die Reihenfolge folgt einer Ahnentafel: Herkunft des Mannes links, der Frau rechts, Seitenzweige außen (`src/family/layout/order.ts`).
+- **Übersichtlicher Baum ohne Linien-Knoten.** Die Anordnung berechnet [ELK](https://eclipse.dev/elk/) im Hintergrund (Web Worker): Generationen in Zeilen, Paare nebeneinander, Geschwister samt Familien nach Alter. Die Reihenfolge folgt einer Ahnentafel: Herkunft des Mannes links, der Frau rechts, Seitenzweige außen (`app/src/family/layout/order.ts`).
 - **Goldene Linie:** Tippt man eine Person an, leuchten ihre Vorfahren und Nachkommen auf.
 - **Ansichten:** ganze Familie, „Meine Linie“ oder die Linie einer beliebigen Person. Wie weit die Linie reicht, lässt sich einstellen: Generationen nach oben und unten, dazu Geschwister, Cousins oder alle Blutsverwandten.
 - **Beziehung:** zwei Personen wählen, der Baum zeigt nur noch den Weg zwischen ihnen, dazu die Bezeichnung in beide Richtungen und die gemeinsamen Vorfahren.
@@ -33,7 +33,7 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 
 - Anmeldung mit signiertem Sitzungs-Cookie (HMAC), Bremse gegen Passwort-Raten.
 - Der Server prüft jeden Baum vor dem Speichern. Gespeichert wird nur, wenn niemand den Baum zwischendurch auf einem anderen Gerät geändert hat.
-- Automatische Sicherungen: vor **jeder** Änderung (mit Notiz, was danach geändert wurde, z. B. „bearbeitet: Karl Niehren“) und täglich über den Workflow `.github/workflows/keep-alive.yml`. Die Sicherungen vor Änderungen bleiben 90 Tage, die täglichen ein Jahr, von Hand angelegte für immer.
+- Automatische Sicherungen: vor **jeder** Änderung (mit Notiz, was danach geändert wurde, z. B. „bearbeitet: Karl Niehren“) und täglich per Cron auf dem Server (siehe [Deployment](#deployment)). Die Sicherungen vor Änderungen bleiben 90 Tage, die täglichen ein Jahr, von Hand angelegte für immer.
 - Zurückholen im Notfall, im SQL-Editor von Supabase (Schema `verwaltung`, nicht über die API erreichbar):
 
   ```sql
@@ -54,32 +54,63 @@ Jede Familie meldet sich mit Familienname und Passwort an und pflegt ihren Baum 
 ## Entwicklung
 
 ```bash
+cd app
 npm ci
 npm run dev        # http://localhost:3000
 npm test           # Tests (Verwandtschaft, Layout, Sitzung, Prüfung der Daten)
 npm run typecheck
 ```
 
-Benötigte Umgebungsvariablen (z. B. in `.env.local`):
+Benötigte Umgebungsvariablen (lokal in `app/.env.local`, auf dem Server in `prod.env`, Vorlage: `example.env`):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=…
+SUPABASE_URL=…
 SUPABASE_SERVICE_ROLE_KEY=…
 # optional, sonst aus dem Service-Role-Key abgeleitet:
 SESSION_SECRET=…
 ```
 
+## Deployment
+
+Unverändert über GitLab CI (`.gitlab-ci.yml`):
+
+1. Push auf `main` → Kaniko baut `app/Dockerfile` und schiebt das Image nach `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
+2. Danach kopiert der Job `deploy` `docker-compose.yml` und `deploy_tools/deploy_prod.sh` auf den Server und startet den Container neu (`prod.env` liegt dort in `~/family-tree/`).
+
+Supabase läuft selbst gehostet auf demselben Host (`supabase-project/`).
+
+**Datenbank-Migrationen** (`supabase/migrations/`): Die App läuft auch ohne sie mit dem Stand von `main` weiter. Erst mit ihnen kommen die Sicherung vor jeder Änderung, die Bremse gegen Passwort-Raten und das Kalender-Abo dazu. Einspielen, der Reihe nach, direkt in den Datenbank-Container:
+
+```bash
+for f in supabase/migrations/*.sql; do docker exec -i supabase-db psql -U postgres -v ON_ERROR_STOP=1 < "$f"; done
+```
+
+Die Migrationen lassen sich gefahrlos mehrfach ausführen.
+
+**Hinweise:**
+
+- Optional `SESSION_SECRET` (mind. 32 Zeichen) in `prod.env` ergänzen. Ohne wird er aus dem Service-Role-Key abgeleitet. Nach dem Update müssen sich alle einmal neu anmelden.
+- Die App muss über HTTPS erreichbar sein, weil das Sitzungs-Cookie in Produktion als `Secure` gesetzt wird.
+
+**Tägliche Sicherung** (braucht die Migrationen): per Cron auf dem Server im App-Container, mit `prod.env` und Netzwerk der laufenden App, z. B. `crontab -e`:
+
+```
+0 3 * * * cd ~/family-tree && docker compose --env-file prod.env run --rm app node scripts/daily-backup.mjs >> ~/family-tree/backup.log 2>&1
+```
+
+`app/scripts/keep-alive.mjs` ist nur für kostenlose Supabase-Cloud-Projekte nötig, die nach 7 Tagen ohne Zugriff pausiert werden. Selbst gehostet braucht es das nicht.
+
 ## Aufbau
 
 | Ordner                     | Inhalt                                                                                 |
 | -------------------------- | -------------------------------------------------------------------------------------- |
-| `src/family/`              | Stammbaum-Logik ohne Oberfläche: Beziehungen, Verwandtschaftsnamen, Bearbeiten, Layout |
-| `src/components/tree/`     | Baum-Ansicht: Karten, Linien, Zoom                                                     |
-| `src/components/person/`   | Infoblatt, Bearbeiten, Personen hinzufügen                                             |
-| `src/components/print/`    | PDF-Export (Druckblatt)                                                                |
-| `src/components/relation/` | Beziehungsansicht: zwei Personen wählen, Bezeichnung                                   |
-| `src/components/app/`      | Datenzustand, Kopfzeile, Suche                                                         |
-| `src/components/ui/`       | Bausteine des Style-Systems                                                            |
-| `src/styles/tokens.css`    | Farben des Style-Systems „Pergament & Tinte“                                           |
-| `src/pages/api/`           | Anmeldung, Stammbaum, Uploads                                                          |
+| `app/src/family/`              | Stammbaum-Logik ohne Oberfläche: Beziehungen, Verwandtschaftsnamen, Bearbeiten, Layout |
+| `app/src/components/tree/`     | Baum-Ansicht: Karten, Linien, Zoom                                                     |
+| `app/src/components/person/`   | Infoblatt, Bearbeiten, Personen hinzufügen                                             |
+| `app/src/components/print/`    | PDF-Export (Druckblatt)                                                                |
+| `app/src/components/relation/` | Beziehungsansicht: zwei Personen wählen, Bezeichnung                                   |
+| `app/src/components/app/`      | Datenzustand, Kopfzeile, Suche                                                         |
+| `app/src/components/ui/`       | Bausteine des Style-Systems                                                            |
+| `app/src/styles/tokens.css`    | Farben des Style-Systems „Pergament & Tinte“                                           |
+| `app/src/pages/api/`           | Anmeldung, Stammbaum, Uploads                                                          |
 | `supabase/migrations/`     | Datenbank-Änderungen                                                                   |

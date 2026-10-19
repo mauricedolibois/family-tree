@@ -16,6 +16,8 @@ const FLAGS: Record<string, Flag> = {
   belgien: { title: 'Belgien', dir: 'row', stripes: ['#000000', '#FDDA24', '#EF3340'] },
   italien: { title: 'Italien', dir: 'row', stripes: ['#009246', '#FFFFFF', '#CE2B37'] },
   polen: { title: 'Polen', dir: 'col', stripes: ['#FFFFFF', '#DC143C'] },
+  // Gelb doppelt so breit wie die roten Streifen (1:2:1), Wappen weggelassen
+  spanien: { title: 'Spanien', dir: 'col', stripes: ['#AA151B', '#F1BF00', '#F1BF00', '#AA151B'] },
   schweiz: { title: 'Schweiz', special: 'swiss' },
   usa: { title: 'USA', special: 'usa' },
 }
@@ -30,6 +32,9 @@ const ALIASES: Record<string, string> = {
   belgium: 'belgien',
   italy: 'italien',
   poland: 'polen',
+  spain: 'spanien',
+  españa: 'spanien',
+  espana: 'spanien',
   switzerland: 'schweiz',
   'vereinigte staaten': 'usa',
   'vereinigte staaten von amerika': 'usa',

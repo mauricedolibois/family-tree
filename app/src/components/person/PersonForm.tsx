@@ -5,7 +5,7 @@ import { useRef, useState } from 'react'
 import clsx from 'clsx'
 import { FileText, ImagePlus, Star, Trash2 } from 'lucide-react'
 import type { Gender, Person } from '@/family/model'
-import { updatePerson } from '@/family/edit'
+import { addExistingParent, spouseOfSingleParent, updatePerson } from '@/family/edit'
 import { isDeceased, parseDateInput, toDateInput } from '@/family/format'
 import type { StoredMedia } from '@/storage/schema'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
@@ -23,9 +23,14 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
   const [name, setName] = useState(person.name)
   const [gender, setGender] = useState<Gender>(person.gender)
   const [dead, setDead] = useState(isDeceased(person))
+  const stepParentId = spouseOfSingleParent(tree, person.id)
+  const stepParent = stepParentId ? tree.members[stepParentId] : null
+  const [alsoParent, setAlsoParent] = useState(false)
   const [form, setForm] = useState({
     birthDate: toDateInput(p.birthDate),
     deathDate: toDateInput(p.deathDate),
+    birthPlace: p.birthPlace ?? '',
+    maidenName: p.maidenName ?? '',
     city: p.city ?? '',
     country: p.country ?? '',
     job: p.job ?? '',
@@ -76,13 +81,15 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
       return setError('Das Sterbedatum liegt vor dem Geburtsdatum.')
     }
     try {
-      const next = updatePerson(tree, person.id, {
+      let next = updatePerson(tree, person.id, {
         name,
         gender,
         profile: {
           birthDate,
           deathDate,
           deceased: dead || undefined,
+          birthPlace: form.birthPlace.trim() || null,
+          maidenName: form.maidenName.trim() || null,
           city: form.city.trim() || null,
           country: form.country.trim() || null,
           job: form.job.trim() || null,
@@ -91,6 +98,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
           media,
         },
       })
+      if (stepParent && alsoParent) next = addExistingParent(next, person.id, stepParent.id)
       await commit(next)
       // Entfernte Dateien bleiben im Speicher, damit ältere gesicherte Stände ihre Bilder behalten.
       // Aufgeräumt wird in der täglichen Sicherung (scripts/daily-backup.mjs).
@@ -133,6 +141,12 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         Ist verstorben
       </Toggle>
 
+      {stepParent && (
+        <Toggle checked={alsoParent} onChange={setAlsoParent}>
+          {stepParent.name} ist auch {stepParent.gender === 'FEMALE' ? 'die Mutter' : 'der Vater'}
+        </Toggle>
+      )}
+
       <p className="-mb-2 text-sm text-ink-faint">
         Ist nur das Jahr bekannt, reicht z. B. „1822“.
         {dead && ' Ist das Sterbedatum unbekannt, bleibt das Feld einfach leer.'}
@@ -167,6 +181,18 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
           </div>
         )}
         <div>
+          <label htmlFor="pf-birthplace" className="field-label">
+            Geburtsort
+          </label>
+          <input id="pf-birthplace" className="field" value={form.birthPlace} onChange={set('birthPlace')} />
+        </div>
+        <div>
+          <label htmlFor="pf-maiden" className="field-label">
+            Geburtsname
+          </label>
+          <input id="pf-maiden" className="field" value={form.maidenName} onChange={set('maidenName')} />
+        </div>
+        <div>
           <label htmlFor="pf-city" className="field-label">
             Wohnort
           </label>
@@ -189,6 +215,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
               'Belgien',
               'Italien',
               'Polen',
+              'Spanien',
             ].map((c) => (
               <option key={c} value={c} />
             ))}
@@ -212,7 +239,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
           className="field min-h-[9rem] resize-y leading-relaxed"
           value={form.comments}
           onChange={set('comments')}
-          placeholder="Geschichten, Quellen, Geburtsort, Hochzeit …"
+          placeholder="Geschichten, Quellen, Hochzeit …"
         />
       </div>
 

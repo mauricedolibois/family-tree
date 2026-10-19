@@ -4,7 +4,7 @@
 // übergebenen Baum nie, sondern liefern eine geänderte Kopie zurück.
 
 import type { StoredProfile } from '@/storage/schema'
-import { buildIndex, parentsOf, type Gender, type Person, type Tree } from './model'
+import { buildIndex, descendantsOf, parentsOf, type Gender, type Person, type Tree } from './model'
 
 export type Relation = 'CHILD' | 'SPOUSE' | 'PARENT'
 
@@ -33,6 +33,8 @@ export function newId(length = 10): string {
 
 const emptyProfile = (): StoredProfile => ({
   birthDate: null,
+  birthPlace: null,
+  maidenName: null,
   deathDate: null,
   country: null,
   city: null,
@@ -143,6 +145,34 @@ export function updatePerson(tree: Tree, id: string, patch: PersonPatch): Tree {
   if (patch.gender) p.gender = patch.gender
   if (patch.profile) p.profile = { ...emptyProfile(), ...p.profile, ...patch.profile }
   return next
+}
+
+/**
+ * Ehepartner des einzigen Elternteils, der nicht selbst Elternteil ist – etwa ein
+ * Stiefvater, der nachträglich auch als Vater eingetragen werden soll.
+ */
+export function spouseOfSingleParent(tree: Tree, childId: string): string | null {
+  const parents = parentsOf(buildIndex(tree), childId)
+  if (parents.length !== 1) return null
+  const spouseId = tree.members[parents[0]]?.spouseId
+  return spouseId && spouseId !== childId && tree.members[spouseId] ? spouseId : null
+}
+
+/** Vorhandene Person als weiteres Elternteil eintragen */
+export function addExistingParent(tree: Tree, childId: string, parentId: string): Tree {
+  const next = clone(tree)
+  const child = next.members[childId]
+  const parent = next.members[parentId]
+  if (!child || !parent) throw new EditError('Die Person wurde nicht gefunden.')
+  const ix = buildIndex(next)
+  const parents = parentsOf(ix, childId)
+  if (parents.includes(parentId)) return next
+  if (parents.length >= 2) throw new EditError(`${child.name} hat bereits zwei Eltern.`)
+  if (parentId === childId || descendantsOf(ix, childId).has(parentId)) {
+    throw new EditError(`${parent.name} kann nicht Elternteil von ${child.name} sein.`)
+  }
+  link(parent, child)
+  return normalize(next)
 }
 
 /**

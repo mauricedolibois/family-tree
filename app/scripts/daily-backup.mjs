@@ -7,15 +7,15 @@
  * - Löscht Fotos und Dokumente erst, wenn weder der aktuelle Baum noch irgendeine
  *   Sicherung sie mehr kennt (und sie älter als eine Woche sind). So behalten auch
  *   ältere Stände ihre Bilder, wenn man sie zurückholt.
- * Läuft täglich im GitHub-Workflow „Keep Supabase Alive“.
+ * Läuft täglich per Cron auf dem Server im App-Container (siehe README, „Deployment“).
  */
 import { createClient } from '@supabase/supabase-js'
 import { createHash } from 'crypto'
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 if (!url || !key) {
-  console.error('Fehlende Umgebungsvariablen: NEXT_PUBLIC_SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY')
+  console.error('Fehlende Umgebungsvariablen: SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY')
   process.exit(1)
 }
 

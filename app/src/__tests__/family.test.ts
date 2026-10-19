@@ -1,6 +1,14 @@
 import { buildIndex, lineageOf, lineageView, siblingsOf, type Tree } from '@/family/model'
 import { describeKinship, findConnection, kinshipLabel, kinshipSentence, kinshipTitle } from '@/family/kinship'
-import { addRelative, canDelete, deletePerson, normalize, updatePerson } from '@/family/edit'
+import {
+  addExistingParent,
+  addRelative,
+  canDelete,
+  deletePerson,
+  normalize,
+  spouseOfSingleParent,
+  updatePerson,
+} from '@/family/edit'
 import {
   ageOf,
   describeLineScope,
@@ -204,6 +212,23 @@ describe('Änderungen', () => {
     // Hanna ist schon mit Gustav verheiratet, also keine zweite Ehe
     expect(tree.members[id].spouseId).toBeNull()
     expect(tree.members.lena.parentIds?.sort()).toEqual(['hanna', id].sort())
+  })
+
+  it('Ehepartner des einzigen Elternteils nachträglich als Elternteil eintragen', () => {
+    const t = family()
+    // Lena ist nur Hannas Tochter, Hanna ist mit Gustav verheiratet
+    expect(spouseOfSingleParent(t, 'lena')).toBe('gustav')
+    expect(spouseOfSingleParent(t, 'kurt')).toBeNull() // hat schon zwei Eltern
+    const next = addExistingParent(t, 'lena', 'gustav')
+    expect(next.members.lena.parentIds?.sort()).toEqual(['gustav', 'hanna'])
+    expect(next.members.gustav.childrenIds).toContain('lena')
+    expect(t.members.gustav.childrenIds).not.toContain('lena')
+  })
+
+  it('kein drittes Elternteil und keine Nachkommen als Eltern', () => {
+    expect(() => addExistingParent(family(), 'kurt', 'jonas')).toThrow(/zwei Eltern/)
+    const t = addRelative(family(), 'lena', { relation: 'CHILD', name: 'Rudi', gender: 'MALE' })
+    expect(() => addExistingParent(t.tree, 'lena', t.id)).toThrow(/nicht Elternteil/)
   })
 
   it('Personen in der Mitte des Baums lassen sich nicht löschen', () => {

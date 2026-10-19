@@ -108,7 +108,11 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
 
       {/* Lebensdaten */}
       <dl className="grid grid-cols-[auto,1fr] gap-x-5 gap-y-2 text-[15px]">
-        <Fact label="Geboren" value={formatDate(p.birthDate)} />
+        <Fact
+          label="Geboren"
+          value={[formatDate(p.birthDate), p.birthPlace && `in ${p.birthPlace}`].filter(Boolean).join(' ')}
+        />
+        <Fact label="Geburtsname" value={p.maidenName ?? ''} />
         <Fact
           label="Gestorben"
           value={

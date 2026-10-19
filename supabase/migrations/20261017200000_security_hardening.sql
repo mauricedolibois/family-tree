@@ -1,8 +1,17 @@
 -- Sicherheit: Die App greift nur serverseitig mit dem Service-Role-Key zu.
 -- Öffentliche Rollen (anon, authenticated) brauchen keinerlei Rechte auf die Tabellen.
-revoke all on table public.families, public.family_trees, public.media,
-  public.family_trees_backup, public.family_tree_drafts
-  from anon, authenticated;
+-- Nur vorhandene Tabellen (public.media gibt es nicht in jeder Datenbank).
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['families', 'family_trees', 'media', 'family_trees_backup', 'family_tree_drafts'] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('revoke all on table public.%I from anon, authenticated', t);
+    end if;
+  end loop;
+end
+$$;
 
 -- Zähler für Login- und Registrierungsversuche (Bremse gegen Passwort-Raten).
 -- Gespeichert werden nur gehashte Schlüssel, keine Namen oder IP-Adressen.

@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { IncomingForm, type File } from 'formidable'
 import fs from 'fs'
 import { randomUUID } from 'crypto'
-import { supaAdmin } from '@/lib/supabaseServer'
+import { getSupaAdmin } from '@/lib/supabaseServer'
 import { getFamilyIdFromReq } from '@/lib/session'
 import { logError } from '@/lib/log'
 
@@ -61,11 +61,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const f of files) {
       const buffer = await fs.promises.readFile(f.filepath)
       const key = `${fid}/${randomUUID()}-${safeName(f.originalFilename)}`
-      const { error } = await supaAdmin.storage
-        .from('media')
+      const { error } = await getSupaAdmin()
+        .storage.from('media')
         .upload(key, buffer, { upsert: false, contentType: f.mimetype || undefined })
       if (error) throw error
-      urls.push(supaAdmin.storage.from('media').getPublicUrl(key).data.publicUrl)
+      urls.push(getSupaAdmin().storage.from('media').getPublicUrl(key).data.publicUrl)
     }
     return res.status(200).json({ urls })
   } catch (err) {

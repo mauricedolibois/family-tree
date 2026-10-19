@@ -2,9 +2,10 @@
 // Alle Datenbankzugriffe des Servers an einer Stelle.
 
 import { randomBytes } from 'crypto'
-import { supaAdmin } from './supabaseServer'
+import { getSupaAdmin } from './supabaseServer'
 import type { StoredTree } from '@/storage/schema'
 import { describeChange } from '@/storage/changes'
+import { logError } from './log'
 
 export type FamilyRow = { id: string; name: string; pass_hash: string; created_at: string }
 
@@ -12,7 +13,7 @@ export type FamilyRow = { id: string; name: string; pass_hash: string; created_a
 const NO_ROWS = 'PGRST116'
 
 export async function getFamilyByName(name: string): Promise<FamilyRow | null> {
-  const { data, error } = await supaAdmin
+  const { data, error } = await getSupaAdmin()
     .from('families')
     .select('id,name,pass_hash,created_at')
     .eq('name', name)
@@ -22,13 +23,13 @@ export async function getFamilyByName(name: string): Promise<FamilyRow | null> {
 }
 
 export async function getFamilyNameById(id: string): Promise<string | null> {
-  const { data, error } = await supaAdmin.from('families').select('name').eq('id', id).maybeSingle()
+  const { data, error } = await getSupaAdmin().from('families').select('name').eq('id', id).maybeSingle()
   if (error) throw error
   return data?.name ?? null
 }
 
 export async function createFamily(name: string, pass_hash: string): Promise<FamilyRow> {
-  const { data, error } = await supaAdmin
+  const { data, error } = await getSupaAdmin()
     .from('families')
     .insert({ name, pass_hash })
     .select('id,name,pass_hash,created_at')
@@ -40,7 +41,7 @@ export async function createFamily(name: string, pass_hash: string): Promise<Fam
 export type LoadedTree = { tree: StoredTree; version: string }
 
 export async function loadFamilyTree(familyId: string): Promise<LoadedTree | null> {
-  const { data, error } = await supaAdmin
+  const { data, error } = await getSupaAdmin()
     .from('family_trees')
     .select('tree_json,updated_at')
     .eq('family_id', familyId)
@@ -65,7 +66,7 @@ export async function saveFamilyTree(
   const updated_at = new Date().toISOString()
 
   if (!baseVersion) {
-    const { data, error } = await supaAdmin
+    const { data, error } = await getSupaAdmin()
       .from('family_trees')
       .insert({ family_id: familyId, tree_json: tree, updated_at })
       .select('updated_at')
@@ -75,7 +76,7 @@ export async function saveFamilyTree(
     return { status: 'saved', version: data.updated_at }
   }
 
-  const { data, error } = await supaAdmin
+  const { data, error } = await getSupaAdmin()
     .from('family_trees')
     .update({ tree_json: tree, updated_at })
     .eq('family_id', familyId)
@@ -95,10 +96,11 @@ export async function snapshotBeforeSave(familyId: string, current: StoredTree, 
   const change = describeChange(current, next)
   if (!change) return // nichts geändert, nichts zu sichern
   const note = `automatisch: vor Änderung (${change})`.slice(0, 500)
-  const { error } = await supaAdmin
+  const { error } = await getSupaAdmin()
     .from('family_trees_backup')
     .insert({ family_id: familyId, tree_json: current, note })
-  if (error) throw error
+  // Ohne Migration (Tabelle fehlt) trotzdem speichern – wie bisher, nur ohne Sicherung
+  if (error) logError('db.snapshotBeforeSave', error)
 }
 
 // ── Kalender-Abo ──────────────────────────────────────────────────────────────
@@ -108,14 +110,14 @@ const newCalendarToken = () => randomBytes(24).toString('base64url')
 /** Schlüssel für das Kalender-Abo der Familie; wird beim ersten Mal angelegt */
 export async function getCalendarToken(familyId: string): Promise<string> {
   const read = async () => {
-    const { data, error } = await supaAdmin.from('families').select('calendar_token').eq('id', familyId).single()
+    const { data, error } = await getSupaAdmin().from('families').select('calendar_token').eq('id', familyId).single()
     if (error) throw error
     return data.calendar_token as string | null
   }
   const existing = await read()
   if (existing) return existing
   // Nur setzen, wenn noch keiner da ist – bei zwei gleichzeitigen Aufrufen gewinnt der erste
-  const { error } = await supaAdmin
+  const { error } = await getSupaAdmin()
     .from('families')
     .update({ calendar_token: newCalendarToken() })
     .eq('id', familyId)
@@ -127,13 +129,17 @@ export async function getCalendarToken(familyId: string): Promise<string> {
 /** Neuer Schlüssel; der alte Abo-Link funktioniert danach nicht mehr */
 export async function renewCalendarToken(familyId: string): Promise<string> {
   const token = newCalendarToken()
-  const { error } = await supaAdmin.from('families').update({ calendar_token: token }).eq('id', familyId)
+  const { error } = await getSupaAdmin().from('families').update({ calendar_token: token }).eq('id', familyId)
   if (error) throw error
   return token
 }
 
 export async function getFamilyByCalendarToken(token: string): Promise<{ id: string; name: string } | null> {
-  const { data, error } = await supaAdmin.from('families').select('id,name').eq('calendar_token', token).maybeSingle()
+  const { data, error } = await getSupaAdmin()
+    .from('families')
+    .select('id,name')
+    .eq('calendar_token', token)
+    .maybeSingle()
   if (error) throw error
   return data
 }

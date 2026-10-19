@@ -7,7 +7,7 @@
 
 import { createHmac } from 'crypto'
 import type { IncomingMessage } from 'http'
-import { supaAdmin } from '@/lib/supabaseServer'
+import { getSupaAdmin } from '@/lib/supabaseServer'
 import { logError } from '@/lib/log'
 
 export type AttemptKind = 'login' | 'register'
@@ -26,7 +26,7 @@ export function clientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>): stri
 /** Anzahl Versuche (optional nur fehlgeschlagene) im Zeitfenster. */
 async function countAttempts(kind: AttemptKind, key: string, windowMinutes: number, onlyFailures: boolean) {
   const since = new Date(Date.now() - windowMinutes * 60_000).toISOString()
-  let query = supaAdmin
+  let query = getSupaAdmin()
     .from('auth_attempts')
     .select('id', { count: 'exact', head: true })
     .eq('kind', kind)
@@ -52,6 +52,6 @@ export async function isLimited(
 
 export async function recordAttempt(kind: AttemptKind, keys: string[], success: boolean) {
   const rows = keys.map((k) => ({ kind, key_hash: hashKey(k), success }))
-  const { error } = await supaAdmin.from('auth_attempts').insert(rows)
+  const { error } = await getSupaAdmin().from('auth_attempts').insert(rows)
   if (error) logError('rateLimit.record', error)
 }

@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+dist
+.next
+logs
+.env
+.env.*
+*.env
+prod.env
+*.log
+coverage
+.eslintcache
+.DS_Store
+.swc
+.turbo

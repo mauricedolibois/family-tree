@@ -42,6 +42,13 @@ describe('validateStoredTree', () => {
     expect(validateStoredTree(input).ok).toBe(false)
   })
 
+  it('behält Geburtsort und Geburtsname', () => {
+    const profile = { birthDate: '1950', birthPlace: 'Saarlouis', maidenName: 'Müller', media: [] }
+    const r = validateStoredTree(tree({ a: member('a', { profile }) }))
+    expect(r.ok && r.tree.members.a.profile?.birthPlace).toBe('Saarlouis')
+    expect(r.ok && r.tree.members.a.profile?.maidenName).toBe('Müller')
+  })
+
   it('entfernt Verweise auf Personen, die es nicht gibt', () => {
     const r = validateStoredTree(tree({ a: member('a', { childrenIds: ['nope'], spouseId: 'weg' }) }))
     expect(r.ok && r.tree.members.a.childrenIds).toEqual([])
