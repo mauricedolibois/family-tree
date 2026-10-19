@@ -21,6 +21,9 @@ type FamilyCtx = {
   tree: Tree
   index: TreeIndex
   familyName: string
+  treeId: string
+  /** Editors and admins may change the tree; viewers only read it */
+  canEdit: boolean
   /** Saves exactly this version and then displays it */
   commit: (next: Tree) => Promise<void>
   saving: boolean
@@ -34,7 +37,18 @@ export function useFamily(): FamilyCtx {
   return ctx
 }
 
-export function FamilyProvider({ familyName, children }: { familyName: string; children: ReactNode }) {
+export function FamilyProvider({
+  treeId,
+  familyName,
+  canEdit,
+  children,
+}: {
+  treeId: string
+  familyName: string
+  canEdit: boolean
+  children: ReactNode
+}) {
+  const url = `/api/trees/${treeId}`
   const [tree, setTree] = useState<Tree | null>(null)
   const [status, setStatus] = useState<Status>('loading')
   const [conflict, setConflict] = useState(false)
@@ -44,12 +58,12 @@ export function FamilyProvider({ familyName, children }: { familyName: string; c
   const load = useCallback(async () => {
     setStatus('loading')
     try {
-      const res = await fetch('/api/family', { cache: 'no-store' })
+      const res = await fetch(url, { cache: 'no-store' })
       if (res.status === 401) {
-        window.location.href = '/auth'
+        window.location.href = '/login'
         return
       }
-      if (!res.ok) throw new Error(`GET /api/family ${res.status}`)
+      if (!res.ok) throw new Error(`GET ${url} ${res.status}`)
       version.current = res.headers.get(TREE_VERSION_HEADER)
       setTree((await res.json()) as Tree)
       setConflict(false)
@@ -58,43 +72,46 @@ export function FamilyProvider({ familyName, children }: { familyName: string; c
       console.error('[FamilyProvider] loading failed', e)
       setStatus('error')
     }
-  }, [])
+  }, [url])
 
   useEffect(() => {
     void load()
   }, [load])
 
-  const commit = useCallback(async (next: Tree) => {
-    setSaving(true)
-    try {
-      const res = await fetch('/api/family', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(version.current ? { [TREE_VERSION_HEADER]: version.current } : {}),
-        },
-        body: JSON.stringify(next),
-      })
-      if (res.status === 409) {
-        setConflict(true)
-        throw new TreeConflictError()
+  const commit = useCallback(
+    async (next: Tree) => {
+      setSaving(true)
+      try {
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(version.current ? { [TREE_VERSION_HEADER]: version.current } : {}),
+          },
+          body: JSON.stringify(next),
+        })
+        if (res.status === 409) {
+          setConflict(true)
+          throw new TreeConflictError()
+        }
+        if (res.status === 401) {
+          window.location.href = '/login'
+          throw new Error('not signed in')
+        }
+        if (!res.ok) throw new Error(`saving failed (${res.status})`)
+        version.current = res.headers.get(TREE_VERSION_HEADER)
+        setTree(next)
+      } finally {
+        setSaving(false)
       }
-      if (res.status === 401) {
-        window.location.href = '/auth'
-        throw new Error('not signed in')
-      }
-      if (!res.ok) throw new Error(`saving failed (${res.status})`)
-      version.current = res.headers.get(TREE_VERSION_HEADER)
-      setTree(next)
-    } finally {
-      setSaving(false)
-    }
-  }, [])
+    },
+    [url],
+  )
 
   const index = useMemo(() => (tree ? buildIndex(tree) : null), [tree])
   const value = useMemo(
-    () => (tree && index ? { tree, index, familyName, commit, saving } : null),
-    [tree, index, familyName, commit, saving],
+    () => (tree && index ? { tree, index, familyName, treeId, canEdit, commit, saving } : null),
+    [tree, index, familyName, treeId, canEdit, commit, saving],
   )
 
   if (status === 'loading' && !value) return <LoadingScreen />

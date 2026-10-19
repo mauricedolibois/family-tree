@@ -1,46 +1,46 @@
 // src/lib/session.ts
 //
-// Signed session cookie instead of a raw family id.
-//
-// The family id is not a secret (it is part of every photo URL), so a cookie
-// holding just the id let anyone in who knew it. The cookie now carries the id
-// and an expiry, signed with HMAC-SHA256; it cannot be forged without the key.
+// Signed session cookie for a signed-in user: user id, session epoch and expiry,
+// signed with HMAC-SHA256 so it cannot be forged without the server's key.
+// Raising the user's epoch in the database ends every session issued before.
+// Cookies of the former shared family login are only ever cleared, never read.
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import type { IncomingMessage, ServerResponse } from 'http'
 import { parse, serialize } from 'cookie'
 
-export const SESSION_COOKIE = 'ft_session'
-/** Old unsigned cookie: only ever cleared, never read. */
-const LEGACY_COOKIE = 'fid'
+export const SESSION_COOKIE = 'ft_user'
+const LEGACY_COOKIES = ['ft_session', 'fid']
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 90 // 90 days
 
-type SessionPayload = { fid: string; exp: number }
+export type Session = { uid: string; epoch: number }
+type SessionPayload = { uid: string; ep: number; exp: number }
 
 /**
  * Signing key. Prefers SESSION_SECRET; otherwise derived from the service role
- * key so no extra environment variable is required.
+ * key so no extra environment variable is required. The context string differs
+ * from the old family sessions, so their cookies can never pass as user sessions.
  */
 function getSecret(): string {
   const explicit = process.env.SESSION_SECRET
-  if (explicit && explicit.length >= 32) return explicit
+  if (explicit && explicit.length >= 32) return createHmac('sha256', explicit).update('user-session').digest('hex')
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceKey) throw new Error('SESSION_SECRET or SUPABASE_SERVICE_ROLE_KEY is missing')
-  return createHmac('sha256', serviceKey).update('family-tree/session/v1').digest('hex')
+  return createHmac('sha256', serviceKey).update('family-tree/session/v2').digest('hex')
 }
 
 function sign(data: string, secret = getSecret()): string {
   return createHmac('sha256', secret).update(data).digest('base64url')
 }
 
-export function createSessionToken(fid: string, now = Date.now()): string {
-  const payload: SessionPayload = { fid, exp: Math.floor(now / 1000) + MAX_AGE_SECONDS }
+export function createSessionToken(session: Session, now = Date.now()): string {
+  const payload: SessionPayload = { uid: session.uid, ep: session.epoch, exp: Math.floor(now / 1000) + MAX_AGE_SECONDS }
   const data = Buffer.from(JSON.stringify(payload)).toString('base64url')
   return `${data}.${sign(data)}`
 }
 
-/** Returns the family id if the token is genuine and not expired. */
-export function verifySessionToken(token: string | undefined | null, now = Date.now()): string | null {
+/** The session if the token is genuine and not expired; the epoch is checked against the database later. */
+export function verifySessionToken(token: string | undefined | null, now = Date.now()): Session | null {
   if (!token) return null
   const dot = token.indexOf('.')
   if (dot <= 0 || dot === token.length - 1) return null
@@ -51,16 +51,17 @@ export function verifySessionToken(token: string | undefined | null, now = Date.
 
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString('utf8')) as SessionPayload
-    if (typeof payload.fid !== 'string' || !payload.fid) return null
+    if (typeof payload.uid !== 'string' || !payload.uid) return null
+    if (!Number.isInteger(payload.ep)) return null
     if (typeof payload.exp !== 'number' || payload.exp * 1000 < now) return null
-    return payload.fid
+    return { uid: payload.uid, epoch: payload.ep }
   } catch {
     return null
   }
 }
 
-/** Family id from the request (API route or getServerSideProps). */
-export function getFamilyIdFromReq(req: Pick<IncomingMessage, 'headers'>): string | null {
+/** Session from the request (API route or getServerSideProps) */
+export function sessionFromReq(req: Pick<IncomingMessage, 'headers'>): Session | null {
   const header = req.headers.cookie
   if (!header) return null
   return verifySessionToken(parse(header)[SESSION_COOKIE])
@@ -82,16 +83,15 @@ function appendSetCookie(res: ServerResponse, cookies: string[]) {
   res.setHeader('Set-Cookie', [...prev, ...cookies])
 }
 
-export function setSessionCookie(res: ServerResponse, fid: string) {
+const clearLegacy = () => LEGACY_COOKIES.map((name) => serialize(name, '', cookieOptions(0)))
+
+export function setSessionCookie(res: ServerResponse, session: Session) {
   appendSetCookie(res, [
-    serialize(SESSION_COOKIE, createSessionToken(fid), cookieOptions(MAX_AGE_SECONDS)),
-    serialize(LEGACY_COOKIE, '', cookieOptions(0)),
+    serialize(SESSION_COOKIE, createSessionToken(session), cookieOptions(MAX_AGE_SECONDS)),
+    ...clearLegacy(),
   ])
 }
 
 export function clearSessionCookie(res: ServerResponse) {
-  appendSetCookie(res, [
-    serialize(SESSION_COOKIE, '', cookieOptions(0)),
-    serialize(LEGACY_COOKIE, '', cookieOptions(0)),
-  ])
+  appendSetCookie(res, [serialize(SESSION_COOKIE, '', cookieOptions(0)), ...clearLegacy()])
 }

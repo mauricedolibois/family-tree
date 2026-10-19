@@ -1,5 +1,6 @@
 // src/lib/db.ts
-// All server-side database access in one place.
+// Server-side access to tree contents, backups and calendar tokens.
+// Accounts, memberships and invitations live in ./accounts.ts.
 
 import { randomBytes } from 'crypto'
 import { getSupaAdmin } from './supabaseServer'
@@ -7,36 +8,8 @@ import type { StoredTree } from '@/storage/schema'
 import { describeChange } from '@/storage/changes'
 import { logError } from './log'
 
-export type FamilyRow = { id: string; name: string; pass_hash: string; created_at: string }
-
 /** PostgREST code for "no rows" with .single() */
 const NO_ROWS = 'PGRST116'
-
-export async function getFamilyByName(name: string): Promise<FamilyRow | null> {
-  const { data, error } = await getSupaAdmin()
-    .from('families')
-    .select('id,name,pass_hash,created_at')
-    .eq('name', name)
-    .maybeSingle()
-  if (error) throw error
-  return data
-}
-
-export async function getFamilyNameById(id: string): Promise<string | null> {
-  const { data, error } = await getSupaAdmin().from('families').select('name').eq('id', id).maybeSingle()
-  if (error) throw error
-  return data?.name ?? null
-}
-
-export async function createFamily(name: string, pass_hash: string): Promise<FamilyRow> {
-  const { data, error } = await getSupaAdmin()
-    .from('families')
-    .insert({ name, pass_hash })
-    .select('id,name,pass_hash,created_at')
-    .single()
-  if (error) throw error
-  return data
-}
 
 export type LoadedTree = { tree: StoredTree; version: string }
 

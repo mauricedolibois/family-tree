@@ -33,7 +33,7 @@ export function CalendarSubscribe({
   /** Offer "create new link" */
   allowRenew?: boolean
 }) {
-  const { tree, index } = useFamily()
+  const { tree, index, treeId, canEdit } = useFamily()
   const { lineScope } = useView()
   const { notify } = useToast()
   const { t, locale } = useI18n()
@@ -45,11 +45,11 @@ export function CalendarSubscribe({
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    fetch('/api/kalender/link', { cache: 'no-store' })
+    fetch(`/api/trees/${treeId}/calendar`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((d: { path: string }) => setPath(d.path))
       .catch(() => setFailed(true))
-  }, [])
+  }, [treeId])
 
   // Ancestors and descendants as set under "Meine Linie"; collateral lines chosen here
   const selection = useMemo<CalendarSelection | null>(
@@ -64,7 +64,7 @@ export function CalendarSubscribe({
 
   const renew = async () => {
     if (!window.confirm(t.subscribe.confirmRenew)) return
-    const r = await fetch('/api/kalender/link', { method: 'POST' })
+    const r = await fetch(`/api/trees/${treeId}/calendar`, { method: 'POST' })
     if (!r.ok) return notify({ message: t.subscribe.renewFailed })
     setPath(((await r.json()) as { path: string }).path)
     notify({ message: t.subscribe.renewed })
@@ -140,7 +140,7 @@ export function CalendarSubscribe({
 
       <p className="text-[13px] leading-snug text-ink-faint">
         {t.subscribe.privacy}
-        {allowRenew && path && (
+        {allowRenew && canEdit && path && (
           <>
             {' '}
             <button

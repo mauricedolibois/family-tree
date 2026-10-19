@@ -1,55 +1,84 @@
+// Start page: opens the only or last used tree, otherwise lets the user pick one.
+// With ?pick=1 the list is always shown (used by the tree switcher).
+
+import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
-import Head from 'next/head'
-import { getFamilyIdFromReq } from '@/lib/session'
-import { getFamilyNameById } from '@/lib/db'
+import { parse } from 'cookie'
+import { ChevronRight, LogOut, Settings, Shield, Trees } from 'lucide-react'
+import { treesOf, type TreeSummary } from '@/lib/accounts'
+import { LAST_TREE_COOKIE, requirePageUser } from '@/lib/pageAuth'
+import { AuthLayout } from '@/components/auth/AuthLayout'
 import { localeFromRequest } from '@/i18n/server'
 import type { Locale } from '@/i18n/locales'
 import { useI18n } from '@/i18n/I18nProvider'
-import { MESSAGES } from '@/i18n/messages'
-import { FamilyProvider } from '@/components/app/FamilyProvider'
-import { ViewProvider } from '@/components/app/ViewProvider'
-import { ToastProvider } from '@/components/app/Toast'
-import { TopBar } from '@/components/app/TopBar'
-import { TreeCanvas } from '@/components/tree/TreeCanvas'
-import { PersonPanel } from '@/components/person/PersonPanel'
-import { ExportSheet } from '@/components/print/ExportSheet'
-import { Tour } from '@/components/intro/Tour'
 
-type Props = { familyName: string; locale: Locale }
+type Props = { trees: TreeSummary[]; name: string; isAdmin: boolean; locale: Locale }
 
-export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => {
-  const fid = getFamilyIdFromReq(req)
-  const locale = localeFromRequest(req)
-  // A failed lookup must not redirect: /auth would send a signed-in visitor straight back
-  const familyName = fid ? await getFamilyNameById(fid).catch(() => MESSAGES[locale].app.familyFallback) : null
-  if (!fid || !familyName) {
-    return { redirect: { destination: '/auth', permanent: false } }
+export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
+  const auth = await requirePageUser(ctx)
+  if (auth.redirect) return { redirect: auth.redirect }
+  const { user } = auth
+  const trees = await treesOf(user)
+  if (!ctx.query.pick) {
+    const last = ctx.req.headers.cookie ? parse(ctx.req.headers.cookie)[LAST_TREE_COOKIE] : undefined
+    const open = trees.length === 1 ? trees[0] : trees.find((t) => t.id === last)
+    if (open) return { redirect: { destination: `/tree/${open.id}`, permanent: false } }
   }
-  return { props: { familyName, locale } }
+  return { props: { trees, name: user.name, isAdmin: user.is_admin, locale: localeFromRequest(ctx.req) } }
 }
 
-export default function Home({ familyName }: Props) {
+export default function StartPage({ trees, name, isAdmin }: Props) {
   const { t } = useI18n()
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    window.location.href = '/login'
+  }
+  const link =
+    'flex items-center gap-2 text-[15px] text-ink-muted underline decoration-gilt/60 underline-offset-4 hover:text-ink'
+
   return (
-    <>
-      <Head>
-        <title>{t.app.familyTitle(familyName)}</title>
-      </Head>
-      <FamilyProvider familyName={familyName}>
-        <ViewProvider>
-          <ToastProvider>
-            <div className="flex h-dvh flex-col overflow-hidden print:hidden">
-              <TopBar />
-              <main className="relative min-h-0 flex-1">
-                <TreeCanvas />
-                <PersonPanel />
-              </main>
-            </div>
-            <ExportSheet />
-            <Tour />
-          </ToastProvider>
-        </ViewProvider>
-      </FamilyProvider>
-    </>
+    <AuthLayout title={t.app.title} intro={t.trees.hello(name)}>
+      <div className="flex flex-col gap-4">
+        {trees.length === 0 ? (
+          <p className="font-serif text-[16px] leading-snug text-ink-muted">
+            {isAdmin ? t.trees.noneAdmin : t.trees.none}
+          </p>
+        ) : (
+          <>
+            <h2 className="field-label">{t.trees.choose}</h2>
+            <ul className="flex flex-col gap-2">
+              {trees.map((tree) => (
+                <li key={tree.id}>
+                  <Link
+                    href={`/tree/${tree.id}`}
+                    className="flex items-center gap-3 rounded-control border border-card-rule bg-card/80 px-3 py-2.5 hover:border-gilt hover:bg-card"
+                  >
+                    <Trees className="h-5 w-5 text-gilt-deep" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-serif text-[17px] font-semibold text-ink">{tree.name}</span>
+                      <span className="block text-[13px] text-ink-muted">{t.roles[tree.role]}</span>
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-ink-faint" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 border-t border-card-rule pt-3">
+          {isAdmin && (
+            <Link href="/admin" className={link}>
+              <Shield className="h-4 w-4" aria-hidden /> {t.admin.title}
+            </Link>
+          )}
+          <Link href="/account" className={link}>
+            <Settings className="h-4 w-4" aria-hidden /> {t.account.title}
+          </Link>
+          <button type="button" onClick={logout} className={link}>
+            <LogOut className="h-4 w-4" aria-hidden /> {t.topBar.logout}
+          </button>
+        </div>
+      </div>
+    </AuthLayout>
   )
 }

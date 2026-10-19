@@ -22,7 +22,7 @@ import { useI18n } from '@/i18n/I18nProvider'
 type Props = { person: Person; onEdit: () => void; onAdd: (r: Relation) => void }
 
 export function PersonDetails({ person, onEdit, onAdd }: Props) {
-  const { tree, index, commit } = useFamily()
+  const { tree, index, commit, canEdit } = useFamily()
   const { meId, setMe, focusOn, showLine, lineId, select, showRelation, relation } = useView()
   const { notify } = useToast()
   const [deleting, setDeleting] = useState(false)
@@ -89,9 +89,11 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
       <Flourish className="-my-2" />
 
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={onEdit} data-tour="edit">
-          {t.person.edit}
-        </Button>
+        {canEdit && (
+          <Button variant="primary" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={onEdit} data-tour="edit">
+            {t.person.edit}
+          </Button>
+        )}
         {lineId !== person.id && (
           <Button size="sm" icon={<GitBranch className="h-4 w-4" />} onClick={() => showLine(person.id)}>
             {t.person.onlyThisLine}
@@ -190,25 +192,25 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
           title={t.person.parents}
           ids={parents}
           onOpen={focusOn}
-          add={parents.length < 2 ? { label: t.person.addParent, run: () => onAdd('PARENT') } : undefined}
+          add={canEdit && parents.length < 2 ? { label: t.person.addParent, run: () => onAdd('PARENT') } : undefined}
         />
         <Relatives
           title={t.person.spouse}
           ids={spouse ? [spouse] : []}
           onOpen={focusOn}
-          add={!spouse ? { label: t.person.addSpouse, run: () => onAdd('SPOUSE') } : undefined}
+          add={canEdit && !spouse ? { label: t.person.addSpouse, run: () => onAdd('SPOUSE') } : undefined}
         />
         <Relatives
           title={t.person.children}
           ids={kids}
           onOpen={focusOn}
           tag={(id) => (isAdopted(id) ? t.person.adopted(index.byId.get(id)?.gender === 'FEMALE') : null)}
-          add={{ label: t.person.addChild, run: () => onAdd('CHILD'), tour: 'add-child' }}
+          add={canEdit ? { label: t.person.addChild, run: () => onAdd('CHILD'), tour: 'add-child' } : undefined}
         />
         {siblings.length > 0 && <Relatives title={t.person.siblings} ids={siblings} onOpen={focusOn} />}
       </section>
 
-      {canDelete(tree, person.id) && (
+      {canEdit && canDelete(tree, person.id) && (
         <div className="border-t border-card-rule pt-4">
           <Button variant="danger" size="sm" icon={<Trash2 className="h-4 w-4" />} onClick={remove} disabled={deleting}>
             {t.person.remove}
@@ -249,6 +251,8 @@ function Relatives({
   tag?: (id: string) => string | null
 }) {
   const { index } = useFamily()
+  // Nothing to show and nothing to add (e.g. for viewers): leave the heading out too
+  if (ids.length === 0 && !add) return null
   return (
     <div>
       <p className="mb-1.5 text-sm text-ink-muted">{title}</p>

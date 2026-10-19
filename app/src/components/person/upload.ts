@@ -34,11 +34,11 @@ async function shrink(file: File): Promise<File> {
   }
 }
 
-export async function uploadFiles(files: File[]): Promise<StoredMedia[]> {
+export async function uploadFiles(treeId: string, files: File[]): Promise<StoredMedia[]> {
   const prepared = await Promise.all(files.map(shrink))
   const form = new FormData()
   for (const f of prepared) form.append('file', f)
-  const res = await fetch('/api/media', { method: 'POST', body: form })
+  const res = await fetch(`/api/trees/${treeId}/media`, { method: 'POST', body: form })
   if (res.status === 413) throw new UploadError('tooLarge')
   if (res.status === 400) throw new UploadError('unsupported')
   if (!res.ok) throw new UploadError('failed')

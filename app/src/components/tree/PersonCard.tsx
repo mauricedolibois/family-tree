@@ -56,7 +56,11 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, o
         <span className="mt-px flex items-center gap-1.5 font-serif text-[13.5px] text-ink-faint">
           {country && <CountryFlag country={country} />}
           {years && <span>{years}</span>}
-          {isMe && <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">{t.person.youBadge}</span>}
+          {isMe && (
+            <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">
+              {t.person.youBadge}
+            </span>
+          )}
         </span>
       </span>
     </button>
