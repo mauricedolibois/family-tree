@@ -59,7 +59,11 @@ npm ci
 npm run dev        # http://localhost:3000
 npm test           # Tests (Verwandtschaft, Layout, Sitzung, Prüfung der Daten)
 npm run typecheck
+npm run lint       # ESLint 9 (eslint.config.mjs)
+npm run format     # Prettier
 ```
+
+Dieselben Prüfungen laufen in der CI bei jedem Merge Request und vor jedem Deploy (Job `test`).
 
 Benötigte Umgebungsvariablen (lokal in `app/.env.local`, auf dem Server in `prod.env`, Vorlage: `example.env`):
 
@@ -68,14 +72,23 @@ SUPABASE_URL=…
 SUPABASE_SERVICE_ROLE_KEY=…
 # optional, sonst aus dem Service-Role-Key abgeleitet:
 SESSION_SECRET=…
+# optional: Anlegen neuer Stammbäume abschalten (Standard: erlaubt)
+ALLOW_REGISTRATION=false
+# optional: Anzahl eigener Reverse-Proxys vor der App (Standard 1 = ein nginx; 0 = ohne Proxy)
+TRUSTED_PROXIES=1
 ```
 
 ## Deployment
 
-Unverändert über GitLab CI (`.gitlab-ci.yml`):
+Über GitLab CI (`.gitlab-ci.yml`):
 
-1. Push auf `main` → Kaniko baut `app/Dockerfile` und schiebt das Image nach `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
-2. Danach kopiert der Job `deploy` `docker-compose.yml` und `deploy_tools/deploy_prod.sh` auf den Server und startet den Container neu (`prod.env` liegt dort in `~/family-tree/`).
+1. Merge Request oder Push auf `main` → Job `test` (Typecheck, Lint, Tests) und Job `audit` (`npm audit`, nur Warnung).
+2. Push auf `main`, wenn `test` grün ist → Kaniko baut `app/Dockerfile` und schiebt das Image nach `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
+3. Danach kopiert der Job `deploy` `docker-compose.yml` und `deploy_tools/deploy_prod.sh` auf den Server und startet den Container neu (`prod.env` liegt dort in `~/family-tree/`).
+
+Das Image enthält nur den eigenständigen Next-Server (`output: 'standalone'`), läuft als Benutzer `node` und meldet über `/api/health` seinen Zustand an Docker (`docker ps` zeigt `healthy`).
+
+Optional in GitLab unter *Build → Pipeline schedules* einen wöchentlichen Zeitplan für `main` anlegen: Geplante Pipelines führen nur `audit` aus und warnen bei neuen kritischen Sicherheitslücken – kein Build, kein Deploy.
 
 Supabase läuft selbst gehostet auf demselben Host (`supabase-project/`).
 
@@ -91,6 +104,8 @@ Die Migrationen lassen sich gefahrlos mehrfach ausführen.
 
 - Optional `SESSION_SECRET` (mind. 32 Zeichen) in `prod.env` ergänzen. Ohne wird er aus dem Service-Role-Key abgeleitet. Nach dem Update müssen sich alle einmal neu anmelden.
 - Die App muss über HTTPS erreichbar sein, weil das Sitzungs-Cookie in Produktion als `Secure` gesetzt wird.
+- nginx muss die Besucher-IP in `X-Forwarded-For` anhängen (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, in `proxy_params` schon enthalten). Die App wertet nur den letzten Eintrag aus, den Anfang kann der Besucher fälschen.
+- Steht HTTP-Auth vor der App, braucht `location /api/kalender/` ein `auth_basic off;` – Kalender-Apps können sich nicht anmelden, der Link ist durch seinen geheimen Schlüssel geschützt.
 
 **Tägliche Sicherung** (braucht die Migrationen): per Cron auf dem Server im App-Container, mit `prod.env` und Netzwerk der laufenden App, z. B. `crontab -e`:
 
