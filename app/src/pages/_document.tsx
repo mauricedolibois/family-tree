@@ -1,4 +1,5 @@
 import { Html, Head, Main, NextScript } from 'next/document'
+import { THEME_SCRIPT } from '@/lib/themeScript'
 
 export default function Document() {
   return (
@@ -10,11 +11,7 @@ export default function Document() {
         <meta name="description" content="Unser Stammbaum" />
         <link rel="icon" href="/favicon.ico" />
         {/* Gewähltes Licht vor dem ersten Zeichnen setzen (kein Aufblitzen) */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem('stammbaum:licht')==='night')document.documentElement.dataset.theme='night'}catch(e){}`,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </Head>
       <body>
         <Main />

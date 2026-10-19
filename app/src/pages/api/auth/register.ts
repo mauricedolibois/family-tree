@@ -4,6 +4,7 @@ import { createFamily, getFamilyByName } from '@/lib/db'
 import { setSessionCookie } from '@/lib/session'
 import { clientIp, isLimited, recordAttempt } from '@/lib/rateLimit'
 import { logError } from '@/lib/log'
+import { registrationOpen } from '@/lib/features'
 
 const MIN_PASSWORD_LENGTH = 8
 const MAX_NAME_LENGTH = 60
@@ -14,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Allow', 'POST')
     return res.status(405).end()
   }
+  if (!registrationOpen()) return res.status(403).json({ error: 'registration closed' })
 
   const { familyName, password } = (req.body || {}) as { familyName?: unknown; password?: unknown }
   if (typeof familyName !== 'string' || typeof password !== 'string') {
