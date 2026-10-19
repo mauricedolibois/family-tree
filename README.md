@@ -82,7 +82,7 @@ TRUSTED_PROXIES=1
 
 Über GitLab CI (`.gitlab-ci.yml`):
 
-1. Merge Request oder Push auf `main` → Job `test` (Typecheck, Lint, Tests) und Job `audit` (`npm audit`, nur Warnung).
+1. Merge Request oder Push auf `main` → Job `test` (Typecheck, Lint, Formatierung, Tests) und Job `audit` (`npm audit`, nur Warnung).
 2. Push auf `main`, wenn `test` grün ist → Kaniko baut `app/Dockerfile` und schiebt das Image nach `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
 3. Danach kopiert der Job `deploy` `docker-compose.yml` und `deploy_tools/deploy_prod.sh` auf den Server und startet den Container neu (`prod.env` liegt dort in `~/family-tree/`).
 

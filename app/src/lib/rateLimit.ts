@@ -18,8 +18,11 @@ function hashKey(value: string): string {
 }
 
 /** Anzahl eigener Reverse-Proxys vor der App (TRUSTED_PROXIES, Standard 1 = ein nginx) */
-function trustedProxies(): number {
-  const n = Number(process.env.TRUSTED_PROXIES ?? 1)
+export function trustedProxies(raw = process.env.TRUSTED_PROXIES): number {
+  // Leer oder ungültig → Standard. Sonst würde aus "" die 0, und alle Besucher
+  // hätten die Adresse des Proxys – eine einzige gemeinsame Login-Bremse für alle.
+  if (!raw?.trim()) return 1
+  const n = Number(raw)
   return Number.isInteger(n) && n >= 0 ? n : 1
 }
 

@@ -1,7 +1,8 @@
 /**
  * @jest-environment node
  */
-import { clientIp } from '@/lib/rateLimit'
+import { clientIp, trustedProxies } from '@/lib/rateLimit'
+import { registrationOpen } from '@/lib/features'
 
 type Req = Parameters<typeof clientIp>[0]
 
@@ -29,5 +30,22 @@ describe('clientIp', () => {
   it('ohne Header oder ohne Proxy gilt die Verbindungsadresse', () => {
     expect(clientIp(req(), 1)).toBe('10.0.0.2')
     expect(clientIp(req('1.2.3.4'), 0)).toBe('10.0.0.2')
+  })
+})
+
+describe('Schalter aus prod.env', () => {
+  it('TRUSTED_PROXIES: leer oder ungültig heißt Standard 1, nicht 0', () => {
+    expect(trustedProxies(undefined)).toBe(1)
+    expect(trustedProxies('')).toBe(1)
+    expect(trustedProxies('  ')).toBe(1)
+    expect(trustedProxies('abc')).toBe(1)
+    expect(trustedProxies('-1')).toBe(1)
+    expect(trustedProxies('0')).toBe(0)
+    expect(trustedProxies('2')).toBe(2)
+  })
+
+  it('ALLOW_REGISTRATION: verschiedene Schreibweisen für „aus“', () => {
+    for (const off of ['false', 'FALSE', ' 0 ', 'no', 'off', 'Nein']) expect(registrationOpen(off)).toBe(false)
+    for (const on of [undefined, '', 'true', '1']) expect(registrationOpen(on)).toBe(true)
   })
 })

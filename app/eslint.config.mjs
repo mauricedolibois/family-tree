@@ -5,7 +5,7 @@ import { FlatCompat } from '@eslint/eslintrc'
 const compat = new FlatCompat({ baseDirectory: import.meta.dirname })
 
 const config = [
-  { ignores: ['.next/**', 'node_modules/**', 'public/**', 'coverage/**', 'next-env.d.ts'] },
+  { ignores: ['.next/**', 'node_modules/**', 'public/**', 'coverage/**', '.npm/**', 'next-env.d.ts'] },
   ...compat.extends('next/core-web-vitals', 'prettier'),
 ]
 
