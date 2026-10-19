@@ -7,15 +7,16 @@ import { ChevronRight, FileText, GitBranch, Pencil, Plus, Route, Trash2, UserRou
 import { childrenOf, parentsOf, siblingsOf, spouseOf, type Person } from '@/family/model'
 import { ageOf, formatDate, isDeceased, lifeYears } from '@/family/format'
 import { describeKinship, kinshipLabel } from '@/family/kinship'
-import { canDelete, deletePerson, type Relation } from '@/family/edit'
+import { canDelete, deletePerson, EditError, type Relation } from '@/family/edit'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { useToast } from '@/components/app/Toast'
 import { Portrait } from '@/components/ui/Portrait'
-import { CountryFlag } from '@/components/ui/CountryFlag'
+import { CountryFlag, countryName } from '@/components/ui/CountryFlag'
 import { Button } from '@/components/ui/Button'
 import { Flourish } from '@/components/ui/Flourish'
 import { MediaImage } from '@/components/ui/MediaImage'
+import { useLang } from '@/i18n/lang'
 
 type Props = { person: Person; onEdit: () => void; onAdd: (r: Relation) => void }
 
@@ -23,6 +24,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
   const { tree, index, commit } = useFamily()
   const { meId, setMe, focusOn, showLine, lineId, select, showRelation, relation } = useView()
   const { notify } = useToast()
+  const { t, lang } = useLang()
   const [deleting, setDeleting] = useState(false)
 
   const kin = meId ? describeKinship(index, meId, person.id) : null
@@ -34,7 +36,8 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
 
   const p = person.profile ?? {}
   const age = ageOf(person)
-  const ageText = age ? `${age.approx ? 'etwa ' : ''}${age.years} Jahre` : null
+  const about = age?.approx ? t('etwa ', 'about ') : ''
+  const ageText = age ? t(`${about}${age.years} Jahre`, `${about}${age.years} years`) : null
   const media = p.media ?? []
 
   /** Beziehungsansicht: von dir zu dieser Person, sonst mit ihr beginnen */
@@ -44,16 +47,28 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
   }
 
   const remove = async () => {
-    if (!window.confirm(`${person.name} aus dem Stammbaum entfernen? Der Stand davor wird automatisch gesichert.`))
-      return
+    const ok = window.confirm(
+      t(
+        `${person.name} aus dem Stammbaum entfernen? Der Stand davor wird automatisch gesichert.`,
+        `Remove ${person.name} from the family tree? The previous version is backed up automatically.`,
+      ),
+    )
+    if (!ok) return
     setDeleting(true)
     try {
       await commit(deletePerson(tree, person.id))
       select(null)
-      notify({ message: `${person.name} wurde entfernt.` })
+      notify({ message: t(`${person.name} wurde entfernt.`, `${person.name} was removed.`) })
     } catch (e) {
       if (!(e instanceof TreeConflictError))
-        notify({ message: e instanceof Error ? e.message : 'Löschen fehlgeschlagen.' })
+        notify({
+          message:
+            e instanceof EditError
+              ? t(e.message, e.en)
+              : e instanceof Error
+              ? e.message
+              : t('Löschen fehlgeschlagen.', 'Removing failed.'),
+        })
     } finally {
       setDeleting(false)
     }
@@ -68,7 +83,9 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-[1.75rem] leading-[1.1] text-ink">{person.name}</h2>
-          {lifeYears(person) && <p className="mt-0.5 font-serif text-[18px] text-ink-muted">{lifeYears(person)}</p>}
+          {lifeYears(person, lang) && (
+            <p className="mt-0.5 font-serif text-[18px] text-ink-muted">{lifeYears(person, lang)}</p>
+          )}
           {kin && (
             <p
               className={clsx(
@@ -76,10 +93,12 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
                 kin.byMarriage ? 'text-ink-muted' : 'text-gilt-deep',
               )}
             >
-              {kinshipLabel(kin)}
+              {kinshipLabel(kin, lang)}
             </p>
           )}
-          {meId === person.id && <p className="mt-1 font-serif text-[17px] italic text-gilt-deep">Das bist du</p>}
+          {meId === person.id && (
+            <p className="mt-1 font-serif text-[17px] italic text-gilt-deep">{t('Das bist du', 'This is you')}</p>
+          )}
         </div>
       </div>
 
@@ -87,68 +106,71 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
 
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" size="sm" icon={<Pencil className="h-4 w-4" />} onClick={onEdit} data-tour="edit">
-          Bearbeiten
+          {t('Bearbeiten', 'Edit')}
         </Button>
         {lineId !== person.id && (
           <Button size="sm" icon={<GitBranch className="h-4 w-4" />} onClick={() => showLine(person.id)}>
-            Nur diese Linie
+            {t('Nur diese Linie', 'Only this line')}
           </Button>
         )}
         {(!relation || (relation.from !== person.id && relation.to !== person.id)) && (
           <Button size="sm" icon={<Route className="h-4 w-4" />} onClick={showRelationTo}>
-            Beziehung zeigen
+            {t('Beziehung zeigen', 'Show relationship')}
           </Button>
         )}
         {meId !== person.id && (
           <Button size="sm" icon={<UserRound className="h-4 w-4" />} onClick={() => setMe(person.id)}>
-            Das bin ich
+            {t('Das bin ich', 'That’s me')}
           </Button>
         )}
       </div>
 
       {/* Lebensdaten */}
       <dl className="grid grid-cols-[auto,1fr] gap-x-5 gap-y-2 text-[15px]">
-        <Fact label="Geboren" value={formatDate(p.birthDate)} />
+        <Fact label={t('Geboren', 'Born')} value={formatDate(p.birthDate, lang)} />
         <Fact
-          label="Gestorben"
+          label={t('Gestorben', 'Died')}
           value={
             !isDeceased(person)
               ? ''
               : p.deathDate
-              ? [formatDate(p.deathDate), age && `mit ${age.approx ? 'etwa ' : ''}${age.years} Jahren`]
+              ? [
+                  formatDate(p.deathDate, lang),
+                  age && t(`mit ${about}${age.years} Jahren`, `aged ${about}${age.years}`),
+                ]
                   .filter(Boolean)
                   .join(', ')
-              : 'ja, Datum unbekannt'
+              : t('ja, Datum unbekannt', 'yes, date unknown')
           }
         />
-        {!isDeceased(person) && ageText && <Fact label="Alter" value={ageText} />}
-        <Fact label="Wohnort" value={p.city ?? ''} />
+        {!isDeceased(person) && ageText && <Fact label={t('Alter', 'Age')} value={ageText} />}
+        <Fact label={t('Wohnort', 'Lives in')} value={p.city ?? ''} />
         <Fact
-          label="Land"
+          label={t('Land', 'Country')}
           value={
             p.country ? (
               <span className="inline-flex items-center gap-2">
                 <CountryFlag country={p.country} />
-                {p.country}
+                {countryName(p.country, lang)}
               </span>
             ) : (
               ''
             )
           }
         />
-        <Fact label="Beruf" value={p.job ?? ''} />
+        <Fact label={t('Beruf', 'Occupation')} value={p.job ?? ''} />
       </dl>
 
       {p.comments && (
         <section>
-          <h3 className="ornament-heading mb-3">Notizen</h3>
+          <h3 className="ornament-heading mb-3">{t('Notizen', 'Notes')}</h3>
           <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{p.comments}</p>
         </section>
       )}
 
       {media.length > 0 && (
         <section>
-          <h3 className="ornament-heading mb-3">Fotos und Dokumente</h3>
+          <h3 className="ornament-heading mb-3">{t('Fotos und Dokumente', 'Photos and documents')}</h3>
           <ul className="grid grid-cols-3 gap-2">
             {media.map((m) => (
               <li key={m.id}>
@@ -164,7 +186,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
                   ) : (
                     <span className="flex h-full flex-col items-center justify-center gap-1 p-2 text-center text-xs text-ink-muted">
                       <FileText className="h-6 w-6" />
-                      <span className="line-clamp-2 break-all">{m.title ?? 'Datei'}</span>
+                      <span className="line-clamp-2 break-all">{m.title ?? t('Datei', 'File')}</span>
                     </span>
                   )}
                 </a>
@@ -176,33 +198,37 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
 
       {/* Familie */}
       <section className="flex flex-col gap-4">
-        <h3 className="ornament-heading">Familie</h3>
+        <h3 className="ornament-heading">{t('Familie', 'Family')}</h3>
         <Relatives
-          title="Eltern"
+          title={t('Eltern', 'Parents')}
           ids={parents}
           onOpen={focusOn}
-          add={parents.length < 2 ? { label: 'Elternteil hinzufügen', run: () => onAdd('PARENT') } : undefined}
+          add={
+            parents.length < 2
+              ? { label: t('Elternteil hinzufügen', 'Add a parent'), run: () => onAdd('PARENT') }
+              : undefined
+          }
         />
         <Relatives
-          title="Ehepartner"
+          title={t('Ehepartner', 'Spouse')}
           ids={spouse ? [spouse] : []}
           onOpen={focusOn}
-          add={!spouse ? { label: 'Ehepartner hinzufügen', run: () => onAdd('SPOUSE') } : undefined}
+          add={!spouse ? { label: t('Ehepartner hinzufügen', 'Add a spouse'), run: () => onAdd('SPOUSE') } : undefined}
         />
         <Relatives
-          title="Kinder"
+          title={t('Kinder', 'Children')}
           ids={kids}
           onOpen={focusOn}
-          tag={(id) => (isAdopted(id) ? 'adoptiert' : null)}
-          add={{ label: 'Kind hinzufügen', run: () => onAdd('CHILD'), tour: 'add-child' }}
+          tag={(id) => (isAdopted(id) ? t('adoptiert', 'adopted') : null)}
+          add={{ label: t('Kind hinzufügen', 'Add a child'), run: () => onAdd('CHILD'), tour: 'add-child' }}
         />
-        {siblings.length > 0 && <Relatives title="Geschwister" ids={siblings} onOpen={focusOn} />}
+        {siblings.length > 0 && <Relatives title={t('Geschwister', 'Siblings')} ids={siblings} onOpen={focusOn} />}
       </section>
 
       {canDelete(tree, person.id) && (
         <div className="border-t border-card-rule pt-4">
           <Button variant="danger" size="sm" icon={<Trash2 className="h-4 w-4" />} onClick={remove} disabled={deleting}>
-            Aus dem Stammbaum entfernen
+            {t('Aus dem Stammbaum entfernen', 'Remove from the family tree')}
           </Button>
         </div>
       )}
@@ -240,6 +266,7 @@ function Relatives({
   tag?: (id: string) => string | null
 }) {
   const { index } = useFamily()
+  const { lang } = useLang()
   return (
     <div>
       <p className="mb-1.5 text-sm text-ink-muted">{title}</p>
@@ -247,7 +274,7 @@ function Relatives({
         {ids.map((id) => {
           const p = index.byId.get(id)
           if (!p) return null
-          const t = tag?.(id)
+          const label = tag?.(id)
           return (
             <li key={id}>
               <button
@@ -259,7 +286,7 @@ function Relatives({
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-serif text-base font-semibold text-ink">{p.name}</span>
                   <span className="block font-serif text-[14px] text-ink-muted">
-                    {[lifeYears(p), t].filter(Boolean).join(', ')}
+                    {[lifeYears(p, lang), label].filter(Boolean).join(', ')}
                   </span>
                 </span>
                 <ChevronRight className="h-4 w-4 text-ink-faint" />

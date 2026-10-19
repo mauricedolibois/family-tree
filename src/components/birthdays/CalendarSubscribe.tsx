@@ -16,7 +16,8 @@ import { useFamily } from '@/components/app/FamilyProvider'
 import { useView } from '@/components/app/ViewProvider'
 import { useToast } from '@/components/app/Toast'
 import { Segmented } from '@/components/ui/Choice'
-import { SIDE_OPTIONS } from '@/components/tree/LineScopeCard'
+import { sideOptions } from '@/components/tree/LineScopeCard'
+import { useLang } from '@/i18n/lang'
 
 type Whom = 'line' | 'all'
 
@@ -35,6 +36,7 @@ export function CalendarSubscribe({
   const { tree, index } = useFamily()
   const { lineScope } = useView()
   const { notify } = useToast()
+  const { t, lang } = useLang()
   const person = personId ? index.byId.get(personId) : undefined
 
   const [whom, setWhom] = useState<Whom>(person ? 'line' : 'all')
@@ -56,20 +58,31 @@ export function CalendarSubscribe({
   )
   const count = useMemo(() => upcomingBirthdays(calendarSubset(tree, selection).tree).length, [tree, selection])
   const scopeText = useMemo(
-    () => (selection ? describeLineScope(selection.scope, lineDepth(index, selection.personId)) : null),
-    [selection, index],
+    () => (selection ? describeLineScope(selection.scope, lineDepth(index, selection.personId), lang) : null),
+    [selection, index, lang],
   )
 
   const renew = async () => {
-    if (!window.confirm('Neuen Link erzeugen? Wer den alten abonniert hat, bekommt danach keine Geburtstage mehr.'))
-      return
+    const ok = window.confirm(
+      t(
+        'Neuen Link erzeugen? Wer den alten abonniert hat, bekommt danach keine Geburtstage mehr.',
+        'Create a new link? Anyone subscribed to the old one will stop getting birthdays.',
+      ),
+    )
+    if (!ok) return
     const r = await fetch('/api/kalender/link', { method: 'POST' })
-    if (!r.ok) return notify({ message: 'Der neue Link konnte nicht erzeugt werden.' })
+    if (!r.ok)
+      return notify({ message: t('Der neue Link konnte nicht erzeugt werden.', 'The new link could not be created.') })
     setPath(((await r.json()) as { path: string }).path)
-    notify({ message: 'Neuer Link erzeugt. Der alte funktioniert nicht mehr.' })
+    notify({
+      message: t(
+        'Neuer Link erzeugt. Der alte funktioniert nicht mehr.',
+        'New link created. The old one no longer works.',
+      ),
+    })
   }
 
-  const href = path ? `${path}${calendarQuery(selection)}` : null
+  const href = path ? `${path}${calendarQuery(selection, lang)}` : null
   const host = typeof window !== 'undefined' ? window.location.host : ''
   const https = `https://${host}${href ?? ''}`
   const webcal = `webcal://${host}${href ?? ''}`
@@ -78,9 +91,9 @@ export function CalendarSubscribe({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(https)
-      notify({ message: 'Link kopiert.' })
+      notify({ message: t('Link kopiert.', 'Link copied.') })
     } catch {
-      window.prompt('Link zum Kopieren:', https)
+      window.prompt(t('Link zum Kopieren:', 'Link to copy:'), https)
     }
   }
 
@@ -92,39 +105,45 @@ export function CalendarSubscribe({
     <div className="flex flex-col gap-2.5 text-left">
       {intro && (
         <p className="font-serif text-[15px] leading-snug text-ink">
-          Die Geburtstage in deinem Kalender, mit Erinnerung am Morgen. Neue Einträge kommen von selbst dazu.
+          {t(
+            'Die Geburtstage in deinem Kalender, mit Erinnerung am Morgen. Neue Einträge kommen von selbst dazu.',
+            'Birthdays in your calendar, with a reminder in the morning. New entries appear automatically.',
+          )}
         </p>
       )}
 
       {person && (
         <Segmented<Whom>
           dense
-          label="Welche Geburtstage?"
+          label={t('Welche Geburtstage?', 'Which birthdays?')}
           value={whom}
           onChange={setWhom}
           options={[
-            { value: 'line', label: 'Meine Linie' },
-            { value: 'all', label: 'Ganze Familie' },
+            { value: 'line', label: t('Meine Linie', 'My line') },
+            { value: 'all', label: t('Ganze Familie', 'Whole family') },
           ]}
         />
       )}
       {selection && (
         <Segmented
           dense
-          label="Seitenlinien"
+          label={t('Seitenlinien', 'Side branches')}
           value={`${side}`}
-          options={SIDE_OPTIONS}
+          options={sideOptions(t)}
           onChange={(v) => setSide(Number(v) as LineScope['side'])}
         />
       )}
       <p className="text-[13px] leading-snug text-ink-muted">
-        {scopeText ? `${scopeText} – ` : 'Aus der ganzen Familie: '}
-        <span className="tabular-nums">{count === 1 ? '1 Geburtstag' : `${count} Geburtstage`}</span>.
+        {scopeText ? `${scopeText} – ` : t('Aus der ganzen Familie: ', 'From the whole family: ')}
+        <span className="tabular-nums">
+          {count === 1 ? t('1 Geburtstag', '1 birthday') : t(`${count} Geburtstage`, `${count} birthdays`)}
+        </span>
+        .
       </p>
 
       {failed ? (
         <p className="rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
-          Der Kalender-Link konnte nicht geladen werden.
+          {t('Der Kalender-Link konnte nicht geladen werden.', 'The calendar link could not be loaded.')}
         </p>
       ) : (
         <div className="flex flex-col gap-2">
@@ -133,18 +152,18 @@ export function CalendarSubscribe({
               iPhone &amp; Mac
             </a>
             <a href={google} target="_blank" rel="noreferrer" className={clsx(linkButton, disabled)}>
-              Google Kalender
+              {t('Google Kalender', 'Google Calendar')}
             </a>
           </div>
           <button type="button" onClick={copy} disabled={!href} className={clsx(linkButton, 'w-full', disabled)}>
             <Copy className="h-4 w-4" aria-hidden />
-            Link kopieren (Outlook und andere)
+            {t('Link kopieren (Outlook und andere)', 'Copy link (Outlook and others)')}
           </button>
         </div>
       )}
 
       <p className="text-[13px] leading-snug text-ink-faint">
-        Wer den Link hat, sieht Namen und Geburtstage.
+        {t('Wer den Link hat, sieht Namen und Geburtstage.', 'Anyone with the link can see names and birthdays.')}
         {allowRenew && path && (
           <>
             {' '}
@@ -153,7 +172,7 @@ export function CalendarSubscribe({
               onClick={renew}
               className="underline decoration-gilt/60 underline-offset-2 hover:text-ink"
             >
-              Neuen Link erzeugen
+              {t('Neuen Link erzeugen', 'Create a new link')}
             </button>
           </>
         )}

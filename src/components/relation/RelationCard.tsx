@@ -6,18 +6,22 @@ import clsx from 'clsx'
 import { ArrowLeftRight } from 'lucide-react'
 import type { Person, TreeIndex } from '@/family/model'
 import { splitName } from '@/family/format'
-import { kinshipSentence, kinshipTitle, type Connection, type Party } from '@/family/kinship'
+import { kinTerm, kinshipSentence, kinshipTitle, type Connection, type Party } from '@/family/kinship'
+import { useLang, type Lang } from '@/i18n/lang'
 import { useFamily } from '@/components/app/FamilyProvider'
 import { useView, type RelationPick } from '@/components/app/ViewProvider'
 import { PersonChip, PersonSearchField } from './PersonPicker'
 
 type Slot = keyof RelationPick
 
-const SLOT_LABEL: Record<Slot, string> = { from: 'Erste Person', to: 'Zweite Person' }
-
 export function RelationCard({ connection, compact }: { connection: Connection | null; compact: boolean }) {
   const { index } = useFamily()
   const { relation, showRelation, meId } = useView()
+  const { t, lang } = useLang()
+  const SLOT_LABEL: Record<Slot, string> = {
+    from: t('Erste Person', 'First person'),
+    to: t('Zweite Person', 'Second person'),
+  }
   const [editing, setEditing] = useState<Slot | null>(null)
   const pick = relation ?? { from: null, to: null }
   const from = pick.from ? index.byId.get(pick.from) ?? null : null
@@ -32,20 +36,20 @@ export function RelationCard({ connection, compact }: { connection: Connection |
     setEditing(null)
   }
 
-  const text = from && to && connection ? describeRelation(index, connection, from, to, meId) : null
+  const text = from && to && connection ? describeRelation(index, connection, from, to, meId, lang) : null
 
   return (
     <section
-      aria-label="Beziehung zwischen zwei Personen"
+      aria-label={t('Beziehung zwischen zwei Personen', 'Relationship between two people')}
       className="parchment pointer-events-auto relative w-full rounded-card border border-gilt/60 p-3 shadow-card md:w-[380px]"
     >
       {/* Am Handy mit offenem Infoblatt nur eine Zeile, damit der Baum sichtbar bleibt */}
       {compact && from && to && (
         <p className="truncate font-serif text-[15px] text-ink md:hidden">
           <span className="text-ink-muted">
-            {shortName(from, to)} und {shortName(to, from)}:
+            {shortName(from, to)} {t('und', 'and')} {shortName(to, from)}:
           </span>{' '}
-          <span className="font-semibold">{text?.title ?? 'keine Verbindung'}</span>
+          <span className="font-semibold">{text?.title ?? t('keine Verbindung', 'not connected')}</span>
         </p>
       )}
 
@@ -65,8 +69,8 @@ export function RelationCard({ connection, compact }: { connection: Connection |
               type="button"
               onClick={() => showRelation({ from: pick.to, to: pick.from })}
               disabled={!from && !to}
-              aria-label="Personen tauschen"
-              title="Personen tauschen"
+              aria-label={t('Personen tauschen', 'Swap people')}
+              title={t('Personen tauschen', 'Swap people')}
               className="grid h-10 w-9 shrink-0 place-items-center rounded-full text-gilt-deep hover:bg-gilt-soft/50 disabled:opacity-40"
             >
               <ArrowLeftRight className="h-[18px] w-[18px]" />
@@ -86,11 +90,17 @@ export function RelationCard({ connection, compact }: { connection: Connection |
             </div>
           ) : from && to ? (
             <p className="font-serif text-[16px] leading-snug text-ink-muted" data-tour="relation-result">
-              Im Stammbaum gibt es keine Verbindung zwischen {from.name} und {to.name}.
+              {t(
+                `Im Stammbaum gibt es keine Verbindung zwischen ${from.name} und ${to.name}.`,
+                `The family tree has no connection between ${from.name} and ${to.name}.`,
+              )}
             </p>
           ) : (
             <p className="font-serif text-[16px] leading-snug text-ink-muted">
-              Tippe zwei Personen im Baum an oder suche sie oben.
+              {t(
+                'Tippe zwei Personen im Baum an oder suche sie oben.',
+                'Tap two people in the tree or search for them above.',
+              )}
             </p>
           )}
         </div>
@@ -107,13 +117,24 @@ function shortName(p: Person, other: Person): string {
 }
 
 /** Überschrift, Sätze in beide Richtungen und gemeinsame Vorfahren; mit `meId` aus deiner Sicht („dein Cousin“) */
-export function describeRelation(ix: TreeIndex, c: Connection, from: Person, to: Person, meId: string | null) {
+export function describeRelation(
+  ix: TreeIndex,
+  c: Connection,
+  from: Person,
+  to: Person,
+  meId: string | null,
+  lang: Lang = 'de',
+) {
   const party = (p: Person, other: Person): Party => (p.id === meId ? 'you' : { name: shortName(p, other) })
-  const { title, note } = c.detour !== null ? { title: detourTitle(c.detour), note: '' } : kinshipTitle(c.kinship)
-  const forward = kinshipSentence(c.kinship, party(to, from), party(from, to))
-  const backward = kinshipSentence(c.reverse, party(from, to), party(to, from))
+  const { title, note } =
+    c.detour !== null ? { title: detourTitle(c.detour, lang), note: '' } : kinshipTitle(c.kinship, lang)
+  const forward = kinshipSentence(c.kinship, party(to, from), party(from, to), lang)
+  const backward = kinshipSentence(c.reverse, party(from, to), party(to, from), lang)
   // Gleiche Bezeichnung in beide Richtungen (z. B. zwei Cousins): ein Satz genügt
-  const same = c.reverse.term === c.kinship.term && kinshipTitle(c.reverse).title === kinshipTitle(c.kinship).title
+  const same =
+    kinTerm(c.reverse, lang) === kinTerm(c.kinship, lang) &&
+    kinshipTitle(c.reverse, lang).title === kinshipTitle(c.kinship, lang).title
+  const and = lang === 'en' ? ' and ' : ' und '
   // Wie in der Ahnentafel: Mann zuerst
   const common = c.common
     .map((id) => ix.byId.get(id))
@@ -122,17 +143,19 @@ export function describeRelation(ix: TreeIndex, c: Connection, from: Person, to:
   return {
     title,
     note,
-    forward: same ? `${forward.slice(0, -1)} – und umgekehrt.` : forward,
+    forward: same ? `${forward.slice(0, -1)}${lang === 'en' ? ' – and vice versa.' : ' – und umgekehrt.'}` : forward,
     backward: same ? null : backward,
-    common: common.length ? `${commonLabel(common)}: ${common.map((p) => p.name).join(' und ')}` : null,
+    common: common.length ? `${commonLabel(common, lang)}: ${common.map((p) => p.name).join(and)}` : null,
   }
 }
 
-function commonLabel(common: Person[]) {
+function commonLabel(common: Person[], lang: Lang) {
+  if (lang === 'en') return common.length > 1 ? 'Common ancestors' : 'Common ancestor'
   if (common.length > 1) return 'Gemeinsame Vorfahren'
   return common[0].gender === 'FEMALE' ? 'Gemeinsame Vorfahrin' : 'Gemeinsamer Vorfahr'
 }
 
-function detourTitle(n: number) {
+function detourTitle(n: number, lang: Lang) {
+  if (lang === 'en') return n <= 1 ? 'Connected through one person' : `Connected through ${n} people`
   return n <= 1 ? 'Über eine Ecke verbunden' : `Über ${n} Ecken verbunden`
 }

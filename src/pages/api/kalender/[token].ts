@@ -6,7 +6,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getFamilyByCalendarToken, loadFamilyTree } from '@/lib/db'
 import { birthdayCalendar } from '@/family/ical'
-import { calendarSubset, parseCalendarQuery } from '@/family/calendarLink'
+import { calendarLang, calendarSubset, parseCalendarQuery } from '@/family/calendarLink'
 import { logError } from '@/lib/log'
 
 const TOKEN = /^[A-Za-z0-9_-]{20,64}$/
@@ -26,8 +26,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!loaded) return res.status(404).end()
 
     const { tree, personName } = calendarSubset(loaded.tree, parseCalendarQuery(req.query))
-    const calendarName = personName ? `Geburtstage – Linie ${personName}` : `Geburtstage ${family.name}`
-    const ics = birthdayCalendar(tree, { calendarName })
+    const lang = calendarLang(req.query)
+    const calendarName =
+      lang === 'en'
+        ? personName
+          ? `Birthdays – ${personName}’s line`
+          : `Birthdays – ${family.name}`
+        : personName
+        ? `Geburtstage – Linie ${personName}`
+        : `Geburtstage ${family.name}`
+    const ics = birthdayCalendar(tree, { calendarName, lang })
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8')
     res.setHeader('Content-Disposition', 'inline; filename="geburtstage.ics"')
     res.setHeader('Cache-Control', 'private, max-age=300')

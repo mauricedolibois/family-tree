@@ -7,9 +7,12 @@ import { useFamily } from './FamilyProvider'
 import { useView } from './ViewProvider'
 import { SearchBox } from './SearchBox'
 import { useTheme } from './useTheme'
+import { useLang } from '@/i18n/lang'
+import { LanguageSwitch } from '@/components/ui/LanguageSwitch'
 
 export function TopBar() {
   const { familyName } = useFamily()
+  const { t } = useLang()
   const [mobileSearch, setMobileSearch] = useState(false)
 
   return (
@@ -24,14 +27,14 @@ export function TopBar() {
               type="button"
               onClick={() => setMobileSearch(false)}
               className="grid h-10 w-10 place-items-center rounded-full text-card/80 hover:bg-white/10"
-              aria-label="Suche schließen"
+              aria-label={t('Suche schließen', 'Close search')}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         ) : (
           <h1 className="min-w-0 flex-1 truncate font-display text-[1.6rem] leading-none">
-            <span className="mr-2 text-[1.05rem] italic text-gilt-soft/60">Stammbaum</span>
+            <span className="mr-2 text-[1.05rem] italic text-gilt-soft/60">{t('Stammbaum', 'Family tree')}</span>
             <span className="gilt-text">{familyName}</span>
           </h1>
         )}
@@ -46,7 +49,7 @@ export function TopBar() {
             type="button"
             onClick={() => setMobileSearch(true)}
             className="grid h-10 w-10 place-items-center rounded-full text-card/85 hover:bg-white/10 md:hidden"
-            aria-label="Person suchen"
+            aria-label={t('Person suchen', 'Search people')}
           >
             <Search className="h-5 w-5" />
           </button>
@@ -60,13 +63,15 @@ export function TopBar() {
 function ThemeButton() {
   const { theme, toggle } = useTheme()
   const night = theme === 'night'
+  const { t } = useLang()
+  const label = night ? t('Tageslicht', 'Daylight') : t('Kerzenlicht', 'Candlelight')
   return (
     <button
       type="button"
       onClick={toggle}
       aria-pressed={night}
-      aria-label={night ? 'Tageslicht' : 'Kerzenlicht'}
-      title={night ? 'Tageslicht' : 'Kerzenlicht'}
+      aria-label={label}
+      title={label}
       className="grid h-10 w-10 place-items-center rounded-full text-gilt-soft/85 hover:bg-white/10"
     >
       {night ? <Sun className="h-5 w-5" /> : <Flame className="h-5 w-5" />}
@@ -77,6 +82,7 @@ function ThemeButton() {
 function AppMenu() {
   const { tree, familyName } = useFamily()
   const { setExportOpen, setTourOpen, showBirthdays, select } = useView()
+  const { t } = useLang()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -98,9 +104,9 @@ function AppMenu() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `stammbaum-${familyName.toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-')}-${new Date()
-      .toISOString()
-      .slice(0, 10)}.json`
+    a.download = `${t('stammbaum', 'family-tree')}-${familyName
+      .toLowerCase()
+      .replace(/[^a-z0-9äöüß]+/gi, '-')}-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
     setOpen(false)
@@ -118,7 +124,7 @@ function AppMenu() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Menü"
+        aria-label={t('Menü', 'Menu')}
         data-tour="menu"
         className="grid h-10 w-10 place-items-center rounded-full text-card/85 hover:bg-white/10"
       >
@@ -137,7 +143,7 @@ function AppMenu() {
               showBirthdays(true)
             }}
           >
-            Nächste Geburtstage
+            {t('Nächste Geburtstage', 'Upcoming birthdays')}
           </MenuItem>
           <MenuItem
             icon={<Printer className="h-4 w-4" />}
@@ -146,7 +152,7 @@ function AppMenu() {
               setExportOpen(true)
             }}
           >
-            Als PDF exportieren
+            {t('Als PDF exportieren', 'Export as PDF')}
           </MenuItem>
           <MenuItem
             icon={<BookOpen className="h-4 w-4" />}
@@ -155,13 +161,16 @@ function AppMenu() {
               setTourOpen(true)
             }}
           >
-            Einführung starten
+            {t('Einführung starten', 'Start the tour')}
           </MenuItem>
           <MenuItem icon={<Download className="h-4 w-4" />} onClick={downloadBackup}>
-            Sicherung herunterladen
+            {t('Sicherung herunterladen', 'Download a backup')}
           </MenuItem>
+          <div className="my-1 border-t border-card-rule" />
+          <LanguageSwitch />
+          <div className="my-1 border-t border-card-rule" />
           <MenuItem icon={<LogOut className="h-4 w-4" />} onClick={logout}>
-            Abmelden
+            {t('Abmelden', 'Log out')}
           </MenuItem>
         </div>
       )}

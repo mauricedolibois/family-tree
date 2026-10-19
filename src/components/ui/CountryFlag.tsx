@@ -2,6 +2,7 @@
 // Kleine Flaggen aus reinem CSS (keine Bilder, keine Emojis – die zeigt Windows nicht an).
 
 import clsx from 'clsx'
+import { useLang, type Lang } from '@/i18n/lang'
 
 const SIZES = { sm: 'w-4 h-3', md: 'w-6 h-4', lg: 'w-8 h-5' } as const
 
@@ -18,6 +19,20 @@ const FLAGS: Record<string, Flag> = {
   polen: { title: 'Polen', dir: 'col', stripes: ['#FFFFFF', '#DC143C'] },
   schweiz: { title: 'Schweiz', special: 'swiss' },
   usa: { title: 'USA', special: 'usa' },
+}
+
+/** Englische Namen der bekannten Länder (gespeichert wird meist deutsch) */
+const ENGLISH: Record<string, string> = {
+  deutschland: 'Germany',
+  frankreich: 'France',
+  luxemburg: 'Luxembourg',
+  niederlande: 'Netherlands',
+  österreich: 'Austria',
+  belgien: 'Belgium',
+  italien: 'Italy',
+  polen: 'Poland',
+  schweiz: 'Switzerland',
+  usa: 'USA',
 }
 
 const ALIASES: Record<string, string> = {
@@ -38,6 +53,18 @@ const ALIASES: Record<string, string> = {
   us: 'usa',
 }
 
+const keyOf = (country: string) => {
+  const key = country.toLowerCase().trim()
+  return FLAGS[key] ? key : ALIASES[key] ?? null
+}
+
+/** Ländername zum Anzeigen: bekannte Länder in der gewählten Sprache, sonst wie eingetragen */
+export function countryName(country: string, lang: Lang): string {
+  const key = keyOf(country)
+  if (!key) return country
+  return lang === 'en' ? ENGLISH[key] ?? country : FLAGS[key].title
+}
+
 export function CountryFlag({
   country,
   className,
@@ -47,8 +74,9 @@ export function CountryFlag({
   className?: string
   size?: keyof typeof SIZES
 }) {
-  const key = country.toLowerCase().trim()
-  const flag = FLAGS[key] ?? FLAGS[ALIASES[key] ?? '']
+  const { lang } = useLang()
+  const key = keyOf(country)
+  const flag = key ? { ...FLAGS[key], title: countryName(country, lang) } : null
   if (!flag) return null
   const base = clsx(SIZES[size], 'inline-block shrink-0 overflow-hidden rounded-[2px] ring-1 ring-ink/15', className)
 

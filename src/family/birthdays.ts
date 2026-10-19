@@ -3,6 +3,7 @@
 
 import type { Person, Tree } from './model'
 import { isDeceased } from './format'
+import type { Lang } from '@/i18n/lang'
 
 export type Birthday = {
   person: Person
@@ -50,8 +51,9 @@ export function upcomingBirthdays(tree: Tree, now = new Date(), occurrences = 1)
   return out.sort((a, b) => a.days - b.days || a.person.name.localeCompare(b.person.name, 'de'))
 }
 
-/** „heute“, „morgen“, „in 5 Tagen“ */
-export function daysText(days: number): string {
+/** „heute“, „morgen“, „in 5 Tagen“ (englisch „today“, „tomorrow“, „in 5 days“) */
+export function daysText(days: number, lang: Lang = 'de'): string {
+  if (lang === 'en') return days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`
   if (days === 0) return 'heute'
   if (days === 1) return 'morgen'
   return `in ${days} Tagen`

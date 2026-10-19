@@ -5,6 +5,7 @@ import clsx from 'clsx'
 import { memo } from 'react'
 import type { Person } from '@/family/model'
 import { isDeceased, lifeYears, splitName } from '@/family/format'
+import { useLang } from '@/i18n/lang'
 import type { CardBox } from '@/family/layout/types'
 import { Portrait } from '@/components/ui/Portrait'
 import { CountryFlag } from '@/components/ui/CountryFlag'
@@ -20,8 +21,9 @@ type Props = {
 }
 
 export const PersonCard = memo(function PersonCard({ person, box, state, isMe, onSelect }: Props) {
+  const { t, lang } = useLang()
   const { given, surname } = splitName(person.name)
-  const years = lifeYears(person)
+  const years = lifeYears(person, lang)
   const past = isDeceased(person)
   const country = person.profile?.country?.trim()
 
@@ -54,7 +56,11 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, o
         <span className="mt-px flex items-center gap-1.5 font-serif text-[13.5px] text-ink-faint">
           {country && <CountryFlag country={country} />}
           {years && <span>{years}</span>}
-          {isMe && <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">Du</span>}
+          {isMe && (
+            <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">
+              {t('Du', 'You')}
+            </span>
+          )}
         </span>
       </span>
     </button>

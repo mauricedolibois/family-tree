@@ -15,6 +15,7 @@ import { Portrait } from '@/components/ui/Portrait'
 import { Button } from '@/components/ui/Button'
 import { Flourish } from '@/components/ui/Flourish'
 import { CalendarSubscribe } from '@/components/birthdays/CalendarSubscribe'
+import { useLang } from '@/i18n/lang'
 import { guestSteps, personalSteps, type Step } from './steps'
 
 const SEEN_KEY = 'stammbaum:einfuehrung'
@@ -54,6 +55,7 @@ function TourRunner() {
   const { index } = useFamily()
   const view = useView()
   const { meId, setMe, setTourOpen, focusOn, select, showLine, showRelation } = view
+  const { t } = useLang()
   const [me, setChosen] = useState<string | null | undefined>(undefined) // undefined: noch auf der Begrüßung
   const [stepId, setStepId] = useState<string | null>(null)
 
@@ -63,10 +65,10 @@ function TourRunner() {
   )
   const steps = useMemo<Step[]>(() => {
     if (me === undefined) return []
-    if (me === null) return guestSteps(actions)
+    if (me === null) return guestSteps(actions, t)
     const p = index.byId.get(me)
-    return personalSteps(me, p ? splitName(p.name).given || p.name : '', actions)
-  }, [me, index, actions])
+    return personalSteps(me, p ? splitName(p.name).given || p.name : '', actions, t)
+  }, [me, index, actions, t])
 
   const step = steps.find((s) => s.id === stepId) ?? null
   const position = step ? steps.indexOf(step) : -1
@@ -172,6 +174,7 @@ function Welcome({
   onSkip: () => void
 }) {
   const { tree, index, familyName } = useFamily()
+  const { t, lang } = useLang()
   const known = knownId ? index.byId.get(knownId) : undefined
   const [searching, setSearching] = useState(!known)
   const [query, setQuery] = useState('')
@@ -191,35 +194,39 @@ function Welcome({
       >
         <Star className="mx-auto mb-1 h-6 w-6 text-gilt" />
         <h2 id="tour-welcome" className="font-display text-[1.85rem] leading-[1.1] text-ink">
-          Willkommen im Stammbaum {familyName}
+          {t(`Willkommen im Stammbaum ${familyName}`, `Welcome to the ${familyName} family tree`)}
         </h2>
         <Flourish className="mx-auto my-3 max-w-[14rem]" />
 
         {!searching && known ? (
           <>
             <p className="font-serif text-[17px] leading-snug text-ink">
-              Die Chronik kennt dich schon. Bist du <strong>{known.name}</strong>?
+              {t('Die Chronik kennt dich schon. Bist du ', 'The chronicle already knows you. Are you ')}
+              <strong>{known.name}</strong>?
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <Button variant="primary" onClick={() => onPick(known.id)}>
-                Ja, das bin ich
+                {t('Ja, das bin ich', 'Yes, that’s me')}
               </Button>
               <Button variant="quiet" onClick={() => setSearching(true)}>
-                Nein, jemand anderes
+                {t('Nein, jemand anderes', 'No, someone else')}
               </Button>
             </div>
           </>
         ) : (
           <>
             <p className="font-serif text-[17px] leading-snug text-ink">
-              Wer bist du? Nenne deinen Namen – dann zeigt dir die Chronik alles an deinem eigenen Eintrag.
+              {t(
+                'Wer bist du? Nenne deinen Namen – dann zeigt dir die Chronik alles an deinem eigenen Eintrag.',
+                'Who are you? Tell us your name – and the chronicle will show you around using your own entry.',
+              )}
             </p>
             <label className="mt-4 block text-left">
-              <span className="sr-only">Dein Name</span>
+              <span className="sr-only">{t('Dein Name', 'Your name')}</span>
               <input
                 ref={input}
                 className="field h-12 text-center font-serif text-[18px]"
-                placeholder="Dein Vor- oder Nachname"
+                placeholder={t('Dein Vor- oder Nachname', 'Your first or last name')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 autoComplete="off"
@@ -230,7 +237,7 @@ function Welcome({
               <ul className="mt-2 flex flex-col gap-1.5 text-left">
                 {results.length === 0 && (
                   <li className="px-1 py-2 text-center font-serif text-[15px] italic text-ink-muted">
-                    Niemand mit diesem Namen in der Chronik.
+                    {t('Niemand mit diesem Namen in der Chronik.', 'No one by that name in the chronicle.')}
                   </li>
                 )}
                 {results.map((p) => (
@@ -244,10 +251,10 @@ function Welcome({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-serif text-base font-semibold text-ink">{p.name}</span>
                         <span className="block truncate font-serif text-[14px] text-ink-muted">
-                          {[lifeYears(p), p.profile?.city].filter(Boolean).join(', ')}
+                          {[lifeYears(p, lang), p.profile?.city].filter(Boolean).join(', ')}
                         </span>
                       </span>
-                      <span className="text-sm text-gilt-deep">Das bin ich</span>
+                      <span className="text-sm text-gilt-deep">{t('Das bin ich', 'That’s me')}</span>
                     </button>
                   </li>
                 ))}
@@ -258,14 +265,14 @@ function Welcome({
               onClick={onGuest}
               className="mt-4 font-serif text-[15px] italic text-ink-muted underline decoration-gilt/60 underline-offset-4 hover:text-ink"
             >
-              Ich stehe noch nicht im Stammbaum
+              {t('Ich stehe noch nicht im Stammbaum', 'I’m not in the family tree yet')}
             </button>
           </>
         )}
 
         <div className="mt-5 border-t border-card-rule pt-3">
           <button type="button" onClick={onSkip} className="text-sm text-ink-faint hover:text-ink">
-            Einführung überspringen
+            {t('Einführung überspringen', 'Skip the tour')}
           </button>
         </div>
       </section>
@@ -387,6 +394,7 @@ function Bubble({
     return () => ro.disconnect()
   }, [])
 
+  const { t } = useLang()
   const style = placeBubble(step, hole, height)
   const last = position === total - 1
   // Platzsparend, wenn die Erklärung über dem Geschehen liegt (freies Umsehen, großer Ausschnitt)
@@ -413,7 +421,7 @@ function Bubble({
         <Progress position={position} total={total} />
         {!last && (
           <button type="button" onClick={onQuit} className="text-[13px] text-ink-faint hover:text-ink">
-            Einführung beenden
+            {t('Einführung beenden', 'End tour')}
           </button>
         )}
       </div>
@@ -447,15 +455,15 @@ function Bubble({
         {step.doneWhen && !step.nextLabel ? (
           <>
             <span className="font-serif text-[14.5px] italic leading-snug text-ink-muted">
-              Probier es aus – oder überspring es.
+              {t('Probier es aus – oder überspring es.', 'Try it – or skip it.')}
             </span>
             <Button size="sm" onClick={onSkip}>
-              Überspringen
+              {t('Überspringen', 'Skip')}
             </Button>
           </>
         ) : (
           <Button variant="primary" size="sm" onClick={onNext} className={clsx(step.mode !== 'modal' && 'ml-auto')}>
-            {step.nextLabel ?? 'Weiter'}
+            {step.nextLabel ?? t('Weiter', 'Next')}
           </Button>
         )}
       </div>
@@ -465,8 +473,12 @@ function Bubble({
 
 /** Fortschritt als Goldpunkte, der aktuelle als Raute */
 function Progress({ position, total }: { position: number; total: number }) {
+  const { t } = useLang()
   return (
-    <span className="flex items-center gap-1.5" aria-label={`Schritt ${position + 1} von ${total}`}>
+    <span
+      className="flex items-center gap-1.5"
+      aria-label={t(`Schritt ${position + 1} von ${total}`, `Step ${position + 1} of ${total}`)}
+    >
       {Array.from({ length: total }, (_, i) => (
         <span
           key={i}

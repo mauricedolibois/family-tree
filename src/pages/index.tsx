@@ -10,8 +10,9 @@ import { TreeCanvas } from '@/components/tree/TreeCanvas'
 import { PersonPanel } from '@/components/person/PersonPanel'
 import { ExportSheet } from '@/components/print/ExportSheet'
 import { Tour } from '@/components/intro/Tour'
+import { langFromRequest, useLang, type Lang } from '@/i18n/lang'
 
-type Props = { familyName: string }
+type Props = { familyName: string; lang: Lang }
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => {
   const fid = getFamilyIdFromReq(req)
@@ -19,14 +20,15 @@ export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) => 
   if (!fid || !familyName) {
     return { redirect: { destination: '/auth', permanent: false } }
   }
-  return { props: { familyName } }
+  return { props: { familyName, lang: langFromRequest(req) } }
 }
 
 export default function Home({ familyName }: Props) {
+  const { t } = useLang()
   return (
     <>
       <Head>
-        <title>{`Stammbaum ${familyName}`}</title>
+        <title>{`${t('Stammbaum', 'Family tree')} ${familyName}`}</title>
       </Head>
       <FamilyProvider familyName={familyName}>
         <ViewProvider>
