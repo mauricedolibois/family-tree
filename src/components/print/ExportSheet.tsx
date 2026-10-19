@@ -5,7 +5,7 @@
 // des Browsers – so bleibt alles gestochen scharf (Vektoren, echte Schriften).
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, Printer } from 'lucide-react'
+import { ArrowLeft, Download, Printer } from 'lucide-react'
 import { lineageOf, lineageView, lineDepth, subTree, type Tree } from '@/family/model'
 import { findConnection } from '@/family/kinship'
 import { describeLineScope, splitName } from '@/family/format'
@@ -40,6 +40,7 @@ function sheetGeometry(paper: Paper, orientation: Orientation) {
   const [w, h] = orientation === 'portrait' ? [short, long] : [long, short]
   const k = short / 210
   const margin = 9 * k
+  const border = 0.45 * k
   const pad = 5 * k
   const header = 25 * k
   const footer = 6 * k
@@ -48,11 +49,12 @@ function sheetGeometry(paper: Paper, orientation: Orientation) {
     h,
     k,
     margin,
+    border,
     pad,
     header,
     footer,
-    treeW: w - 2 * (margin + pad),
-    treeH: h - 2 * (margin + pad) - header - footer,
+    treeW: w - 2 * (margin + border + pad),
+    treeH: h - 2 * (margin + border + pad) - header - footer,
   }
 }
 
@@ -116,6 +118,54 @@ function ExportDialog() {
   const geo = sheetGeometry(paper, orientation)
   const scale = layout ? treeScale(layout, paper, orientation) : 1
   const pt = namePt(scale)
+  const [building, setBuilding] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  /** PDF-Datei in genau diesem Format erzeugen und herunterladen */
+  const download = async () => {
+    if (!layout) return
+    setBuilding(true)
+    setFailed(false)
+    try {
+      const { buildPdf } = await import('./pdf')
+      const date = new Date().toLocaleDateString(locale(lang), { day: 'numeric', month: 'long', year: 'numeric' })
+      const bytes = await buildPdf({
+        geo,
+        layout,
+        scale,
+        tree: view.tree,
+        highlight: view.highlight,
+        heading,
+        footer: {
+          married: t('verheiratet', 'married'),
+          adopted: t('adoptiert', 'adopted'),
+          date: `${t('Stand', 'As of')}: ${date}`,
+        },
+        lang,
+        title: heading.title,
+      })
+      const name = [heading.title, paper, orientation === 'portrait' ? t('hoch', 'portrait') : t('quer', 'landscape')]
+        .join(' ')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/ß/g, 'ss')
+        .replace(/[^A-Za-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${name || 'stammbaum'}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (e) {
+      console.error('[PDF]', e)
+      setFailed(true)
+    } finally {
+      setBuilding(false)
+    }
+  }
 
   // Beim Drucken immer im Tageslicht
   useEffect(() => {
@@ -200,22 +250,40 @@ function ExportDialog() {
                     : t(' Gut lesbar.', ' Easy to read.'))
                 : t('Der Baum wird angeordnet …', 'Arranging the tree …')}
             </p>
-            <div>
+            <div className="flex flex-col gap-2">
               <Button
                 variant="primary"
                 className="w-full"
+                icon={<Download className="h-4 w-4" />}
+                onClick={download}
+                disabled={!layout || building}
+              >
+                {building ? t('PDF wird erstellt …', 'Creating PDF …') : t('PDF herunterladen', 'Download PDF')}
+              </Button>
+              {failed && (
+                <p role="alert" className="rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
+                  {t(
+                    'Die PDF konnte nicht erstellt werden. Versuch es noch einmal oder nutze „Drucken“.',
+                    'The PDF could not be created. Try again or use “Print”.',
+                  )}
+                </p>
+              )}
+              <p className="text-sm leading-snug text-ink-faint">
+                {t(
+                  'Die Datei hat genau das gewählte Format – zum Ausdrucken zu Hause oder im Copyshop.',
+                  'The file has exactly the chosen size – for printing at home or at a print shop.',
+                )}
+              </p>
+              <Button
+                variant="quiet"
+                size="sm"
+                className="self-start"
                 icon={<Printer className="h-4 w-4" />}
                 onClick={() => window.print()}
                 disabled={!layout}
               >
-                {t('Drucken oder als PDF sichern', 'Print or save as PDF')}
+                {t('Direkt drucken', 'Print directly')}
               </Button>
-              <p className="mt-2 text-sm leading-snug text-ink-faint">
-                {t(
-                  'Im Druckdialog als Drucker „Als PDF sichern“ wählen. Papiergröße und Ausrichtung sind schon eingestellt.',
-                  'In the print dialog, choose “Save as PDF” as the printer. Paper size and orientation are already set.',
-                )}
-              </p>
             </div>
           </div>
         </aside>
@@ -366,7 +434,7 @@ function Sheet({
       {/* Doppelter Goldrahmen */}
       <div
         className="relative flex h-full flex-col"
-        style={{ border: `${0.45 * geo.k}mm solid rgb(var(--gilt))`, padding: mm(geo.pad) }}
+        style={{ border: `${geo.border}mm solid rgb(var(--gilt))`, padding: mm(geo.pad) }}
       >
         <span
           aria-hidden

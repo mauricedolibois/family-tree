@@ -6,7 +6,9 @@ import { useLang, type Lang } from '@/i18n/lang'
 
 const SIZES = { sm: 'w-4 h-3', md: 'w-6 h-4', lg: 'w-8 h-5' } as const
 
-type Flag = { title: string; dir: 'row' | 'col'; stripes: string[] } | { title: string; special: 'usa' | 'swiss' }
+export type Flag =
+  | { title: string; dir: 'row' | 'col'; stripes: string[] }
+  | { title: string; special: 'usa' | 'swiss' }
 
 const FLAGS: Record<string, Flag> = {
   deutschland: { title: 'Deutschland', dir: 'col', stripes: ['#000000', '#DD0000', '#FFCC00'] },
@@ -56,6 +58,12 @@ const ALIASES: Record<string, string> = {
 const keyOf = (country: string) => {
   const key = country.toLowerCase().trim()
   return FLAGS[key] ? key : ALIASES[key] ?? null
+}
+
+/** Flagge zu einem Land (auch für den PDF-Export), oder null */
+export function flagOf(country: string): Flag | null {
+  const key = keyOf(country)
+  return key ? FLAGS[key] : null
 }
 
 /** Ländername zum Anzeigen: bekannte Länder in der gewählten Sprache, sonst wie eingetragen */
