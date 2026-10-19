@@ -3,22 +3,28 @@ import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { Eye, EyeOff } from 'lucide-react'
 import { getFamilyIdFromReq } from '@/lib/session'
+import { registrationOpen } from '@/lib/features'
 import { Button } from '@/components/ui/Button'
 import { Flourish } from '@/components/ui/Flourish'
 
+type Props = { canRegister: boolean }
+
 // Wer schon angemeldet ist, landet direkt im Stammbaum
-export const getServerSideProps: GetServerSideProps = async ({ req }) =>
-  getFamilyIdFromReq(req) ? { redirect: { destination: '/', permanent: false } } : { props: {} }
+export const getServerSideProps: GetServerSideProps<Props> = async ({ req }) =>
+  getFamilyIdFromReq(req)
+    ? { redirect: { destination: '/', permanent: false } }
+    : { props: { canRegister: registrationOpen() } }
 
 type Mode = 'login' | 'register'
 
 const MESSAGES: Record<string, string> = {
   401: 'Familienname oder Passwort stimmt nicht.',
   409: 'Diesen Familiennamen gibt es schon. Wähle einen anderen oder melde dich an.',
+  403: 'Neue Stammbäume können hier gerade nicht angelegt werden.',
   429: 'Zu viele Versuche. Bitte warte ein paar Minuten und versuche es dann erneut.',
 }
 
-export default function AuthPage() {
+export default function AuthPage({ canRegister }: Props) {
   const [mode, setMode] = useState<Mode>('login')
   const [familyName, setFamilyName] = useState('')
   const [password, setPassword] = useState('')
@@ -124,19 +130,21 @@ export default function AuthPage() {
               </Button>
             </div>
 
-            <p className="mt-5 text-center text-[15px] text-ink-muted">
-              {mode === 'login' ? 'Noch keinen Stammbaum?' : 'Schon einen Stammbaum?'}{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === 'login' ? 'register' : 'login')
-                  setError(null)
-                }}
-                className="font-medium text-linen underline decoration-gilt/70 underline-offset-4 hover:decoration-linen"
-              >
-                {mode === 'login' ? 'Neuen anlegen' : 'Anmelden'}
-              </button>
-            </p>
+            {canRegister && (
+              <p className="mt-5 text-center text-[15px] text-ink-muted">
+                {mode === 'login' ? 'Noch keinen Stammbaum?' : 'Schon einen Stammbaum?'}{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode(mode === 'login' ? 'register' : 'login')
+                    setError(null)
+                  }}
+                  className="font-medium text-linen underline decoration-gilt/70 underline-offset-4 hover:decoration-linen"
+                >
+                  {mode === 'login' ? 'Neuen anlegen' : 'Anmelden'}
+                </button>
+              </p>
+            )}
           </form>
         </div>
       </main>

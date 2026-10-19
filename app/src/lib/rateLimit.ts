@@ -17,10 +17,30 @@ function hashKey(value: string): string {
   return createHmac('sha256', salt).update(value).digest('hex').slice(0, 32)
 }
 
-export function clientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>): string {
-  const forwarded = req.headers['x-forwarded-for']
-  const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0]?.trim()
-  return first || req.socket?.remoteAddress || 'unknown'
+/** Anzahl eigener Reverse-Proxys vor der App (TRUSTED_PROXIES, Standard 1 = ein nginx) */
+export function trustedProxies(raw = process.env.TRUSTED_PROXIES): number {
+  // Leer oder ungültig → Standard. Sonst würde aus "" die 0, und alle Besucher
+  // hätten die Adresse des Proxys – eine einzige gemeinsame Login-Bremse für alle.
+  if (!raw?.trim()) return 1
+  const n = Number(raw)
+  return Number.isInteger(n) && n >= 0 ? n : 1
+}
+
+/**
+ * IP des Besuchers. Jeder Proxy hängt die Adresse, von der er die Anfrage bekam,
+ * hinten an X-Forwarded-For an – verlässlich sind also nur die letzten Einträge.
+ * Den Anfang der Liste kann der Besucher selbst beliebig füllen.
+ * Ohne Proxy (TRUSTED_PROXIES=0) zählt nur die Verbindungsadresse.
+ */
+export function clientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>, proxies = trustedProxies()): string {
+  const direct = req.socket?.remoteAddress || 'unknown'
+  if (proxies === 0) return direct
+  const header = req.headers['x-forwarded-for']
+  const hops = (Array.isArray(header) ? header.join(',') : header ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return hops.length ? hops[Math.max(0, hops.length - proxies)] : direct
 }
 
 /** Anzahl Versuche (optional nur fehlgeschlagene) im Zeitfenster. */

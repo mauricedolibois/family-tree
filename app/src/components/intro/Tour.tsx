@@ -124,7 +124,7 @@ function TourRunner() {
       if (el) scrollWithinSheet(el)
     }, 150)
     return () => clearInterval(timer)
-  }, [step?.scrollTo, step?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [step?.scrollTo, step?.id])
 
   if (me === undefined) {
     return <Welcome knownId={meId} onPick={start} onGuest={() => start(null)} onSkip={() => close(false)} />

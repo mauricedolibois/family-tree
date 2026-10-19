@@ -1,6 +1,6 @@
 /**
  * Keep-Alive Script für Supabase
- * 
+ *
  * Erstellt eine temporäre Test-Familie in der Datenbank und löscht sie wieder.
  * Verhindert, dass Supabase die Datenbank nach 7 Tagen Inaktivität pausiert.
  */
@@ -16,7 +16,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  auth: { persistSession: false }
+  auth: { persistSession: false },
 })
 
 const KEEP_ALIVE_FAMILY_NAME = '__keep_alive_test_family__'
@@ -36,18 +36,12 @@ async function main() {
 
     if (existingFamily) {
       console.log('🗑️ Lösche alte Test-Familie...')
-      
+
       // Zuerst den zugehörigen Baum löschen
-      await supabase
-        .from('family_trees')
-        .delete()
-        .eq('family_id', existingFamily.id)
+      await supabase.from('family_trees').delete().eq('family_id', existingFamily.id)
 
       // Dann die Familie löschen
-      await supabase
-        .from('families')
-        .delete()
-        .eq('id', existingFamily.id)
+      await supabase.from('families').delete().eq('id', existingFamily.id)
     }
 
     // 2. Neue Test-Familie erstellen
@@ -56,7 +50,7 @@ async function main() {
       .from('families')
       .insert({
         name: KEEP_ALIVE_FAMILY_NAME,
-        pass_hash: 'keep_alive_dummy_hash'
+        pass_hash: 'keep_alive_dummy_hash',
       })
       .select()
       .single()
@@ -79,19 +73,17 @@ async function main() {
           gender: 'male',
           childrenIds: [],
           profile: {
-            comments: `Automatisch erstellt am ${new Date().toISOString()}`
-          }
-        }
-      }
+            comments: `Automatisch erstellt am ${new Date().toISOString()}`,
+          },
+        },
+      },
     }
 
-    const { error: treeError } = await supabase
-      .from('family_trees')
-      .insert({
-        family_id: newFamily.id,
-        tree_json: testTree,
-        updated_at: new Date().toISOString()
-      })
+    const { error: treeError } = await supabase.from('family_trees').insert({
+      family_id: newFamily.id,
+      tree_json: testTree,
+      updated_at: new Date().toISOString(),
+    })
 
     if (treeError) {
       throw new Error(`Fehler beim Erstellen des Baums: ${treeError.message}`)
@@ -101,23 +93,16 @@ async function main() {
 
     // 4. Kurz warten und dann alles wieder löschen
     console.log('⏳ Warte 2 Sekunden...')
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000))
 
     console.log('🗑️ Lösche Test-Familienbaum...')
-    await supabase
-      .from('family_trees')
-      .delete()
-      .eq('family_id', newFamily.id)
+    await supabase.from('family_trees').delete().eq('family_id', newFamily.id)
 
     console.log('🗑️ Lösche Test-Familie...')
-    await supabase
-      .from('families')
-      .delete()
-      .eq('id', newFamily.id)
+    await supabase.from('families').delete().eq('id', newFamily.id)
 
     console.log('✅ Bereinigung abgeschlossen')
     console.log('🎉 Keep-Alive erfolgreich! Datenbank bleibt aktiv.')
-
   } catch (error) {
     console.error('❌ Fehler im Keep-Alive Script:', error)
     process.exit(1)
