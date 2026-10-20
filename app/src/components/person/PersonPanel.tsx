@@ -61,22 +61,22 @@ export function PersonPanel() {
       data-tour="sheet"
       aria-label={t.sheet.aboutPerson(person.name)}
       className={
-        'parchment panel-enter fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-panel border-t border-gilt/60 shadow-sheet transition-[max-height] duration-300 ease-settle ' +
+        'surface panel-enter fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-panel border-t border-frame/60 shadow-sheet transition-[max-height] duration-300 ease-settle ' +
         (expanded ? 'max-h-[88dvh] ' : 'max-h-[46dvh] ') +
         'md:absolute md:inset-x-auto md:bottom-3 md:right-3 md:top-3 md:max-h-none md:w-[420px] md:rounded-panel md:border md:shadow-lifted'
       }
     >
-      {/* Gold frame like on a book page */}
+      {/* Frame around the info sheet (gold rule in the classic theme) */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-2 rounded-t-[14px] border border-gilt/35 md:rounded-[14px]"
+        className="pointer-events-none absolute inset-2 rounded-t-[14px] border border-frame/35 md:rounded-[14px]"
       />
       <div className="relative flex shrink-0 items-center justify-between px-3 pb-1 pt-2">
         {mode.kind !== 'details' ? (
           <button
             type="button"
             onClick={back}
-            className="flex h-10 items-center gap-1 rounded-full px-2 text-[15px] text-ink-muted hover:bg-paper-raised hover:text-ink"
+            className="flex h-10 items-center gap-1 rounded-full px-2 text-[15px] text-ink-muted hover:bg-canvas-raised hover:text-ink"
           >
             <ArrowLeft className="h-4 w-4" /> {t.sheet.back}
           </button>
@@ -94,7 +94,7 @@ export function PersonPanel() {
           type="button"
           onClick={() => select(null)}
           aria-label={t.sheet.close}
-          className="ml-auto grid h-10 w-10 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+          className="ml-auto grid h-10 w-10 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
         >
           <X className="h-5 w-5" />
         </button>

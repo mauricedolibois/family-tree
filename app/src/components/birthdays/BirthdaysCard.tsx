@@ -53,7 +53,7 @@ export function BirthdaysCard() {
   return (
     <section
       aria-label={t.birthdays.title}
-      className="parchment pointer-events-auto flex max-h-[calc(100dvh-150px)] w-full flex-col rounded-card border border-gilt/60 shadow-card md:w-[380px]"
+      className="surface pointer-events-auto flex max-h-[calc(100dvh-150px)] w-full flex-col rounded-card border border-frame/60 shadow-card md:w-[380px]"
     >
       <header className="flex shrink-0 items-center justify-between gap-2 px-4 pb-1 pt-3">
         {subscribe ? (
@@ -63,7 +63,7 @@ export function BirthdaysCard() {
               onClick={() => setSubscribe(false)}
               aria-label={t.birthdays.backToList}
               title={t.birthdays.backToList}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
             >
               <ArrowLeft className="h-[18px] w-[18px]" />
             </button>
@@ -79,7 +79,7 @@ export function BirthdaysCard() {
               onClick={() => setSubscribe(true)}
               aria-label={t.birthdays.subscribe}
               title={t.birthdays.subscribe}
-              className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+              className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
             >
               <CalendarPlus className="h-[18px] w-[18px]" />
             </button>
@@ -88,7 +88,7 @@ export function BirthdaysCard() {
             type="button"
             onClick={() => showLine(null)}
             aria-label={t.birthdays.close}
-            className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+            className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>
@@ -103,11 +103,11 @@ export function BirthdaysCard() {
       {/* The list stays mounted (hidden) so going back returns to the same spot */}
       <div className={clsx('min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-2', subscribe && 'hidden')}>
         {groups.length === 0 && (
-          <p className="px-2 py-4 font-serif text-[16px] leading-snug text-ink-muted">{t.birthdays.none}</p>
+          <p className="px-2 py-4 font-text text-[16px] leading-snug text-ink-muted">{t.birthdays.none}</p>
         )}
         {groups.map((g) => (
           <section key={g.label}>
-            <h3 className="parchment sticky top-0 z-10 px-2 pb-1 pt-2 font-serif text-[15px] italic text-gilt-deep">
+            <h3 className="surface sticky top-0 z-10 px-2 pb-1 pt-2 font-text text-[15px] italic text-accent-deep">
               {g.label}
             </h3>
             <ul className="flex flex-col gap-0.5">
@@ -141,26 +141,26 @@ function BirthdayRow({ b, relation, onOpen }: { b: Birthday; relation: string | 
         type="button"
         onClick={onOpen}
         className={clsx(
-          'flex w-full items-center gap-3 rounded-control px-2 py-1.5 text-left hover:bg-paper-raised',
-          b.days === 0 && 'bg-gilt-soft/60',
+          'flex w-full items-center gap-3 rounded-control px-2 py-1.5 text-left hover:bg-canvas-raised',
+          b.days === 0 && 'bg-accent-soft/60',
         )}
       >
         {/* Calendar leaf */}
         <span className="flex w-11 shrink-0 flex-col items-center rounded-control border border-card-rule bg-card py-1 leading-none">
-          <span className="font-serif text-[12px] text-ink-muted">{weekday}</span>
+          <span className="font-text text-[12px] text-ink-muted">{weekday}</span>
           <span className="mt-0.5 font-display text-[1.3rem] text-ink">{b.date.getDate()}</span>
         </span>
         <Portrait person={b.person} size="sm" />
         <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate font-serif text-[16px] font-semibold text-ink">{b.person.name}</span>
-          <span className="block truncate font-serif text-[14px] text-ink-muted">
+          <span className="block truncate font-text text-[16px] font-semibold text-ink">{b.person.name}</span>
+          <span className="block truncate font-text text-[14px] text-ink-muted">
             {[t.birthdays.turns(b.age), relation].filter(Boolean).join(', ')}
           </span>
         </span>
         <span
           className={clsx(
             'flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[13px]',
-            b.days === 0 ? 'bg-gilt font-medium text-linen-deep' : soon ? 'text-gilt-deep' : 'text-ink-faint',
+            b.days === 0 ? 'bg-accent font-medium text-on-accent' : soon ? 'text-accent-deep' : 'text-ink-faint',
           )}
         >
           {b.days === 0 && <Cake className="h-3.5 w-3.5" aria-hidden />}

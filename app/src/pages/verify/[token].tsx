@@ -38,7 +38,7 @@ export default function VerifyPage({ token }: Props) {
       {state === 'invalid' && (
         <div className="flex flex-col gap-3">
           <FormMessage>{t.verify.invalid}</FormMessage>
-          <Link href="/login" className="text-[15px] text-linen underline underline-offset-4">
+          <Link href="/login" className="text-[15px] text-link underline underline-offset-4">
             {t.forgot.back}
           </Link>
         </div>

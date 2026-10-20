@@ -86,12 +86,12 @@ export function CalendarSubscribe({
   }
 
   const linkButton =
-    'inline-flex h-10 items-center justify-center gap-2 rounded-control border border-card-rule bg-card px-3 text-sm font-medium text-ink hover:border-gilt'
+    'inline-flex h-10 items-center justify-center gap-2 rounded-control border border-card-rule bg-card px-3 text-sm font-medium text-ink hover:border-accent'
   const disabled = !href && 'pointer-events-none opacity-50'
 
   return (
     <div className="flex flex-col gap-2.5 text-left">
-      {intro && <p className="font-serif text-[15px] leading-snug text-ink">{t.subscribe.intro}</p>}
+      {intro && <p className="font-text text-[15px] leading-snug text-ink">{t.subscribe.intro}</p>}
 
       {person && (
         <Segmented<Whom>
@@ -146,7 +146,7 @@ export function CalendarSubscribe({
             <button
               type="button"
               onClick={renew}
-              className="underline decoration-gilt/60 underline-offset-2 hover:text-ink"
+              className="underline decoration-accent/60 underline-offset-2 hover:text-ink"
             >
               {t.subscribe.renew}
             </button>

@@ -36,14 +36,14 @@ export default function StartPage({ trees, name, isAdmin, gone }: Props) {
     window.location.href = '/login'
   }
   const link =
-    'flex items-center gap-2 text-[15px] text-ink-muted underline decoration-gilt/60 underline-offset-4 hover:text-ink'
+    'flex items-center gap-2 text-[15px] text-ink-muted underline decoration-accent/60 underline-offset-4 hover:text-ink'
 
   return (
     <AuthLayout title={t.app.title} intro={t.trees.hello(name)}>
       <div className="flex flex-col gap-4">
         {gone && <FormMessage tone="info">{t.trees.gone}</FormMessage>}
         {trees.length === 0 ? (
-          <p className="font-serif text-[16px] leading-snug text-ink-muted">
+          <p className="font-text text-[16px] leading-snug text-ink-muted">
             {isAdmin ? t.trees.noneAdmin : t.trees.none}
           </p>
         ) : (
@@ -54,11 +54,11 @@ export default function StartPage({ trees, name, isAdmin, gone }: Props) {
                 <li key={tree.id}>
                   <Link
                     href={`/tree/${tree.id}`}
-                    className="flex items-center gap-3 rounded-control border border-card-rule bg-card/80 px-3 py-2.5 hover:border-gilt hover:bg-card"
+                    className="flex items-center gap-3 rounded-control border border-card-rule bg-card/80 px-3 py-2.5 hover:border-accent hover:bg-card"
                   >
-                    <Trees className="h-5 w-5 text-gilt-deep" aria-hidden />
+                    <Trees className="h-5 w-5 text-accent-deep" aria-hidden />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-serif text-[17px] font-semibold text-ink">{tree.name}</span>
+                      <span className="block truncate font-text text-[17px] font-semibold text-ink">{tree.name}</span>
                       <span className="block text-[13px] text-ink-muted">{t.roles[tree.role]}</span>
                     </span>
                     <ChevronRight className="h-4 w-4 text-ink-faint" aria-hidden />

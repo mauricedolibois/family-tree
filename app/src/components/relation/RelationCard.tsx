@@ -40,11 +40,11 @@ export function RelationCard({ connection, compact }: { connection: Connection |
   return (
     <section
       aria-label={t.relation.cardLabel}
-      className="parchment pointer-events-auto relative w-full rounded-card border border-gilt/60 p-3 shadow-card md:w-[380px]"
+      className="surface pointer-events-auto relative w-full rounded-card border border-frame/60 p-3 shadow-card md:w-[380px]"
     >
       {/* On phones with the info sheet open, a single row keeps the tree visible */}
       {compact && from && to && (
-        <p className="truncate font-serif text-[15px] text-ink md:hidden">
+        <p className="truncate font-text text-[15px] text-ink md:hidden">
           <span className="text-ink-muted">{t.relation.pair(shortName(from, to), shortName(to, from))}:</span>{' '}
           <span className="font-semibold">{text?.title ?? t.relation.noConnectionShort}</span>
         </p>
@@ -68,7 +68,7 @@ export function RelationCard({ connection, compact }: { connection: Connection |
               disabled={!from && !to}
               aria-label={t.relation.swap}
               title={t.relation.swap}
-              className="grid h-10 w-9 shrink-0 place-items-center rounded-full text-gilt-deep hover:bg-gilt-soft/50 disabled:opacity-40"
+              className="grid h-10 w-9 shrink-0 place-items-center rounded-full text-accent-deep hover:bg-accent-soft/50 disabled:opacity-40"
             >
               <ArrowLeftRight className="h-[18px] w-[18px]" />
             </button>
@@ -80,17 +80,17 @@ export function RelationCard({ connection, compact }: { connection: Connection |
           {text ? (
             <div data-tour="relation-result">
               <p className="font-display text-[1.45rem] leading-[1.15] text-ink">{text.title}</p>
-              {text.note && <p className="font-serif text-[16px] italic leading-snug text-ink-muted">{text.note}</p>}
-              <p className="mt-1.5 font-serif text-[16px] leading-snug text-ink">{text.forward}</p>
-              {text.backward && <p className="font-serif text-[16px] leading-snug text-ink-muted">{text.backward}</p>}
+              {text.note && <p className="font-text text-[16px] italic leading-snug text-ink-muted">{text.note}</p>}
+              <p className="mt-1.5 font-text text-[16px] leading-snug text-ink">{text.forward}</p>
+              {text.backward && <p className="font-text text-[16px] leading-snug text-ink-muted">{text.backward}</p>}
               {text.common && <p className="mt-1.5 text-sm leading-snug text-ink-muted">{text.common}</p>}
             </div>
           ) : from && to ? (
-            <p className="font-serif text-[16px] leading-snug text-ink-muted" data-tour="relation-result">
+            <p className="font-text text-[16px] leading-snug text-ink-muted" data-tour="relation-result">
               {t.relation.noConnection(from.name, to.name)}
             </p>
           ) : (
-            <p className="font-serif text-[16px] leading-snug text-ink-muted">{t.relation.hint}</p>
+            <p className="font-text text-[16px] leading-snug text-ink-muted">{t.relation.hint}</p>
           )}
         </div>
       </div>

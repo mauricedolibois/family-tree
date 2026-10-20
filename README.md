@@ -4,6 +4,7 @@ A private family tree styled like an old family library: parchment, ink and gold
 Everyone has their own account, can belong to several family trees and maintains them together with the family, on phones and computers alike. See [docs/accounts.md](docs/accounts.md).
 
 The interface speaks German, English, French and Spanish; see [docs/i18n.md](docs/i18n.md).
+It comes in two designs, classic (parchment) and modern, each light, dark or automatic; see [docs/themes.md](docs/themes.md).
 
 ## Features
 
@@ -163,7 +164,8 @@ same schema (CI runs it whenever something under `supabase/` changes).
 | `app/src/components/app/`      | Data state, header, search                                            |
 | `app/src/components/ui/`       | Design-system building blocks                                         |
 | `app/src/i18n/`                | Languages: detection, texts, provider                                 |
-| `app/src/styles/tokens.css`    | Colours of the "parchment & ink" design system                        |
+| `app/src/styles/themes/`       | Designs (themes): colours, fonts and styled parts, see docs/themes.md |
+| `app/src/themes/`              | Theme choice: list of themes, cookies, provider                       |
 | `app/src/pages/api/`           | Accounts, trees, uploads, calendar, administration                    |
 | `app/src/lib/`                 | Server side: database, accounts, sessions, mail, throttling           |
 | `app/scripts/`                 | Maintenance scripts (daily backup, keep-alive)                        |

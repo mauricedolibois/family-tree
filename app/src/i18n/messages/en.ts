@@ -44,8 +44,6 @@ export const en: Messages = {
   topBar: {
     closeSearch: 'Close search',
     searchPerson: 'Search person',
-    daylight: 'Daylight',
-    candlelight: 'Candlelight',
     menu: 'Menu',
     birthdays: 'Upcoming birthdays',
     exportPdf: 'Export as PDF',
@@ -578,6 +576,14 @@ export const en: Messages = {
       'nothing to grant': 'Choose a family tree or admin rights.',
       'invalid name': 'Please enter a name.',
     },
+  },
+  theme: {
+    design: 'Design',
+    mode: 'Light or dark',
+    names: { classic: 'Classic', modern: 'Modern' },
+    modes: { light: 'Light', dark: 'Dark', system: 'Automatic' },
+    toLight: 'Light view',
+    toDark: 'Dark view',
   },
   history: {
     title: 'History',

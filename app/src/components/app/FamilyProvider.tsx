@@ -162,10 +162,10 @@ export function FamilyProvider({
 function LoadingScreen() {
   const { t } = useI18n()
   return (
-    <div className="desk grid h-dvh place-items-center" role="status" aria-live="polite">
-      <div className="parchment flex flex-col items-center gap-4 rounded-panel border border-gilt/50 px-10 py-8 shadow-lifted">
-        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-linen-tint border-t-linen motion-reduce:animate-none" />
-        <p className="font-serif text-lg text-ink-muted">{t.family.loading}</p>
+    <div className="page-backdrop grid h-dvh place-items-center" role="status" aria-live="polite">
+      <div className="surface flex flex-col items-center gap-4 rounded-panel border border-frame/50 px-10 py-8 shadow-lifted">
+        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-primary-tint border-t-primary motion-reduce:animate-none" />
+        <p className="font-text text-lg text-ink-muted">{t.family.loading}</p>
       </div>
     </div>
   )
@@ -174,17 +174,14 @@ function LoadingScreen() {
 function LoadError({ onRetry }: { onRetry: () => void }) {
   const { t } = useI18n()
   return (
-    <div className="desk grid h-dvh place-items-center p-6">
-      <div
-        className="parchment max-w-sm rounded-panel border border-gilt/50 p-8 text-center shadow-lifted"
-        role="alert"
-      >
-        <p className="font-serif text-xl text-ink">{t.family.loadFailed}</p>
+    <div className="page-backdrop grid h-dvh place-items-center p-6">
+      <div className="surface max-w-sm rounded-panel border border-frame/50 p-8 text-center shadow-lifted" role="alert">
+        <p className="font-text text-xl text-ink">{t.family.loadFailed}</p>
         <p className="mt-2 text-ink-muted">{t.family.loadFailedHint}</p>
         <button
           type="button"
           onClick={onRetry}
-          className="mt-6 rounded-control bg-linen px-5 py-2.5 font-medium text-white hover:bg-linen-hover"
+          className="mt-6 rounded-control bg-primary px-5 py-2.5 font-medium text-on-primary hover:bg-primary-hover"
         >
           {t.family.reload}
         </button>
@@ -198,13 +195,13 @@ function ConflictBanner({ onReload }: { onReload: () => void }) {
   return (
     <div
       role="alert"
-      className="fixed inset-x-3 top-3 z-[60] mx-auto flex max-w-xl flex-wrap items-center gap-3 rounded-card bg-gilt-soft px-4 py-3 text-sm text-gilt-deep shadow-lifted"
+      className="fixed inset-x-3 top-3 z-[60] mx-auto flex max-w-xl flex-wrap items-center gap-3 rounded-card bg-accent-soft px-4 py-3 text-sm text-accent-deep shadow-lifted"
     >
       <span className="flex-1">{t.family.conflict}</span>
       <button
         type="button"
         onClick={onReload}
-        className="rounded-control bg-gilt-deep px-3 py-1.5 font-medium text-white"
+        className="rounded-control bg-accent-deep px-3 py-1.5 font-medium text-on-primary"
       >
         {t.family.loadLatest}
       </button>

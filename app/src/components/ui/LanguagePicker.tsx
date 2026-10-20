@@ -13,7 +13,7 @@ export function LanguagePicker({ className, tone = 'paper' }: { className?: stri
     <label
       className={clsx(
         'inline-flex items-center gap-2 text-sm',
-        tone === 'cover' ? 'text-card/75' : 'text-ink-muted',
+        tone === 'cover' ? 'text-on-primary/75' : 'text-ink-muted',
         className,
       )}
     >
@@ -24,7 +24,7 @@ export function LanguagePicker({ className, tone = 'paper' }: { className?: stri
         onChange={(e) => isLocale(e.target.value) && setLocale(e.target.value)}
         className={clsx(
           'cursor-pointer rounded-control border bg-transparent py-1 pl-2 pr-7 text-sm',
-          tone === 'cover' ? 'border-gilt/40 text-card [&>option]:text-ink' : 'border-card-rule text-ink',
+          tone === 'cover' ? 'border-frame/40 text-on-primary [&>option]:text-ink' : 'border-card-rule text-ink',
         )}
       >
         {LOCALES.map((l) => (

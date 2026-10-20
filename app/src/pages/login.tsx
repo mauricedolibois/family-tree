@@ -80,7 +80,7 @@ export default function LoginPage({ canRegister, next, setup }: Props) {
             {t.login.noAccount}{' '}
             <Link
               href="/register"
-              className="font-medium text-gilt-soft underline decoration-gilt/60 underline-offset-4"
+              className="font-medium text-on-primary-accent underline decoration-accent/60 underline-offset-4"
             >
               {t.login.register}
             </Link>
@@ -141,7 +141,7 @@ export default function LoginPage({ canRegister, next, setup }: Props) {
 
         {error && <FormMessage>{error}</FormMessage>}
         {unverified && (
-          <button type="button" onClick={resend} className="text-left text-sm text-linen underline underline-offset-4">
+          <button type="button" onClick={resend} className="text-left text-sm text-link underline underline-offset-4">
             {t.login.resendVerification}
           </button>
         )}
@@ -152,7 +152,7 @@ export default function LoginPage({ canRegister, next, setup }: Props) {
         </Button>
         <Link
           href="/forgot"
-          className="text-center text-[15px] text-ink-muted underline decoration-gilt/60 underline-offset-4"
+          className="text-center text-[15px] text-ink-muted underline decoration-accent/60 underline-offset-4"
         >
           {t.login.forgot}
         </Link>

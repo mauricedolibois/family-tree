@@ -185,14 +185,14 @@ function Welcome({
   }, [searching])
 
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center overflow-auto bg-linen-deep/70 p-4 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[90] grid place-items-center overflow-auto bg-primary-deep/70 p-4 backdrop-blur-[2px]">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="tour-welcome"
-        className="parchment gilt-frame panel-enter relative w-full max-w-md px-6 pb-5 pt-7 text-center shadow-lifted"
+        className="surface framed panel-enter relative w-full max-w-md px-6 pb-5 pt-7 text-center shadow-lifted"
       >
-        <Star className="mx-auto mb-1 h-6 w-6 text-gilt" />
+        <Star className="mx-auto mb-1 h-6 w-6 text-accent" />
         <h2 id="tour-welcome" className="font-display text-[1.85rem] leading-[1.1] text-ink">
           {t.tour.welcome(familyName)}
         </h2>
@@ -200,7 +200,7 @@ function Welcome({
 
         {!searching && known ? (
           <>
-            <p className="font-serif text-[17px] leading-snug text-ink">
+            <p className="font-text text-[17px] leading-snug text-ink">
               {t.tour.knownYou} <strong>{known.name}</strong>?
             </p>
             <div className="mt-5 flex flex-col gap-2">
@@ -214,12 +214,12 @@ function Welcome({
           </>
         ) : (
           <>
-            <p className="font-serif text-[17px] leading-snug text-ink">{t.tour.whoAreYou}</p>
+            <p className="font-text text-[17px] leading-snug text-ink">{t.tour.whoAreYou}</p>
             <label className="mt-4 block text-left">
               <span className="sr-only">{t.tour.yourName}</span>
               <input
                 ref={input}
-                className="field h-12 text-center font-serif text-[18px]"
+                className="field h-12 text-center font-text text-[18px]"
                 placeholder={t.tour.namePlaceholder}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -230,25 +230,23 @@ function Welcome({
             {query.trim() && (
               <ul className="mt-2 flex flex-col gap-1.5 text-left">
                 {results.length === 0 && (
-                  <li className="px-1 py-2 text-center font-serif text-[15px] italic text-ink-muted">
-                    {t.tour.nobody}
-                  </li>
+                  <li className="px-1 py-2 text-center font-text text-[15px] italic text-ink-muted">{t.tour.nobody}</li>
                 )}
                 {results.map((p) => (
                   <li key={p.id}>
                     <button
                       type="button"
                       onClick={() => onPick(p.id)}
-                      className="flex w-full items-center gap-3 rounded-control border border-card-rule bg-card/80 px-2.5 py-2 text-left hover:border-gilt hover:bg-card"
+                      className="flex w-full items-center gap-3 rounded-control border border-card-rule bg-card/80 px-2.5 py-2 text-left hover:border-accent hover:bg-card"
                     >
                       <Portrait person={p} size="sm" />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-serif text-base font-semibold text-ink">{p.name}</span>
-                        <span className="block truncate font-serif text-[14px] text-ink-muted">
+                        <span className="block truncate font-text text-base font-semibold text-ink">{p.name}</span>
+                        <span className="block truncate font-text text-[14px] text-ink-muted">
                           {[lifeYears(p), p.profile?.city].filter(Boolean).join(', ')}
                         </span>
                       </span>
-                      <span className="text-sm text-gilt-deep">{t.person.thatsMe}</span>
+                      <span className="text-sm text-accent-deep">{t.person.thatsMe}</span>
                     </button>
                   </li>
                 ))}
@@ -257,7 +255,7 @@ function Welcome({
             <button
               type="button"
               onClick={onGuest}
-              className="mt-4 font-serif text-[15px] italic text-ink-muted underline decoration-gilt/60 underline-offset-4 hover:text-ink"
+              className="mt-4 font-text text-[15px] italic text-ink-muted underline decoration-accent/60 underline-offset-4 hover:text-ink"
             >
               {t.tour.notInTree}
             </button>
@@ -299,7 +297,7 @@ function StepView({
 
   if (step.mode === 'modal') {
     return (
-      <div className="fixed inset-0 z-[90] overflow-y-auto bg-linen-deep/70 backdrop-blur-[2px]">
+      <div className="fixed inset-0 z-[90] overflow-y-auto bg-primary-deep/70 backdrop-blur-[2px]">
         <div className="grid min-h-full place-items-center p-4">{bubble}</div>
       </div>
     )
@@ -318,7 +316,7 @@ function StepView({
 function Spotlight({ hole }: { hole: Rect | null }) {
   if (!hole) {
     // Target not there yet (e.g. the info sheet is opening): block everything
-    return <div className="fixed inset-0 z-[90] bg-linen-deep/50" />
+    return <div className="fixed inset-0 z-[90] bg-primary-deep/50" />
   }
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -341,16 +339,16 @@ function Spotlight({ hole }: { hole: Rect | null }) {
         className="tour-hole pointer-events-none fixed z-[90] rounded-[16px]"
         style={{ left: r.x, top: r.y, width: r.w, height: r.h }}
       >
-        <Star className="sparkle absolute -left-2 -top-2 h-4 w-4 text-gilt-light" />
-        <Star className="sparkle absolute -right-2 -top-2 h-3 w-3 text-gilt-light [animation-delay:0.7s]" />
-        <Star className="sparkle absolute -bottom-2 -right-2 h-4 w-4 text-gilt-light [animation-delay:1.3s]" />
-        <Star className="sparkle absolute -bottom-2 -left-2 h-3 w-3 text-gilt-light [animation-delay:1.9s]" />
+        <Star className="sparkle absolute -left-2 -top-2 h-4 w-4 text-accent-light" />
+        <Star className="sparkle absolute -right-2 -top-2 h-3 w-3 text-accent-light [animation-delay:0.7s]" />
+        <Star className="sparkle absolute -bottom-2 -right-2 h-4 w-4 text-accent-light [animation-delay:1.3s]" />
+        <Star className="sparkle absolute -bottom-2 -left-2 h-3 w-3 text-accent-light [animation-delay:1.9s]" />
       </div>
     </>
   )
 }
 
-/** Pulsing gold ring around what matters */
+/** Pulsing accent ring around what matters */
 function GoldRing({ rect }: { rect: Rect }) {
   return (
     <div
@@ -402,11 +400,11 @@ function Bubble({
       aria-live="polite"
       aria-label={step.title}
       className={clsx(
-        'parchment gilt-frame z-[92] shadow-lifted',
+        'surface framed z-[92] shadow-lifted',
         compact ? 'px-4 pb-3 pt-2.5' : 'px-5 pb-4 pt-3.5',
         step.mode === 'modal'
           ? 'relative w-full max-w-md text-center'
-          : // !fixed: .gilt-frame sets position: relative
+          : // !fixed: .framed sets position: relative
             '!fixed transition-[top,left] duration-300 ease-settle',
       )}
       style={step.mode === 'modal' ? undefined : style}
@@ -427,10 +425,10 @@ function Bubble({
           step.mode === 'modal' && 'justify-center text-[1.75rem]',
         )}
       >
-        <Star className="h-4 w-4 shrink-0 text-gilt" />
+        <Star className="h-4 w-4 shrink-0 text-accent" />
         {step.title}
       </h2>
-      <p className={clsx('mt-1 font-serif leading-snug text-ink', compact ? 'text-[15px]' : 'text-[16.5px]')}>
+      <p className={clsx('mt-1 font-text leading-snug text-ink', compact ? 'text-[15px]' : 'text-[16.5px]')}>
         {step.text}
       </p>
       {step.calendar && (
@@ -448,7 +446,7 @@ function Bubble({
       >
         {step.doneWhen && !step.nextLabel ? (
           <>
-            <span className="font-serif text-[14.5px] italic leading-snug text-ink-muted">{t.tour.tryIt}</span>
+            <span className="font-text text-[14.5px] italic leading-snug text-ink-muted">{t.tour.tryIt}</span>
             <Button size="sm" onClick={onSkip}>
               {t.tour.skip}
             </Button>
@@ -463,7 +461,7 @@ function Bubble({
   )
 }
 
-/** Progress as gold dots, the current one as a diamond */
+/** Progress as accent dots, the current one as a diamond */
 function Progress({ position, total }: { position: number; total: number }) {
   const { t } = useI18n()
   return (
@@ -474,9 +472,9 @@ function Progress({ position, total }: { position: number; total: number }) {
           className={clsx(
             'block',
             i === position
-              ? 'h-2 w-2 rotate-45 bg-gilt'
+              ? 'h-2 w-2 rotate-45 bg-accent'
               : i < position
-              ? 'h-1.5 w-1.5 rounded-full bg-gilt/70'
+              ? 'h-1.5 w-1.5 rounded-full bg-accent/70'
               : 'h-1.5 w-1.5 rounded-full bg-card-rule',
           )}
         />
@@ -553,7 +551,7 @@ function unionRect(selectors: string[]): Rect | null {
   return box ? { x: box.l, y: box.t, w: box.r - box.l, h: box.b - box.t } : null
 }
 
-/** Four-pointed star like the sparkles on the gold line */
+/** Four-pointed star like the sparkles on the highlighted line */
 function Star({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>

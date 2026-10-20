@@ -37,7 +37,7 @@ export function ViewModes({
       <div
         role="radiogroup"
         aria-label={t.views.label}
-        className="parchment pointer-events-auto flex rounded-full border border-gilt/60 p-1 shadow-card"
+        className="surface pointer-events-auto flex rounded-full border border-frame/60 p-1 shadow-card"
       >
         <Tab active={!lineId && !relation} onClick={() => showLine(null)}>
           {t.views.wholeFamily}
@@ -55,7 +55,7 @@ export function ViewModes({
       </div>
 
       {other && (
-        <span className="parchment pointer-events-auto flex items-center rounded-full border border-gilt/60 pl-3 text-sm text-ink shadow-card">
+        <span className="surface pointer-events-auto flex items-center rounded-full border border-frame/60 pl-3 text-sm text-ink shadow-card">
           <span className="max-w-[10rem] truncate">{t.views.lineOf(splitName(other.name).given || other.name)}</span>
           <button
             type="button"
@@ -79,8 +79,8 @@ export function ViewModes({
           className={clsx(
             'pointer-events-auto grid h-10 w-10 place-items-center rounded-full border shadow-card',
             scopeOpen
-              ? 'border-gilt bg-linen text-gilt-soft'
-              : 'parchment border-gilt/60 text-ink-muted hover:text-ink',
+              ? 'border-accent bg-primary text-on-primary-accent'
+              : 'surface border-frame/60 text-ink-muted hover:text-ink',
           )}
         >
           <SlidersHorizontal className="h-[18px] w-[18px]" />
@@ -88,7 +88,7 @@ export function ViewModes({
       )}
 
       {!relation && !scopeOpen && !birthdays && (
-        <span className="parchment pointer-events-auto hidden rounded-full border border-card-rule px-3 py-1 text-sm tabular-nums text-ink-muted shadow-card sm:inline-block">
+        <span className="surface pointer-events-auto hidden rounded-full border border-card-rule px-3 py-1 text-sm tabular-nums text-ink-muted shadow-card sm:inline-block">
           {t.views.people(count)}
         </span>
       )}
@@ -117,7 +117,7 @@ function Tab({
       className={clsx(
         'h-8 whitespace-nowrap rounded-full px-3 text-sm transition-colors sm:px-3.5',
         active
-          ? 'bg-linen font-medium text-gilt-soft shadow-[inset_0_0_0_1px_rgb(var(--gilt)/0.5)]'
+          ? 'bg-primary font-medium text-on-primary-accent shadow-[inset_0_0_0_1px_rgb(var(--accent)/0.5)]'
           : 'text-ink-muted hover:text-ink',
         disabled && 'opacity-55',
       )}

@@ -118,13 +118,13 @@ function ExportDialog() {
   const scale = layout ? treeScale(layout, paper, orientation) : 1
   const pt = namePt(scale)
 
-  // Always print in the daylight theme
+  // Print in the chosen design, but always light: paper is white
   useEffect(() => {
     const root = document.documentElement
-    const prev = root.dataset.theme
-    if (prev) delete root.dataset.theme
+    const prev = root.dataset.mode
+    root.dataset.mode = 'light'
     return () => {
-      if (prev) root.dataset.theme = prev
+      if (prev) root.dataset.mode = prev
     }
   }, [])
 
@@ -150,24 +150,24 @@ function ExportDialog() {
   }
 
   return (
-    <div className="desk fixed inset-0 z-[80] flex flex-col overflow-hidden bg-paper print:static print:block print:overflow-visible print:bg-none">
+    <div className="page-backdrop fixed inset-0 z-[80] flex flex-col overflow-hidden bg-canvas print:static print:block print:overflow-visible print:bg-none">
       <style>{`@page { size: ${geo.w}mm ${geo.h}mm; margin: 0 }`}</style>
 
-      <header className="book-cover flex h-14 shrink-0 items-center gap-2 px-3 pt-[env(safe-area-inset-top)] text-card print:hidden">
+      <header className="header-bar flex h-14 shrink-0 items-center gap-2 px-3 pt-[env(safe-area-inset-top)] text-on-primary print:hidden">
         <button
           type="button"
           onClick={close}
-          className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-card/90 hover:bg-white/10"
+          className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-on-primary/90 hover:bg-on-primary/10"
         >
           <ArrowLeft className="h-4 w-4" /> {t.print.back}
         </button>
-        <h1 className="font-display text-[1.35rem] text-gilt-soft">{t.print.title}</h1>
+        <h1 className="font-display text-[1.35rem] text-on-primary-accent">{t.print.title}</h1>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-auto md:flex-row md:overflow-hidden print:block print:overflow-visible">
         {/* Settings */}
         <aside className="shrink-0 p-3 md:w-[380px] md:overflow-auto md:p-4 print:hidden">
-          <div className="parchment flex flex-col gap-4 rounded-card border border-gilt/60 p-4 shadow-card">
+          <div className="surface flex flex-col gap-4 rounded-card border border-frame/60 p-4 shadow-card">
             <Segmented dense label={t.print.content} value={content} options={options} onChange={chooseContent} />
             <Segmented
               label={t.print.format}
@@ -336,30 +336,30 @@ function Sheet({
         } as React.CSSProperties
       }
     >
-      {/* Double gold frame */}
+      {/* Double frame in the accent colour */}
       <div
         className="relative flex h-full flex-col"
-        style={{ border: `${0.45 * geo.k}mm solid rgb(var(--gilt))`, padding: mm(geo.pad) }}
+        style={{ border: `${0.45 * geo.k}mm solid rgb(var(--accent))`, padding: mm(geo.pad) }}
       >
         <span
           aria-hidden
           className="pointer-events-none absolute"
-          style={{ inset: mm(1.3 * geo.k), border: `${0.18 * geo.k}mm solid rgb(var(--gilt) / 0.65)` }}
+          style={{ inset: mm(1.3 * geo.k), border: `${0.18 * geo.k}mm solid rgb(var(--accent) / 0.65)` }}
         />
 
         <header className="flex flex-col items-center text-center" style={{ height: mm(geo.header) }}>
-          <p className="font-serif italic text-ink-muted" style={{ fontSize: '0.95em' }}>
+          <p className="font-text italic text-ink-muted" style={{ fontSize: '0.95em' }}>
             {heading.kicker}
           </p>
           <h2 className="font-display leading-[1.1] text-ink" style={{ fontSize: '2.15em', marginTop: '0.1em' }}>
             {heading.title}
           </h2>
           <Flourish
-            className="text-gilt"
+            className="text-accent"
             style={{ width: mm(58 * geo.k), height: mm(3.6 * geo.k), margin: '0.35em 0' }}
           />
           {heading.lines.map((l) => (
-            <p key={l} className="max-w-[85%] font-serif leading-snug text-ink-muted" style={{ fontSize: '0.9em' }}>
+            <p key={l} className="max-w-[85%] font-text leading-snug text-ink-muted" style={{ fontSize: '0.9em' }}>
               {l}
             </p>
           ))}
@@ -403,12 +403,12 @@ function Sheet({
               </div>
             </div>
           ) : (
-            <p className="font-serif italic text-ink-muted">{t.print.layingOut}</p>
+            <p className="font-text italic text-ink-muted">{t.print.layingOut}</p>
           )}
         </div>
 
         <footer
-          className="flex items-end justify-between font-serif text-ink-muted"
+          className="flex items-end justify-between font-text text-ink-muted"
           style={{ height: mm(geo.footer), fontSize: '0.8em' }}
         >
           <span className="flex items-center" style={{ gap: '1.4em' }}>
@@ -419,7 +419,7 @@ function Sheet({
               <span className="flex items-center" style={{ gap: '0.4em' }}>
                 <span
                   className="inline-block"
-                  style={{ width: '1.8em', height: '0.18em', background: 'rgb(var(--gilt))' }}
+                  style={{ width: '1.8em', height: '0.18em', background: 'rgb(var(--accent))' }}
                 />
                 {heading.legendLine}
               </span>

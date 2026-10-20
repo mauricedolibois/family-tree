@@ -4,6 +4,7 @@
 import Head from 'next/head'
 import { Flourish } from '@/components/ui/Flourish'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
+import { ThemePicker } from '@/components/ui/ThemePicker'
 import { useI18n } from '@/i18n/I18nProvider'
 
 export function AuthLayout({
@@ -24,20 +25,21 @@ export function AuthLayout({
       <Head>
         <title>{title}</title>
       </Head>
-      <main className="book-cover grid min-h-dvh place-items-center p-4 sm:p-8">
+      <main className="header-bar grid min-h-dvh place-items-center p-4 sm:p-8">
         <div className="w-full max-w-[26rem]">
-          <div className="gilt-frame px-6 pb-7 pt-9 text-center sm:px-10">
-            <p className="font-display text-[1.05rem] italic text-gilt/80">{t.auth.kicker}</p>
-            <h1 className="gilt-text mt-1 font-display text-[3.4rem] leading-none">{t.app.title}</h1>
+          <div className="framed px-6 pb-7 pt-9 text-center sm:px-10">
+            <p className="ornament font-display text-[1.05rem] italic text-accent/80">{t.auth.kicker}</p>
+            <h1 className="title-text mt-1 font-display text-[3.4rem] leading-none">{t.app.title}</h1>
             <Flourish className="mx-auto mt-3 max-w-[14rem]" />
-            {intro && <p className="mx-auto mt-3 max-w-[20rem] font-serif text-[17px] text-card/70">{intro}</p>}
+            {intro && <p className="mx-auto mt-3 max-w-[20rem] font-text text-[17px] text-on-primary/70">{intro}</p>}
           </div>
 
-          <div className="parchment mt-5 rounded-panel border border-gilt/60 p-5 shadow-lifted sm:p-6">{children}</div>
+          <div className="surface mt-5 rounded-panel border border-frame/60 p-5 shadow-lifted sm:p-6">{children}</div>
 
-          {footer && <div className="mt-4 text-center text-[15px] text-card/75">{footer}</div>}
-          <div className="mt-5 flex justify-center">
+          {footer && <div className="mt-4 text-center text-[15px] text-on-primary/75">{footer}</div>}
+          <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
             <LanguagePicker tone="cover" />
+            <ThemePicker tone="cover" />
           </div>
         </div>
       </main>
@@ -53,7 +55,7 @@ export function FormMessage({ tone = 'error', children }: { tone?: 'error' | 'in
       className={
         tone === 'error'
           ? 'rounded-control bg-danger-soft px-3 py-2 text-sm text-danger'
-          : 'rounded-control bg-gilt-soft/60 px-3 py-2 text-sm text-gilt-deep'
+          : 'rounded-control bg-accent-soft/60 px-3 py-2 text-sm text-accent-deep'
       }
     >
       {children}

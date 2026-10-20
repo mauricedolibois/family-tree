@@ -88,7 +88,7 @@ export default function InvitePage({ token }: Props) {
       {gone ? (
         <div className="flex flex-col gap-3">
           <FormMessage>{gone === 'expired' ? t.invite.expired : t.invite.invalid}</FormMessage>
-          <Link href="/login" className="text-[15px] text-linen underline underline-offset-4">
+          <Link href="/login" className="text-[15px] text-link underline underline-offset-4">
             {t.forgot.back}
           </Link>
         </div>
@@ -139,7 +139,7 @@ export default function InvitePage({ token }: Props) {
             {t.invite.haveAccount}{' '}
             <Link
               href={`/login?next=${encodeURIComponent(here)}`}
-              className="font-medium text-linen underline underline-offset-4"
+              className="font-medium text-link underline underline-offset-4"
             >
               {t.login.submit}
             </Link>

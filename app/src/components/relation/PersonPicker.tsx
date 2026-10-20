@@ -33,7 +33,7 @@ export function PersonChip({
         onClick={onClick}
         data-tour={tour}
         aria-label={t.relation.choose(label)}
-        className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-control border border-dashed border-gilt/70 px-2 text-[15px] text-ink-muted hover:border-gilt hover:bg-gilt-soft/40 hover:text-ink"
+        className="flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-control border border-dashed border-frame/70 px-2 text-[15px] text-ink-muted hover:border-accent hover:bg-accent-soft/40 hover:text-ink"
       >
         <UserSearch className="h-4 w-4 shrink-0" />
         <span className="truncate">{t.relation.pickPerson}</span>
@@ -48,12 +48,12 @@ export function PersonChip({
       onClick={onClick}
       data-tour={tour}
       aria-label={t.relation.change(label, person.name)}
-      className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-control border border-gilt/60 bg-card/80 px-2 text-left hover:border-gilt hover:bg-card"
+      className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-control border border-frame/60 bg-card/80 px-2 text-left hover:border-accent hover:bg-card"
     >
       <Portrait person={person} size="sm" className="hidden min-[400px]:inline-grid" />
       <span className="min-w-0 flex-1 leading-tight">
-        <span className="block truncate font-serif text-[15.5px] font-semibold text-ink">{given || surname}</span>
-        <span className="block truncate font-serif text-[13.5px] text-ink-muted">
+        <span className="block truncate font-text text-[15.5px] font-semibold text-ink">{given || surname}</span>
+        <span className="block truncate font-text text-[13.5px] text-ink-muted">
           {[given && surname, years].filter(Boolean).join(', ')}
         </span>
       </span>
@@ -150,13 +150,13 @@ export function PersonSearchField({
                 onMouseEnter={() => setActive(i)}
                 className={clsx(
                   'flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left',
-                  i === active && 'bg-paper-raised',
+                  i === active && 'bg-canvas-raised',
                 )}
               >
                 <Portrait person={p} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-serif text-base font-semibold text-ink">{p.name}</span>
-                  <span className="block truncate font-serif text-[14px] text-ink-muted">
+                  <span className="block truncate font-text text-base font-semibold text-ink">{p.name}</span>
+                  <span className="block truncate font-text text-[14px] text-ink-muted">
                     {[lifeYears(p), p.profile?.city].filter(Boolean).join(', ')}
                   </span>
                 </span>

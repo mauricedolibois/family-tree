@@ -1,5 +1,5 @@
 // src/components/ui/Button.tsx
-// Design-system buttons: primary (linen), secondary (parchment), quiet (text only), danger.
+// Buttons: primary (filled), secondary (on a surface), quiet (text only), danger.
 
 import clsx from 'clsx'
 import { forwardRef, type ButtonHTMLAttributes } from 'react'
@@ -8,9 +8,11 @@ type Variant = 'primary' | 'secondary' | 'quiet' | 'danger'
 type Size = 'md' | 'sm'
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-linen text-card hover:bg-linen-hover shadow-[inset_0_-1px_0_rgb(0_0_0/0.25)] disabled:bg-linen/50',
-  secondary: 'border border-card-rule bg-card text-ink hover:border-line hover:bg-paper-raised disabled:text-ink-faint',
-  quiet: 'text-ink-muted hover:bg-paper-raised hover:text-ink disabled:text-ink-faint',
+  primary:
+    'bg-primary text-on-primary hover:bg-primary-hover shadow-[inset_0_-1px_0_rgb(0_0_0/0.25)] disabled:bg-primary/50',
+  secondary:
+    'border border-card-rule bg-card text-ink hover:border-line hover:bg-canvas-raised disabled:text-ink-faint',
+  quiet: 'text-ink-muted hover:bg-canvas-raised hover:text-ink disabled:text-ink-faint',
   danger: 'text-danger hover:bg-danger-soft disabled:opacity-50',
 }
 

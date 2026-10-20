@@ -35,11 +35,11 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, o
       aria-pressed={state === 'selected'}
       aria-label={[person.name, years].filter(Boolean).join(', ')}
       className={clsx(
-        'bookplate absolute flex items-center gap-3 rounded-card border px-2.5 text-left',
+        'person-card absolute flex items-center gap-3 rounded-card border px-2.5 text-left',
         'transition-[opacity,box-shadow,border-color] duration-300 ease-settle',
         past ? 'bg-card-past' : 'bg-card',
-        state === 'selected' && 'candle-glow z-10 border-gilt [--plate-rule:rgb(var(--gilt))]',
-        state === 'line' && 'border-gilt/80 shadow-card [--plate-rule:rgb(var(--gilt)/0.55)]',
+        state === 'selected' && 'selected-glow z-10 border-accent [--plate-rule:rgb(var(--accent))]',
+        state === 'line' && 'border-frame/80 shadow-card [--plate-rule:rgb(var(--accent)/0.55)]',
         state === 'normal' && 'border-card-rule shadow-card hover:border-line',
         state === 'dimmed' && 'border-card-rule opacity-[0.38] hover:opacity-80',
       )}
@@ -47,17 +47,17 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, o
     >
       <Portrait person={person} />
       <span className="min-w-0 flex-1 leading-tight">
-        <span className="block truncate font-serif text-[16.5px] font-semibold text-ink">{given || surname}</span>
+        <span className="block truncate font-text text-[16.5px] font-semibold text-ink">{given || surname}</span>
         {given && surname && (
-          <span className="block truncate font-serif text-[14px] tracking-[0.04em] text-ink-muted [font-variant-caps:all-small-caps]">
+          <span className="block truncate font-text text-[14px] tracking-[0.04em] text-ink-muted [font-variant-caps:all-small-caps]">
             {surname}
           </span>
         )}
-        <span className="mt-px flex items-center gap-1.5 font-serif text-[13.5px] text-ink-faint">
+        <span className="mt-px flex items-center gap-1.5 font-text text-[13.5px] text-ink-faint">
           {country && <CountryFlag country={country} />}
           {years && <span>{years}</span>}
           {isMe && (
-            <span className="rounded-full bg-linen-tint px-1.5 text-[11px] font-medium text-linen">
+            <span className="rounded-full bg-primary-tint px-1.5 text-[11px] font-medium text-on-tint">
               {t.person.youBadge}
             </span>
           )}

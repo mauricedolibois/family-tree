@@ -77,7 +77,7 @@ export default function AccountPage({ user }: Props) {
       footer={
         <Link
           href="/?pick=1"
-          className="inline-flex items-center gap-1.5 text-gilt-soft underline decoration-gilt/60 underline-offset-4"
+          className="inline-flex items-center gap-1.5 text-on-primary-accent underline decoration-accent/60 underline-offset-4"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden /> {t.account.backToTrees}
         </Link>

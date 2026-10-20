@@ -26,7 +26,7 @@ export type Step = {
   target?: string
   /** Extra areas that belong to it (e.g. a results list that pops open) */
   also?: string[]
-  /** Small gold ring around what matters */
+  /** Small accent ring around what matters */
   ring?: string
   /** Scroll the area or ring in the info sheet into view */
   scrollTo?: string
