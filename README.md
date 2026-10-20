@@ -30,7 +30,8 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 - **Deceased, date unknown:** an "is deceased" switch when editing ("already deceased" when adding); the date of death becomes optional. The card shows e.g. "1888–†" and the person drops out of birthdays and the calendar.
 - **Export as PDF** from the menu: your line, a relation or the whole family, portrait or landscape, A4 to A1. A print-ready sheet with gold frame, title and date, saved through the print dialog ("Save as PDF") so everything stays vector-sharp.
 - **Country flag** for every person with a country of origin.
-- **Download a backup** as JSON, or **export everything with photos** as a ZIP file, from the menu. Admins import such files as new trees, moderators can replace their tree with one.
+- **Download** the tree with all photos as a ZIP file from the menu. Admins import such files (or older JSON backups) as new trees, moderators can replace their tree with one.
+- **Undo** right after every change, and a **history** for moderators and admins: every earlier version with what changed and who changed it, to restore or download.
 
 ## Security and data
 

@@ -20,8 +20,9 @@ ids cannot be probed.
 | `POST /api/trees/<id>/calendar` new link | 401 | 403 | ✓ | ✓ | 404 | ✓ |
 | `POST /api/trees/<id>/media` upload | 401 | 403 | ✓ | ✓ | 404 | ✓ |
 | `GET /api/media/<id>/<file>` photo or document | 404 | ✓ | ✓ | ✓ | 404 | ✓ |
-| `GET /api/trees/<id>/export` ZIP with photos | 401 | ✓ | ✓ | ✓ | 404 | ✓ |
+| `GET /api/trees/<id>/download` ZIP with photos | 401 | ✓ | ✓ | ✓ | 404 | ✓ |
 | `GET /api/trees/<id>/members`, invitations, roles | 401 | 403 | 403 | ✓ | 404 | ✓ |
+| `/api/trees/<id>/history` versions, restore, download | 401 | 403 | 403 | ✓ | 404 | ✓ |
 | `POST /api/trees/<id>/import` replace from file | 401 | 403 | 403 | ✓ | 404 | ✓ |
 | `POST /api/trees/import` new tree from file | 401 | 403 | 403 | 403 | 403 | ✓ |
 | `/api/admin/…` accounts, trees, trash, invitations | 401 | 403 | 403 | 403 | 403 | ✓ |
@@ -72,6 +73,6 @@ Further limits:
 
 - Photos someone has already seen may stay in their browser cache for up to a
   week after they lose access (files never change, so they are cached long).
-- Viewers can still download everything they see (export, JSON backup); that is
+- Viewers can still download everything they see (the ZIP download); that is
   the point of being a member, not a gap.
 - The Supabase secrets themselves (`supabase.md`, step 4).

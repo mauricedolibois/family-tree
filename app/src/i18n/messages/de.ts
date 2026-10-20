@@ -53,11 +53,9 @@ export const de = {
     birthdays: 'Nächste Geburtstage',
     exportPdf: 'Als PDF exportieren',
     startTour: 'Einführung starten',
-    downloadBackup: 'Sicherung herunterladen',
-    exportZip: 'Export mit Bildern (ZIP)',
     logout: 'Abmelden',
+    download: 'Herunterladen (mit Bildern)',
     switchTree: 'Stammbaum wechseln',
-    backupFile: 'stammbaum',
   },
   errors: {
     edit: {
@@ -589,21 +587,52 @@ export const de = {
       'invalid name': 'Bitte einen Namen eingeben.',
     } as Record<string, string>,
   },
+  history: {
+    title: 'Verlauf',
+    intro: (tree: string) =>
+      `Frühere Stände von „${tree}“. Vor jeder Änderung, jedem Import und jeder Wiederherstellung wird der ganze Stammbaum gesichert.`,
+    undo: 'Rückgängig',
+    undone: 'Rückgängig gemacht.',
+    kind: {
+      change: 'Stand vor dieser Änderung',
+      daily: 'Tagesstand',
+      manual: 'Von Hand gesichert',
+      restore: 'Stand vor einer Wiederherstellung',
+      import: 'Stand vor einem Import',
+    } as Record<string, string>,
+    added: (names: string) => `Hinzugefügt: ${names}`,
+    removed: (names: string) => `Entfernt: ${names}`,
+    edited: (names: string) => `Bearbeitet: ${names}`,
+    relinked: (names: string) => `Verbindungen geändert: ${names}`,
+    rootChanged: 'Startperson geändert',
+    more: (n: number) => `und ${n} weitere`,
+    by: (name: string) => `von ${name}`,
+    people: (n: number) => (n === 1 ? '1 Person' : `${n} Personen`),
+    restore: 'Wiederherstellen',
+    download: 'Herunterladen',
+    confirmRestore: (date: string) =>
+      `Den ganzen Stammbaum auf den Stand vom ${date} zurücksetzen? Was danach geändert wurde, ist dann nicht mehr zu sehen. Der jetzige Stand wird vorher gesichert und bleibt im Verlauf.`,
+    restored: (date: string) => `Der Stand vom ${date} ist wiederhergestellt.`,
+    empty: 'Noch keine früheren Stände.',
+    older: 'Ältere Stände laden',
+  },
   transfer: {
     importTitle: 'Stammbaum importieren',
-    importHint: 'Ein Export (ZIP, mit Bildern) oder ein Backup (JSON) wird zu einem neuen Stammbaum.',
+    importHint:
+      'Ein heruntergeladener Stammbaum (ZIP mit Bildern) oder eine ältere Sicherung (JSON) wird zu einem neuen Stammbaum.',
     name: 'Name des Stammbaums',
     file: 'Datei',
     importButton: 'Importieren',
     created: (name: string, people: number) => `„${name}“ ist angelegt (${people} Personen).`,
     replaceTitle: 'Aus Datei ersetzen',
     replaceHint:
-      'Ersetzt den ganzen Stammbaum durch einen Export (ZIP) oder ein Backup (JSON). Der jetzige Stand wird vorher gesichert und lässt sich von einem Admin zurückholen.',
+      'Ersetzt den ganzen Stammbaum durch einen heruntergeladenen Stammbaum (ZIP) oder eine ältere Sicherung (JSON). Der jetzige Stand bleibt im Verlauf und lässt sich dort wiederherstellen.',
     replaceButton: 'Stammbaum ersetzen',
     confirmReplace: (name: string) => `Den ganzen Stammbaum „${name}“ durch den Inhalt der Datei ersetzen?`,
     replaced: (people: number) => `Ersetzt: ${people} Personen.`,
     status: {
-      unreadable: 'Die Datei lässt sich nicht lesen. Erwartet wird ein Export (ZIP) oder ein Backup (JSON).',
+      unreadable:
+        'Die Datei lässt sich nicht lesen. Erwartet wird ein heruntergeladener Stammbaum (ZIP) oder eine Sicherung (JSON).',
       'too large': 'Die Datei ist zu groß (höchstens 200 MB, je Bild 25 MB, 2000 Dateien).',
       'invalid tree': 'Die Datei enthält keinen gültigen Stammbaum.',
       'invalid name': 'Bitte einen Namen eingeben.',

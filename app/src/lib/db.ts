@@ -5,7 +5,7 @@
 import { randomBytes } from 'crypto'
 import { getSupaAdmin } from './supabaseServer'
 import type { StoredTree } from '@/storage/schema'
-import { describeChange } from '@/storage/changes'
+import { changeNote, describeChange, type ChangeSummary } from '@/storage/changes'
 import { logError } from './log'
 
 export type LoadedTree = { tree: StoredTree; version: string }
@@ -37,32 +37,53 @@ export async function saveTree(treeId: string, tree: StoredTree, baseVersion: st
   return { status: 'saved', version: data[0].updated_at }
 }
 
+const peopleIn = (tree: StoredTree) => Object.keys(tree.members ?? {}).length
+
 /**
- * Backs up the current version before every change, noting what is about to
- * change so a specific state can be restored if needed. The daily backup job
- * prunes these snapshots after a while.
+ * Backs up the current version before every change, noting who changes what, so
+ * the history can show it and a version can be restored. The daily backup job
+ * prunes these after a while.
  */
-export async function snapshotBeforeSave(treeId: string, current: StoredTree, next: StoredTree) {
+export async function snapshotBeforeSave(treeId: string, current: StoredTree, next: StoredTree, userId: string) {
   const change = describeChange(current, next)
   if (!change) return // nothing changed, nothing to back up
   const { error } = await getSupaAdmin()
     .from('tree_backups')
-    .insert({ tree_id: treeId, data: current, kind: 'change', note: change.slice(0, 500) })
+    .insert({
+      tree_id: treeId,
+      data: current,
+      kind: 'change',
+      note: changeNote(change).slice(0, 500),
+      change,
+      people: peopleIn(current),
+      created_by: userId,
+    })
   // A failed snapshot must not stop the save; the log shows it
   if (error) logError('db.snapshotBeforeSave', error)
 }
 
 /**
- * Replaces the whole tree, for imports: backs up the current version first (kind
- * "import"), so an import can be undone with admin.restore. Open editing sessions
- * elsewhere get a conflict on their next save, as after any other change.
+ * Replaces the whole tree, after backing up the current version with the given
+ * kind ("import" or "restore"), so this can be undone the same way. Open editing
+ * sessions elsewhere get a conflict on their next save, as after any other change.
  */
-export async function replaceTree(treeId: string, tree: StoredTree): Promise<string> {
+export async function replaceTree(
+  treeId: string,
+  tree: StoredTree,
+  backup: { kind: 'import' | 'restore'; note: string; userId: string },
+): Promise<string> {
   const current = await loadTree(treeId)
   if (current) {
     const { error } = await getSupaAdmin()
       .from('tree_backups')
-      .insert({ tree_id: treeId, data: current.tree, kind: 'import', note: 'before import' })
+      .insert({
+        tree_id: treeId,
+        data: current.tree,
+        kind: backup.kind,
+        note: backup.note,
+        people: peopleIn(current.tree),
+        created_by: backup.userId,
+      })
     if (error) throw error
   }
   const { data, error } = await getSupaAdmin()
@@ -73,6 +94,52 @@ export async function replaceTree(treeId: string, tree: StoredTree): Promise<str
     .single()
   if (error) throw error
   return data.updated_at
+}
+
+// ── History ──────────────────────────────────────────────────────────────────
+
+export type VersionKind = 'change' | 'daily' | 'manual' | 'restore' | 'import'
+
+export type VersionSummary = {
+  id: number
+  created_at: string
+  kind: VersionKind
+  note: string | null
+  change: ChangeSummary | null
+  people: number | null
+  author: string | null
+}
+
+const PAGE = 50
+
+/** Versions of a tree, newest first, 50 at a time (older ones with `before`) */
+export async function listVersions(treeId: string, before?: number): Promise<VersionSummary[]> {
+  let query = getSupaAdmin()
+    .from('tree_backups')
+    .select('id,created_at,kind,note,change,people,users(name)')
+    .eq('tree_id', treeId)
+  if (before) query = query.lt('id', before)
+  const { data, error } = await query.order('id', { ascending: false }).limit(PAGE)
+  if (error) throw error
+  return (data ?? []).map((row) => {
+    const { users, ...version } = row as unknown as Omit<VersionSummary, 'author'> & { users: { name: string } | null }
+    return { ...version, author: users?.name ?? null }
+  })
+}
+
+/** One version's tree, only if it belongs to the given tree */
+export async function loadVersion(
+  treeId: string,
+  id: number,
+): Promise<{ tree: StoredTree; created_at: string } | null> {
+  const { data, error } = await getSupaAdmin()
+    .from('tree_backups')
+    .select('data,created_at')
+    .eq('tree_id', treeId)
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return data ? { tree: data.data as StoredTree, created_at: data.created_at as string } : null
 }
 
 // ── Calendar subscription ─────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
--- Family tree database, version 4: everything a new installation needs.
+-- Family tree database, version 5: everything a new installation needs.
 --
 -- Run the whole file once in the Supabase SQL editor (or with psql) on a database
 -- without family tree tables. Existing installations do not use this file; they
@@ -42,7 +42,12 @@ create table public.tree_backups (
   data jsonb not null,
   kind text not null check (kind in ('change', 'daily', 'manual', 'restore', 'import')),
   note text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Number of people, for listing versions without reading every tree
+  people integer,
+  -- For kind "change": what the following change did, by name (added, removed,
+  -- edited, relinked, rootChanged), so the history can show it in any language
+  change jsonb
 );
 create index tree_backups_tree on public.tree_backups (tree_id, created_at desc);
 
@@ -62,6 +67,9 @@ create table public.users (
   created_at timestamptz not null default now()
 );
 create unique index users_email_key on public.users (lower(email));
+
+-- Who made the change, restore or import that followed this version
+alter table public.tree_backups add column created_by uuid references public.users (id) on delete set null;
 
 -- Who may do what in which tree: viewers read, editors also change the tree,
 -- moderators also invite people and manage the members of the tree. Admins may do
@@ -121,7 +129,7 @@ create table public.app_meta (
   key text primary key,
   value text not null
 );
-insert into public.app_meta (key, value) values ('schema_version', '4');
+insert into public.app_meta (key, value) values ('schema_version', '5');
 
 -- ── Access ───────────────────────────────────────────────────────────────────
 
@@ -204,8 +212,8 @@ begin
     );
   end if;
 
-  insert into public.tree_backups (tree_id, data, kind, note)
-  select id, data, 'restore', format('before restoring backup %s', backup_id)
+  insert into public.tree_backups (tree_id, data, kind, note, people)
+  select id, data, 'restore', format('before restoring backup %s', backup_id), people_now
   from public.trees
   where id = b.tree_id and data is not null;
 
@@ -225,8 +233,10 @@ as $$
 declare
   n int;
 begin
-  insert into public.tree_backups (tree_id, data, kind, note)
-  select id, data, 'manual', backup.note from public.trees where data is not null;
+  insert into public.tree_backups (tree_id, data, kind, note, people)
+  select id, data, 'manual', backup.note, (select count(*) from jsonb_object_keys(data -> 'members'))
+  from public.trees
+  where data is not null;
   get diagnostics n = row_count;
   return format('%s tree(s) backed up.', n);
 end
@@ -259,4 +269,4 @@ notify pgrst, 'reload schema';
 
 commit;
 
-select 'Database is set up (version 4).' as result;
+select 'Database is set up (version 5).' as result;

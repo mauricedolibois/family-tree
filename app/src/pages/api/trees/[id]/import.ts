@@ -22,7 +22,7 @@ export default withUser('api/trees/[id]/import', async (req, res, user) => {
     const { data } = await readImportRequest(req)
     const mayRead = async (id: string) => !!(await treeAccess(user, id))
     const imported = await prepareImport(unpackImport(data), tree.id, mayRead, stored)
-    await replaceTree(tree.id, imported)
+    await replaceTree(tree.id, imported, { kind: 'import', note: 'before import', userId: user.id })
     return res.status(200).json({ ok: true, people: Object.keys(imported.members).length })
   } catch (err) {
     await removeMedia(stored).catch(() => {})
