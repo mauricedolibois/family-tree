@@ -28,6 +28,29 @@ test:
     - npm run check-format
     - npm test -- --ci
 
+# setup.sql and the migrations must lead to the same schema (supabase/check.sh).
+# Only when something under supabase/ changed.
+database:
+  stage: test
+  image:
+    name: postgres:15-alpine
+    entrypoint: [""]
+  services:
+    - name: postgres:15-alpine
+      alias: db
+  variables:
+    POSTGRES_PASSWORD: check
+    PGHOST: db
+    PGUSER: postgres
+    PGPASSWORD: check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+      changes: [supabase/**/*]
+  script:
+    - sh supabase/check.sh
+
 # Known vulnerabilities in runtime dependencies. Only warns (yellow), never blocks a deploy.
 # Also runs in scheduled pipelines (Build → Pipeline schedules, e.g. weekly).
 audit:

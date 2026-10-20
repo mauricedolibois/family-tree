@@ -25,19 +25,19 @@ export default withAdmin('api/admin/invites', async (req, res, admin) => {
   const email = typeof body.email === 'string' && body.email.trim() ? body.email.trim() : null
   if (email && !looksLikeEmail(email)) return res.status(400).json({ error: 'invalid email' })
   const makeAdmin = body.admin === true
-  const familyId = body.treeId ? treeIdParam(String(body.treeId)) : null
-  const role: Role | null = familyId ? (body.role === 'viewer' ? 'viewer' : 'editor') : null
-  if (body.treeId && !familyId) return res.status(400).json({ error: 'invalid tree' })
-  if (!familyId && !makeAdmin) return res.status(400).json({ error: 'nothing to grant' })
-  const tree = familyId ? await getTree(familyId) : null
-  if (familyId && !tree) return res.status(404).json({ error: 'tree not found' })
+  const treeId = body.treeId ? treeIdParam(String(body.treeId)) : null
+  const role: Role | null = treeId ? (body.role === 'viewer' ? 'viewer' : 'editor') : null
+  if (body.treeId && !treeId) return res.status(400).json({ error: 'invalid tree' })
+  if (!treeId && !makeAdmin) return res.status(400).json({ error: 'nothing to grant' })
+  const tree = treeId ? await getTree(treeId) : null
+  if (treeId && !tree) return res.status(404).json({ error: 'tree not found' })
   const days = Math.min(Math.max(Math.round(Number(body.days) || DEFAULT_DAYS), 1), MAX_DAYS)
 
   const token = newToken()
   const invite = await createInvite({
     tokenHash: hashToken(token),
     email,
-    familyId,
+    treeId,
     role,
     makeAdmin,
     createdBy: admin.id,

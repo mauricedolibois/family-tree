@@ -1,9 +1,9 @@
 /**
- * Daily backup of all family trees into family_trees_backup.
+ * Daily backup of all family trees into tree_backups.
  *
  * - Backs up a tree only if it changed since its last backup.
- * - Prunes automatic backups: pre-change snapshots after 90 days, daily ones
- *   after a year. Manual backups are kept forever.
+ * - Prunes automatic backups: snapshots before a change or a restore after
+ *   90 days, daily ones after a year. Manual backups are kept forever.
  * - Deletes photos and documents only once neither the current tree nor any
  *   backup refers to them (and they are older than a week), so restored
  *   versions keep their images.
@@ -20,13 +20,11 @@ if (!url || !key) {
 }
 
 const supabase = createClient(url, key, { auth: { persistSession: false } })
-// The notes are stored with every backup and matched by prefix below, so they
-// stay German to keep pruning working for existing rows.
-const NOTE = 'automatisch: tägliche Sicherung'
-/** How long automatic backups are kept (days), by note prefix */
+/** How long automatic backups are kept (days), by kind; manual ones stay */
 const KEEP = [
-  { prefix: 'automatisch: vor %', days: 90 },
-  { prefix: 'automatisch: tägliche%', days: 365 },
+  { kind: 'change', days: 90 },
+  { kind: 'restore', days: 90 },
+  { kind: 'daily', days: 365 },
 ]
 
 /** Stable fingerprint of a JSON value (keys sorted). */
@@ -47,35 +45,33 @@ function fingerprint(value) {
 }
 
 async function main() {
-  const { data: trees, error } = await supabase.from('family_trees').select('family_id, tree_json')
+  const { data: trees, error } = await supabase.from('trees').select('id, data').not('data', 'is', null)
   if (error) throw error
 
   let saved = 0
   for (const t of trees) {
     const { data: last, error: lastErr } = await supabase
-      .from('family_trees_backup')
-      .select('tree_json')
-      .eq('family_id', t.family_id)
-      .order('backed_up_at', { ascending: false })
+      .from('tree_backups')
+      .select('data')
+      .eq('tree_id', t.id)
+      .order('created_at', { ascending: false })
       .limit(1)
     if (lastErr) throw lastErr
-    if (last?.[0] && fingerprint(last[0].tree_json) === fingerprint(t.tree_json)) continue
+    if (last?.[0] && fingerprint(last[0].data) === fingerprint(t.data)) continue
 
-    const { error: insErr } = await supabase
-      .from('family_trees_backup')
-      .insert({ family_id: t.family_id, tree_json: t.tree_json, note: NOTE })
+    const { error: insErr } = await supabase.from('tree_backups').insert({ tree_id: t.id, data: t.data, kind: 'daily' })
     if (insErr) throw insErr
     saved++
   }
 
   let removed = 0
-  for (const { prefix, days } of KEEP) {
+  for (const { kind, days } of KEEP) {
     const cutoff = new Date(Date.now() - days * 86400_000).toISOString()
     const { count, error: delErr } = await supabase
-      .from('family_trees_backup')
+      .from('tree_backups')
       .delete({ count: 'exact' })
-      .like('note', prefix)
-      .lt('backed_up_at', cutoff)
+      .eq('kind', kind)
+      .lt('created_at', cutoff)
     if (delErr) throw delErr
     removed += count ?? 0
   }
@@ -117,8 +113,8 @@ async function readAll(table, columns) {
 /** Remove files no longer referenced by any tree or backup */
 async function removeOrphanFiles() {
   const referenced = new Set()
-  for (const row of await readAll('family_trees', 'family_id, tree_json')) collectPaths(row.tree_json, referenced)
-  for (const row of await readAll('family_trees_backup', 'tree_json')) collectPaths(row.tree_json, referenced)
+  for (const row of await readAll('trees', 'data')) collectPaths(row.data, referenced)
+  for (const row of await readAll('tree_backups', 'data')) collectPaths(row.data, referenced)
   if (referenced.size === 0) {
     console.log('ℹ️ no file references found; deleting nothing to be safe')
     return 0

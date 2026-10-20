@@ -500,6 +500,14 @@ export const de = {
     none: 'Du gehörst noch zu keinem Stammbaum. Bitte jemanden, dich einzuladen.',
     noneAdmin: 'Es gibt noch keinen Stammbaum. Lege in der Verwaltung einen an.',
   },
+  setup: {
+    missing:
+      'Die Datenbank ist noch nicht eingerichtet. Ein Admin muss supabase/setup.sql im Supabase-SQL-Editor ausführen.',
+    outdated: (have: number, need: number) =>
+      `Die Datenbank ist auf Version ${have}, diese App braucht Version ${need}. Ein Admin muss die fehlenden Skripte aus supabase/migrations im Supabase-SQL-Editor ausführen.`,
+    noAccount:
+      'Es gibt noch kein Konto. Den Link für den ersten Admin schreibt die App beim Start in ihr Log (docker logs family-tree-app).',
+  },
   admin: {
     title: 'Verwaltung',
     noMail: 'Diese Seite verschickt keine Mails: Einladungen und Links zum Zurücksetzen gibst du selbst weiter.',

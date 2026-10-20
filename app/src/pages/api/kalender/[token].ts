@@ -4,7 +4,7 @@
 // (see src/family/calendarLink.ts).
 
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getFamilyByCalendarToken, loadFamilyTree } from '@/lib/db'
+import { getTreeByCalendarToken, loadTree } from '@/lib/db'
 import { birthdayCalendar } from '@/family/ical'
 import { calendarLocale, calendarSubset, parseCalendarQuery } from '@/family/calendarLink'
 import { MESSAGES } from '@/i18n/messages'
@@ -21,9 +21,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!TOKEN.test(raw)) return res.status(404).end()
 
   try {
-    const family = await getFamilyByCalendarToken(raw)
+    const family = await getTreeByCalendarToken(raw)
     if (!family) return res.status(404).end()
-    const loaded = await loadFamilyTree(family.id)
+    const loaded = await loadTree(family.id)
     if (!loaded) return res.status(404).end()
 
     const { tree, personName } = calendarSubset(loaded.tree, parseCalendarQuery(req.query))

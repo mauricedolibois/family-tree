@@ -37,17 +37,18 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 - Personal accounts with email and password; admins, editors and viewers per tree; invitation links; optional email verification and mail over SMTP ([docs/accounts.md](docs/accounts.md)).
 - Signed session cookies (HMAC) that can be ended everywhere at once, and throttling against password guessing.
 - The server validates every tree before saving, and only saves if nobody changed the tree on another device in the meantime.
-- Automatic backups: before **every** change (with a note about what changed, e.g. "bearbeitet: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
-- Emergency restore from the Supabase SQL editor (schema `verwaltung`, not reachable through the API; the names are German):
+- Automatic backups: before **every** change (with a note about what changed, e.g. "edited: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
+- Emergency tools in the Supabase SQL editor (schema `admin`, not reachable through the API):
 
   ```sql
-  select * from verwaltung.staende limit 20;         -- latest backups
-  select verwaltung.wiederherstellen(NUMMER);         -- preview only: what would happen?
-  select verwaltung.wiederherstellen(NUMMER, true);   -- actually restore (the current version is backed up first)
-  select verwaltung.sichern('vor dem Familienfest');  -- manual backup now
+  select * from admin.backups limit 20;              -- latest backups
+  select admin.restore(NUMBER);                      -- preview only: what would happen?
+  select admin.restore(NUMBER, true);                -- actually restore (the current version is backed up first)
+  select admin.backup('before the family reunion');  -- manual backup of every tree
+  select admin.invite_admin('you@example.org');      -- one-time link for another admin
   ```
 
-  Replace `NUMMER` with the `id` from the list. The placeholder is there on purpose so the lines cannot be run unchanged by accident. Without `true` the function only shows a preview and changes nothing.
+  Replace `NUMBER` with the `id` from the list. The placeholder is there on purpose so the lines cannot be run unchanged by accident. Without `true` the function only shows a preview and changes nothing.
 
 - Photos and documents are not deleted right away when someone removes them: the daily backup only deletes a file once neither the current tree nor any backup refers to it (and it is older than a week), so restored versions keep their images. If a file is missing anyway, the app shows initials or "Bild fehlt" (image missing).
 
@@ -101,25 +102,44 @@ The image contains only the standalone Next server (`output: 'standalone'`), run
 
 Optionally add a weekly schedule for `main` in GitLab under *Build → Pipeline schedules*: scheduled pipelines only run `audit` and warn about new critical vulnerabilities. No build, no deploy.
 
-Supabase is self-hosted on the same host (`supabase-project/`).
+### Database
 
-**Database migrations** (`supabase/migrations/`): the app also runs without them, on the feature level of the original deployment. They add the pre-change backups, sign-in throttling and the calendar subscription. Apply them in order, directly in the database container:
+The app needs a Supabase instance (self-hosted or cloud); it only talks to it through
+`SUPABASE_URL` and the service role key and never needs database admin rights.
+Scripts are run by hand in the Supabase SQL editor (or with `psql`). Each one runs in
+a single transaction, so a failure changes nothing.
 
-```bash
-for f in supabase/migrations/*.sql; do docker exec -i supabase-db psql -U postgres -v ON_ERROR_STOP=1 < "$f"; done
-```
+- **New installation:** run [`supabase/setup.sql`](supabase/setup.sql), then start the
+  app. Nobody can sign in yet, so the app writes a one-time link for the first admin
+  to its log:
 
-Alternatively paste them into the Supabase Studio SQL editor. Running them more than once is safe.
+  ```bash
+  docker logs family-tree-app | grep setup
+  ```
+
+  Open the link (valid for 7 days), create your account and invite people on `/admin`.
+- **Installations from before `setup.sql`** (the original version with one shared
+  password per family, and every later state up to personal accounts): back up the
+  database, then run [`supabase/migrations/v1_from_legacy.sql`](supabase/migrations/v1_from_legacy.sql)
+  once and deploy the new app. Trees, backups, accounts and open invitations are taken
+  over; the result is identical to a new installation. Older app versions do not work
+  with it any more. Without accounts yet, the admin link appears in the log as above.
+- **Updates:** when a new version needs database changes, it comes with a script
+  `supabase/migrations/vN_….sql`, and the log, the admin page and the sign-in page say
+  which version is missing. Run the missing scripts in order. `setup.sql` always
+  creates the current version directly.
+
+`supabase/check.sh` verifies that `setup.sql` and the migrations lead to exactly the
+same schema (CI runs it whenever something under `supabase/` changes).
 
 **Notes:**
 
-- **Personal accounts (since `20261020120000_user_accounts.sql`):** apply the migrations, deploy, then create the first admin with `select verwaltung.admin_invite('you@example.org');` in the SQL editor and invite the family on `/admin`. Step by step in [docs/accounts.md](docs/accounts.md#rollout-on-an-existing-installation).
 - Optionally set `SESSION_SECRET` (at least 32 characters) in `prod.env`. Without it the key is derived from the service role key. Changing it signs everyone out once.
 - The app must be served over HTTPS because the session cookie is `Secure` in production.
 - nginx has to append the visitor IP to `X-Forwarded-For` (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, already part of `proxy_params`). The app only trusts the last entry; the visitor can forge the beginning.
 - With HTTP basic auth in front of the app, `location /api/kalender/` needs `auth_basic off;`. Calendar apps cannot sign in; the link is protected by its secret token.
 
-**Daily backup** (requires the migrations): via cron on the server inside the app container, using `prod.env` and the running app's network, e.g. `crontab -e`:
+**Daily backup:** via cron on the server inside the app container, using `prod.env` and the running app's network, e.g. `crontab -e`:
 
 ```
 0 3 * * * cd ~/family-tree && docker compose --env-file prod.env run --rm app node scripts/daily-backup.mjs >> ~/family-tree/backup.log 2>&1
@@ -143,7 +163,7 @@ Alternatively paste them into the Supabase Studio SQL editor. Running them more 
 | `app/src/pages/api/`           | Accounts, trees, uploads, calendar, administration                    |
 | `app/src/lib/`                 | Server side: database, accounts, sessions, mail, throttling           |
 | `app/scripts/`                 | Maintenance scripts (daily backup, keep-alive)                        |
-| `supabase/migrations/`         | Database changes                                                      |
+| `supabase/`                    | `setup.sql` for new databases, `migrations/` for existing ones        |
 
 ## Roadmap
 

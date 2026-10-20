@@ -49,13 +49,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Checked before reading the body, so nobody without rights can push 20 MB at the server
-  let fid: string | null
+  let treeId: string | null
   try {
     const user = await currentUser(req)
     if (!user) return res.status(401).json({ error: 'unauthorized' })
-    fid = treeIdParam(req.query.id)
-    const access = fid ? await treeAccess(user, fid) : null
-    if (!fid || !access) return res.status(404).json({ error: 'not found' })
+    treeId = treeIdParam(req.query.id)
+    const access = treeId ? await treeAccess(user, treeId) : null
+    if (!treeId || !access) return res.status(404).json({ error: 'not found' })
     if (!canEdit(access)) return res.status(403).json({ error: 'read only' })
   } catch (err) {
     logError('api/trees/[id]/media', err)
@@ -74,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const urls: string[] = []
     for (const f of files) {
       const buffer = await fs.promises.readFile(f.filepath)
-      const key = `${fid}/${randomUUID()}-${safeName(f.originalFilename)}`
+      const key = `${treeId}/${randomUUID()}-${safeName(f.originalFilename)}`
       const { error } = await getSupaAdmin()
         .storage.from('media')
         .upload(key, buffer, { upsert: false, contentType: f.mimetype || undefined })

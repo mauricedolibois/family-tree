@@ -28,7 +28,7 @@ import { localeFromRequest } from '@/i18n/server'
 
 async function grant(invite: InviteDetails, user: UserRow) {
   if (invite.make_admin && !user.is_admin) await updateUser(user.id, { is_admin: true })
-  if (invite.family_id && invite.role) await setMembership(user.id, invite.family_id, invite.role)
+  if (invite.tree_id && invite.role) await setMembership(user.id, invite.tree_id, invite.role)
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -71,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       if (!(await claimInvite(invite.id, me.id))) return res.status(410).json({ error: 'expired' })
       await grant(invite, me)
-      return res.status(200).json({ ok: true, treeId: invite.family_id })
+      return res.status(200).json({ ok: true, treeId: invite.tree_id })
     }
 
     // New account
@@ -104,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ ok: true, verify: true })
     }
     setSessionCookie(res, { uid: user.id, epoch: user.session_epoch })
-    return res.status(200).json({ ok: true, treeId: invite.family_id })
+    return res.status(200).json({ ok: true, treeId: invite.tree_id })
   } catch (err) {
     if ((err as { code?: string })?.code === '23505') return res.status(409).json({ error: 'email taken' })
     logError('api/invite', err)

@@ -1,5 +1,5 @@
 // src/storage/schema.ts
-// How a family tree is stored (column family_trees.tree_json).
+// How a family tree is stored (column trees.data).
 
 export type Gender = 'MALE' | 'FEMALE'
 export type MediaKind = 'image' | 'video' | 'pdf' | 'other'

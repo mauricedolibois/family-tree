@@ -4,22 +4,31 @@ import type { GetServerSideProps } from 'next'
 import { Eye, EyeOff } from 'lucide-react'
 import { currentUser } from '@/lib/auth'
 import { registrationOpen } from '@/lib/features'
+import { setupNotice, type SetupNotice } from '@/lib/firstStart'
 import { safeNext } from '@/lib/pageAuth'
+import { logError } from '@/lib/log'
 import { Button } from '@/components/ui/Button'
 import { AuthLayout, FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { useI18n } from '@/i18n/I18nProvider'
 import { localeFromRequest } from '@/i18n/server'
 import type { Locale } from '@/i18n/locales'
 
-type Props = { canRegister: boolean; next: string; locale: Locale }
+type Props = { canRegister: boolean; next: string; setup: SetupNotice; locale: Locale }
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req, query }) => {
   const next = safeNext(query.next) ?? '/'
-  if (await currentUser(req)) return { redirect: { destination: next, permanent: false } }
-  return { props: { canRegister: registrationOpen(), next, locale: localeFromRequest(req) } }
+  // A broken or empty database must not hide the page that explains what to do
+  const user = await currentUser(req).catch((err) => {
+    logError('login', err)
+    return null
+  })
+  if (user) return { redirect: { destination: next, permanent: false } }
+  return {
+    props: { canRegister: registrationOpen(), next, setup: await setupNotice(), locale: localeFromRequest(req) },
+  }
 }
 
-export default function LoginPage({ canRegister, next }: Props) {
+export default function LoginPage({ canRegister, next, setup }: Props) {
   const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -79,6 +88,17 @@ export default function LoginPage({ canRegister, next }: Props) {
         )
       }
     >
+      {setup && (
+        <div className="mb-4">
+          <FormMessage tone="info">
+            {setup.kind === 'missing'
+              ? t.setup.missing
+              : setup.kind === 'outdated'
+              ? t.setup.outdated(setup.have, setup.need)
+              : t.setup.noAccount}
+          </FormMessage>
+        </div>
+      )}
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         <div>
           <label htmlFor="email" className="field-label">
