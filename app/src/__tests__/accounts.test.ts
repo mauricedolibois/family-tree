@@ -87,21 +87,31 @@ describe('mail', () => {
     delete process.env.REQUIRE_EMAIL_VERIFICATION
   })
 
-  it('renders in the recipient language and escapes HTML', () => {
+  it('writes German first, then English, and escapes HTML', () => {
     const m = renderMail(
-      { kind: 'invite', locale: 'fr', path: '/invite/t0k3n', name: '<b>Lars</b>', tree: 'Reiser' },
+      { kind: 'invite', path: '/invite/t0k3n', name: '<b>Lars</b>', tree: 'Reiser' },
       'https://tree.example.org',
     )
-    expect(m.subject).toBe('<b>Lars</b> t’invite dans l’arbre « Reiser »')
-    expect(m.text).toContain('https://tree.example.org/invite/t0k3n')
+    expect(m.subject).toBe(
+      '<b>Lars</b> lädt dich zum Stammbaum „Reiser“ ein · <b>Lars</b> invites you to the family tree “Reiser”',
+    )
+    const de = m.text.indexOf('Einladung annehmen')
+    const en = m.text.indexOf('Accept invitation')
+    expect(de).toBeGreaterThan(-1)
+    expect(en).toBeGreaterThan(de)
+    expect(m.text.match(/https:\/\/tree\.example\.org\/invite\/t0k3n/g)).toHaveLength(2)
+    expect(m.html.indexOf('lang="de"')).toBeLessThan(m.html.indexOf('lang="en"'))
     expect(m.html).toContain('&lt;b&gt;Lars&lt;/b&gt;')
     expect(m.html).not.toContain('<b>Lars</b>')
   })
 
-  it('falls back to German for unknown languages', () => {
-    expect(
-      renderMail({ kind: 'reset', locale: 'xx', path: '/reset/x', name: 'Ida' }, 'https://a.example').subject,
-    ).toBe('Neues Passwort für den Stammbaum')
+  it('every kind of mail has both languages', () => {
+    for (const kind of ['invite', 'verify', 'reset'] as const) {
+      const m = renderMail({ kind, path: '/x', name: 'Ida', tree: '' }, 'https://a.example')
+      expect(m.html).toContain('lang="de"')
+      expect(m.html).toContain('lang="en"')
+      expect(m.subject).toContain(' · ')
+    }
   })
 
   it('links only point to the configured APP_URL', () => {
