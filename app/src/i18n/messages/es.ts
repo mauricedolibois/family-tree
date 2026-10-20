@@ -49,7 +49,7 @@ export const es: Messages = {
     exportPdf: 'Exportar como PDF',
     startTour: 'Iniciar la visita guiada',
     logout: 'Cerrar sesión',
-    download: 'Descargar (con fotos)',
+    download: 'Descargar',
     switchTree: 'Cambiar de árbol',
   },
   errors: {
@@ -463,10 +463,9 @@ export const es: Messages = {
   account: {
     title: 'Mi cuenta',
     intro: (email) => `Sesión iniciada como ${email}`,
-    backToTrees: 'Volver a los árboles',
     profile: 'Perfil',
     name: 'Nombre',
-    languageHint: 'El idioma se elige al final de la página; también se usa para los correos que recibes.',
+    languageHint: 'Elige el idioma en el menú arriba a la derecha.',
     saved: 'Guardado.',
     email: 'Correo electrónico',
     unverified: 'Esta dirección todavía no está confirmada.',
@@ -507,7 +506,6 @@ export const es: Messages = {
     intro: (tree) => `¿Quién forma parte del árbol «${tree}»? Aquí invitas a gente nueva y gestionas los miembros.`,
     rolesHelp:
       'Solo ver: leer el árbol. Puede editar: además cambiar personas y subir fotos. Moderador: además invitar y gestionar los miembros.',
-    backToTree: 'Volver al árbol',
     noMembers: 'Aparte de los administradores, todavía no forma parte nadie.',
     remove: 'Quitar',
     confirmRemove: (name, tree) => `¿Quitar a ${name} del árbol «${tree}»?`,
@@ -555,6 +553,10 @@ export const es: Messages = {
     treesTitle: 'Árboles genealógicos',
     memberCount: (n) => (n === 1 ? '1 miembro' : `${n} miembros`),
     notMember: 'no eres miembro',
+    memberOf: 'Miembro de',
+    inNoTree: 'En ningún árbol',
+    addToOtherTree: 'Añadir a otro árbol',
+    chooseTree: 'Elegir un árbol …',
     rename: 'Cambiar nombre',
     newTreeName: 'Nombre del nuevo árbol',
     createTree: 'Crear',
@@ -589,8 +591,13 @@ export const es: Messages = {
     toLight: 'Vista clara',
     toDark: 'Vista oscura',
   },
+  nav: {
+    toTree: 'Al árbol',
+    myTrees: 'Mis árboles',
+  },
   history: {
-    title: 'Historial',
+    title: 'Historial y copias',
+    versions: 'Versiones anteriores',
     intro: (tree) =>
       `Versiones anteriores de «${tree}». El árbol entero se guarda antes de cada cambio, importación y restauración.`,
     undo: 'Deshacer',

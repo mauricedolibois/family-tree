@@ -3,24 +3,24 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Head from 'next/head'
-import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
-import { ArrowLeft, Download, RotateCcw } from 'lucide-react'
+import { Download, RotateCcw, Upload } from 'lucide-react'
 import type { VersionSummary } from '@/lib/db'
 import { canManage, treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
-import { requirePageUser } from '@/lib/pageAuth'
+import { navContext, requirePageUser } from '@/lib/pageAuth'
 import { nameList } from '@/storage/changes'
 import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
-import { LanguagePicker } from '@/components/ui/LanguagePicker'
-import { Card } from '@/components/manage/parts'
+import { PageHeader } from '@/components/app/PageHeader'
+import type { NavContext } from '@/components/app/NavMenu'
+import { Card, sendForm } from '@/components/manage/parts'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import type { Messages } from '@/i18n/messages/de'
 import { localeFromRequest } from '@/i18n/server'
 
-type Props = { treeId: string; locale: Locale }
+type Props = { treeId: string; nav: NavContext; locale: Locale }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const auth = await requirePageUser(ctx)
@@ -29,7 +29,9 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const access = treeId ? await treeAccess(auth.user, treeId) : null
   if (!treeId || !access) return { redirect: { destination: '/?gone=1', permanent: false } }
   if (!canManage(access)) return { redirect: { destination: `/tree/${treeId}`, permanent: false } }
-  return { props: { treeId, locale: localeFromRequest(ctx.req) } }
+  return {
+    props: { treeId, nav: await navContext(auth.user, { id: treeId, access }), locale: localeFromRequest(ctx.req) },
+  }
 }
 
 /** What the change after this version did, in the reader's language */
@@ -48,7 +50,7 @@ function changeText(v: VersionSummary, t: Messages['history']): string | null {
   return parts.join(' · ')
 }
 
-export default function HistoryPage({ treeId }: Props) {
+export default function HistoryPage({ treeId, nav }: Props) {
   const { t, locale } = useI18n()
   const [tree, setTree] = useState<{ name: string } | null>(null)
   const [versions, setVersions] = useState<VersionSummary[] | null>(null)
@@ -104,16 +106,7 @@ export default function HistoryPage({ treeId }: Props) {
         <title>{tree ? `${t.history.title} – ${tree.name}` : t.history.title}</title>
       </Head>
       <div className="page-backdrop min-h-dvh">
-        <header className="header-bar flex h-14 items-center gap-3 px-3 pt-[env(safe-area-inset-top)] text-on-primary sm:px-5">
-          <Link
-            href={`/tree/${treeId}`}
-            className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-on-primary/90 hover:bg-on-primary/10"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden /> {t.members.backToTree}
-          </Link>
-          <h1 className="flex-1 truncate font-display text-[1.35rem] text-on-primary-accent">{t.history.title}</h1>
-          <LanguagePicker tone="cover" className="hidden sm:inline-flex" />
-        </header>
+        <PageHeader title={t.history.title} nav={nav} current="history" />
 
         <main className="mx-auto flex max-w-3xl flex-col gap-5 p-3 sm:p-5">
           {tree && <p className="text-[15px] text-ink">{t.history.intro(tree.name)}</p>}
@@ -121,7 +114,7 @@ export default function HistoryPage({ treeId }: Props) {
           {!versions ? (
             <p className="text-center text-ink-muted">{t.auth.wait}</p>
           ) : (
-            <Card title={t.history.title}>
+            <Card title={t.history.versions}>
               {versions.length === 0 ? (
                 <p className="text-sm text-ink-muted">{t.history.empty}</p>
               ) : (
@@ -170,8 +163,60 @@ export default function HistoryPage({ treeId }: Props) {
               )}
             </Card>
           )}
+          {tree && <ReplaceCard treeId={treeId} treeName={tree.name} onDone={() => void load()} />}
         </main>
       </div>
     </>
+  )
+}
+
+/** Replace the whole tree with a file; the current version lands in the history first */
+function ReplaceCard({ treeId, treeName, onDone }: { treeId: string; treeName: string; onDone: () => void }) {
+  const { t } = useI18n()
+  const [file, setFile] = useState<File | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!file || !window.confirm(t.transfer.confirmReplace(treeName))) return
+    setBusy(true)
+    setMessage(null)
+    const form = new FormData()
+    form.append('file', file)
+    try {
+      const { ok, data } = await sendForm(`/api/trees/${treeId}/import`, form)
+      setMessage(
+        ok
+          ? { tone: 'info', text: t.transfer.replaced(Number(data.people)) }
+          : { tone: 'error', text: t.transfer.status[String(data.error)] ?? t.common.retry },
+      )
+      if (ok) onDone()
+    } catch {
+      setMessage({ tone: 'error', text: t.common.offline })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card title={t.transfer.replaceTitle}>
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        <p className="text-sm text-ink-muted">{t.transfer.replaceHint}</p>
+        <input
+          type="file"
+          accept=".zip,.json,application/zip,application/json"
+          className="text-sm text-ink"
+          aria-label={t.transfer.file}
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+        {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+        <div>
+          <Button type="submit" disabled={busy || !file} icon={<Upload className="h-4 w-4" />}>
+            {busy ? t.auth.wait : t.transfer.replaceButton}
+          </Button>
+        </div>
+      </form>
+    </Card>
   )
 }

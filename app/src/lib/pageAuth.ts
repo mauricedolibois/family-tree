@@ -2,8 +2,9 @@
 // Sign-in checks for getServerSideProps.
 
 import type { GetServerSidePropsContext, Redirect } from 'next'
-import { currentUser } from './auth'
-import type { UserRow } from './accounts'
+import { canManage, currentUser, type Access } from './auth'
+import { treesOf, type UserRow } from './accounts'
+import type { NavContext } from '@/components/app/NavMenu'
 
 /** Only same-site paths, so `next` cannot send people to another site after signing in */
 export function safeNext(value: unknown): string | null {
@@ -23,3 +24,13 @@ export async function requirePageUser(
 }
 
 export const LAST_TREE_COOKIE = 'tree'
+
+/** What the menu on a page may offer the user; with a tree for pages that belong to one */
+export async function navContext(user: UserRow, tree?: { id: string; access: Access }): Promise<NavContext> {
+  const trees = await treesOf(user)
+  return {
+    isAdmin: user.is_admin,
+    treeCount: trees.length,
+    ...(tree ? { tree: { id: tree.id, canManage: canManage(tree.access) } } : {}),
+  }
+}

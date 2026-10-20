@@ -52,7 +52,7 @@ export const de = {
     exportPdf: 'Als PDF exportieren',
     startTour: 'Einführung starten',
     logout: 'Abmelden',
-    download: 'Herunterladen (mit Bildern)',
+    download: 'Herunterladen',
     switchTree: 'Stammbaum wechseln',
   },
   errors: {
@@ -468,10 +468,9 @@ export const de = {
   account: {
     title: 'Mein Konto',
     intro: (email: string) => `Angemeldet als ${email}`,
-    backToTrees: 'Zu den Stammbäumen',
     profile: 'Profil',
     name: 'Name',
-    languageHint: 'Die Sprache wählst du unten auf der Seite; sie gilt auch für Mails an dich.',
+    languageHint: 'Die Sprache wählst du im Menü oben rechts.',
     saved: 'Gespeichert.',
     email: 'E-Mail-Adresse',
     unverified: 'Diese Adresse ist noch nicht bestätigt.',
@@ -513,7 +512,6 @@ export const de = {
       `Wer gehört zum Stammbaum „${tree}“? Hier lädst du neue Leute ein und verwaltest die Mitglieder.`,
     rolesHelp:
       'Nur ansehen: Stammbaum lesen. Darf bearbeiten: auch Personen ändern und Fotos hochladen. Moderator: zusätzlich einladen und Mitglieder verwalten.',
-    backToTree: 'Zurück zum Stammbaum',
     noMembers: 'Außer den Admins gehört noch niemand dazu.',
     remove: 'Entfernen',
     confirmRemove: (name: string, tree: string) => `${name} aus „${tree}“ entfernen?`,
@@ -561,6 +559,10 @@ export const de = {
     treesTitle: 'Stammbäume',
     memberCount: (n: number) => (n === 1 ? '1 Mitglied' : `${n} Mitglieder`),
     notMember: 'du bist nicht Mitglied',
+    memberOf: 'Mitglied in',
+    inNoTree: 'In keinem Stammbaum',
+    addToOtherTree: 'Zu weiterem Stammbaum hinzufügen',
+    chooseTree: 'Stammbaum wählen …',
     rename: 'Umbenennen',
     newTreeName: 'Name des neuen Stammbaums',
     createTree: 'Anlegen',
@@ -595,8 +597,13 @@ export const de = {
     toLight: 'Helle Ansicht',
     toDark: 'Dunkle Ansicht',
   },
+  nav: {
+    toTree: 'Zum Stammbaum',
+    myTrees: 'Meine Stammbäume',
+  },
   history: {
-    title: 'Verlauf',
+    title: 'Verlauf & Sicherungen',
+    versions: 'Frühere Stände',
     intro: (tree: string) =>
       `Frühere Stände von „${tree}“. Vor jeder Änderung, jedem Import und jeder Wiederherstellung wird der ganze Stammbaum gesichert.`,
     undo: 'Rückgängig',
