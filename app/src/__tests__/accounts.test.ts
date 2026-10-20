@@ -2,7 +2,9 @@
  * @jest-environment node
  */
 import { createHash } from 'crypto'
-import { cleanAdminPatch, inviteIsOpen, looksLikeEmail, normalizeEmail } from '@/lib/accounts'
+import { cleanAdminPatch, inviteIsOpen, looksLikeEmail, normalizeEmail, parseRole } from '@/lib/accounts'
+import { canEdit, canManage } from '@/lib/auth'
+import { inviteDays, inviteEmail } from '@/lib/invites'
 import { hashToken, isTokenShaped, newToken } from '@/lib/tokens'
 import { safeNext } from '@/lib/pageAuth'
 import { cleanName, validPassword } from '@/lib/passwords'
@@ -116,5 +118,37 @@ describe('mail', () => {
     process.env.MAIL_ENABLED = 'true'
     expect(emailVerificationRequired()).toBe(true)
     expect(flag('On')).toBe(true)
+  })
+})
+
+describe('roles', () => {
+  it('accepts only the three tree roles', () => {
+    expect(['viewer', 'editor', 'moderator'].map(parseRole)).toEqual(['viewer', 'editor', 'moderator'])
+    for (const bad of ['admin', 'owner', '', null, undefined, 1]) expect(parseRole(bad)).toBeNull()
+  })
+
+  it('moderators edit and manage, editors only edit, viewers neither', () => {
+    const table = (['admin', 'moderator', 'editor', 'viewer', null] as const).map((a) => [a, canEdit(a), canManage(a)])
+    expect(table).toEqual([
+      ['admin', true, true],
+      ['moderator', true, true],
+      ['editor', true, false],
+      ['viewer', false, false],
+      [null, false, false],
+    ])
+  })
+})
+
+describe('invitation input', () => {
+  it('address is optional but must look valid when given', () => {
+    expect(inviteEmail('')).toBeNull()
+    expect(inviteEmail('  ')).toBeNull()
+    expect(inviteEmail(undefined)).toBeNull()
+    expect(inviteEmail(' oma@example.org ')).toBe('oma@example.org')
+    expect(inviteEmail('not-an-address')).toBeUndefined()
+  })
+
+  it('validity is 1 to 30 days, 7 by default', () => {
+    expect([undefined, 'x', 0, -5, 3.6, 30, 400].map(inviteDays)).toEqual([7, 7, 7, 1, 4, 30, 30])
   })
 })

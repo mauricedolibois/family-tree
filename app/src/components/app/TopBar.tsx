@@ -14,6 +14,7 @@ import {
   Search,
   Settings,
   Shield,
+  Users,
   Sun,
   X,
 } from 'lucide-react'
@@ -25,7 +26,13 @@ import { useI18n } from '@/i18n/I18nProvider'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
 
 /** The signed-in person, as far as the header needs to know */
-export type Viewer = { name: string; isAdmin: boolean; treeCount: number }
+export type Viewer = {
+  name: string
+  isAdmin: boolean
+  treeCount: number
+  /** Moderator of this tree or admin: may invite people and manage members */
+  canManage: boolean
+}
 
 export function TopBar({ viewer }: { viewer: Viewer }) {
   const { familyName } = useFamily()
@@ -96,7 +103,7 @@ function ThemeButton() {
 }
 
 function AppMenu({ viewer }: { viewer: Viewer }) {
-  const { tree, familyName } = useFamily()
+  const { tree, familyName, treeId } = useFamily()
   const { setExportOpen, setTourOpen, showBirthdays, select } = useView()
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
@@ -185,6 +192,14 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
           {viewer.treeCount > 1 && (
             <MenuItem icon={<ArrowLeftRight className="h-4 w-4" />} onClick={() => (window.location.href = '/?pick=1')}>
               {t.topBar.switchTree}
+            </MenuItem>
+          )}
+          {viewer.canManage && (
+            <MenuItem
+              icon={<Users className="h-4 w-4" />}
+              onClick={() => (window.location.href = `/tree/${treeId}/members`)}
+            >
+              {t.members.title}
             </MenuItem>
           )}
           <MenuItem icon={<Settings className="h-4 w-4" />} onClick={() => (window.location.href = '/account')}>

@@ -383,7 +383,7 @@ export const en: Messages = {
       },
     },
   },
-  roles: { editor: 'Can edit', viewer: 'View only', admin: 'Admin' },
+  roles: { editor: 'Can edit', viewer: 'View only', moderator: 'Moderator', admin: 'Admin' },
   login: {
     pageTitle: 'Family tree – Sign in',
     intro: 'Sign in with your email address.',
@@ -500,6 +500,21 @@ export const en: Messages = {
       `The database is at version ${have}, this app needs version ${need}. An admin has to run the missing scripts from supabase/migrations in the Supabase SQL editor.`,
     noAccount:
       'There is no account yet. The app writes the link for the first admin to its log when it starts (docker logs family-tree-app).',
+  },
+  members: {
+    title: 'Members',
+    intro: (tree) => `Who belongs to the ${tree} family tree? Invite new people and manage the members here.`,
+    rolesHelp:
+      'View only: read the tree. Can edit: also change people and upload photos. Moderator: also invite people and manage members.',
+    backToTree: 'Back to the tree',
+    noMembers: 'Nobody belongs to it yet apart from the admins.',
+    remove: 'Remove',
+    confirmRemove: (name, tree) => `Remove ${name} from the ${tree} family tree?`,
+    status: {
+      self: 'You cannot change your own role here.',
+      'too many attempts': 'Too many invitations in a short time. Please try again later.',
+      'invalid email': 'This email address does not look valid.',
+    },
   },
   admin: {
     title: 'Administration',
