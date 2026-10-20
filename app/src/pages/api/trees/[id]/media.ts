@@ -79,7 +79,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .storage.from('media')
         .upload(key, buffer, { upsert: false, contentType: f.mimetype || undefined })
       if (error) throw error
-      urls.push(getSupaAdmin().storage.from('media').getPublicUrl(key).data.publicUrl)
+      // The bucket is private; /api/media serves the file to people who may see the tree
+      urls.push(`/api/media/${key}`)
     }
     return res.status(200).json({ urls })
   } catch (err) {

@@ -38,8 +38,17 @@ describe('validateStoredTree', () => {
     ['unknown gender', tree({ a: member('a', { gender: 'X' }) })],
     ['broken date', tree({ a: member('a', { profile: { birthDate: '12.03.1950' } }) })],
     ['script URL', tree({ a: member('a', { profile: { titleImageUrl: 'javascript:alert(1)' } }) })],
+    ['relative URL outside /api/media', tree({ a: member('a', { profile: { titleImageUrl: '/api/admin' } }) })],
   ])('rejects: %s', (_label, input) => {
     expect(validateStoredTree(input).ok).toBe(false)
+  })
+
+  it('accepts links to uploaded files', () => {
+    const photo = '/api/media/11111111-1111-1111-1111-111111111111/0f0e-anna.jpg'
+    const profile = { titleImageUrl: photo, media: [{ id: 'm1', kind: 'image', url: photo }] }
+    const r = validateStoredTree(tree({ a: member('a', { profile }) }))
+    expect(r.ok && r.tree.members.a.profile?.titleImageUrl).toBe(photo)
+    expect(r.ok && r.tree.members.a.profile?.media?.[0].url).toBe(photo)
   })
 
   it('keeps birth place and maiden name', () => {
