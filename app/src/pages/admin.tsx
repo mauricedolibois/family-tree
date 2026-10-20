@@ -122,7 +122,7 @@ function InviteCard({ trees, mail, onCreated }: { trees: Tree[]; mail: boolean; 
   const [email, setEmail] = useState('')
   // As in AddToTree: a picked tree that has gone (deleted meanwhile) falls back to the shown one
   const [picked, setPicked] = useState<string | null>(null)
-  const treeId = picked === '' || trees.some((tr) => tr.id === picked) ? picked! : (trees[0]?.id ?? '')
+  const treeId = picked === '' || trees.some((tr) => tr.id === picked) ? picked! : trees[0]?.id ?? ''
   const [role, setRole] = useState<Role>('editor')
   const [admin, setAdmin] = useState(false)
   const [days, setDays] = useState(7)
