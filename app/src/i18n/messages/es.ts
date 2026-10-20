@@ -490,7 +490,8 @@ export const es: Messages = {
     hello: (name) => `Hola, ${name}`,
     choose: 'Tus árboles genealógicos',
     none: 'Todavía no perteneces a ningún árbol. Pide a alguien que te invite.',
-    noneAdmin: 'Todavía no hay ningún árbol. Crea uno en la administración.',
+    noneAdmin:
+      'Todavía no formas parte de ningún árbol. En la administración puedes crear uno o añadirte a uno existente.',
     gone: 'Este árbol ya no está disponible. Quizá se eliminó o te quitaron de él.',
   },
   setup: {
@@ -553,6 +554,7 @@ export const es: Messages = {
       `¿Eliminar «${name}» definitivamente? Se borran el árbol, sus copias y todas las fotos. No se puede deshacer.`,
     treesTitle: 'Árboles genealógicos',
     memberCount: (n) => (n === 1 ? '1 miembro' : `${n} miembros`),
+    notMember: 'no eres miembro',
     rename: 'Cambiar nombre',
     newTreeName: 'Nombre del nuevo árbol',
     createTree: 'Crear',

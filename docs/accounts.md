@@ -5,7 +5,7 @@ to several family trees; what they may do is set per tree.
 
 | Role | May do |
 | --- | --- |
-| **Admin** (global) | Everything: every tree, accounts, invitations, new trees, admin rights. Needs no membership. |
+| **Admin** (global) | Runs the server: accounts, admin rights, trees (create, rename, delete, import), invitations and memberships for every tree on `/admin`. Sees and edits a tree's contents only as a member of it, like everyone else; whoever creates or imports a tree becomes its moderator. |
 | **Moderator** (per tree) | Like an editor, and also invite people to the tree, change the roles of its members and remove them (`/tree/<id>/members`). |
 | **Editor** (per tree) | Read and change the tree, upload photos, renew the calendar link. |
 | **Viewer** (per tree) | Read the tree, use views, birthdays, PDF export and the calendar subscription. |

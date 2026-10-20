@@ -494,7 +494,8 @@ export const fr: Messages = {
     hello: (name) => `Bonjour ${name}`,
     choose: 'Tes arbres généalogiques',
     none: 'Tu ne fais encore partie d’aucun arbre. Demande à quelqu’un de t’inviter.',
-    noneAdmin: 'Il n’y a encore aucun arbre. Crée-en un dans l’administration.',
+    noneAdmin:
+      'Tu ne fais encore partie d’aucun arbre. Dans l’administration, tu peux en créer un ou t’ajouter à un arbre existant.',
     gone: 'Cet arbre n’est plus disponible. Il a peut-être été supprimé, ou tu en as été retiré.',
   },
   setup: {
@@ -557,6 +558,7 @@ export const fr: Messages = {
       `Supprimer définitivement « ${name} » ? L’arbre, ses sauvegardes et toutes les photos seront effacés. C’est irréversible.`,
     treesTitle: 'Arbres généalogiques',
     memberCount: (n) => (n === 1 ? '1 membre' : `${n} membres`),
+    notMember: 'tu n’en es pas membre',
     rename: 'Renommer',
     newTreeName: 'Nom du nouvel arbre',
     createTree: 'Créer',

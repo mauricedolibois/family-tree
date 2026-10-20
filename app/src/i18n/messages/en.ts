@@ -489,7 +489,8 @@ export const en: Messages = {
     hello: (name) => `Hello ${name}`,
     choose: 'Your family trees',
     none: 'You are not part of a family tree yet. Ask someone to invite you.',
-    noneAdmin: 'There is no family tree yet. Create one in the administration.',
+    noneAdmin:
+      'You are not a member of any family tree yet. In the administration you can create one or add yourself to an existing one.',
     gone: 'This family tree is no longer available. It may have been deleted, or you were removed from it.',
   },
   setup: {
@@ -551,6 +552,7 @@ export const en: Messages = {
       `Delete “${name}” for good? The tree, its backups and all photos are removed. This cannot be undone.`,
     treesTitle: 'Family trees',
     memberCount: (n) => (n === 1 ? '1 member' : `${n} members`),
+    notMember: 'you are not a member',
     rename: 'Rename',
     newTreeName: 'Name of the new family tree',
     createTree: 'Create',

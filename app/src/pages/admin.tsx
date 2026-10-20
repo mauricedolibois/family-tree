@@ -105,7 +105,7 @@ export default function AdminPage() {
                 date={date}
                 onRevoke={(id) => run(`/api/admin/invites/${id}`, null, 'DELETE')}
               />
-              <TreesCard trees={data.trees} users={data.users} run={run} />
+              <TreesCard trees={data.trees} users={data.users} me={data.me} run={run} />
               <ImportCard onDone={load} />
               <TrashCard trash={data.trash} date={date} run={run} />
               <UsersCard data={data} run={run} />
@@ -245,11 +245,12 @@ function InvitesCard({
 
 type Run = (url: string, body: object | null, method: string) => Promise<{ ok: boolean; data: Record<string, unknown> }>
 
-function TreesCard({ trees, users, run }: { trees: Tree[]; users: AdminUserView[]; run: Run }) {
+function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserView[]; me: string; run: Run }) {
   const { t } = useI18n()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null)
   const members = (id: string) => users.filter((u) => u.trees.some((tr) => tr.id === id)).length
+  const mine = new Set(users.find((u) => u.id === me)?.trees.map((tr) => tr.id) ?? [])
 
   return (
     <Card title={t.admin.treesTitle}>
@@ -279,12 +280,20 @@ function TreesCard({ trees, users, run }: { trees: Tree[]; users: AdminUserView[
               </form>
             ) : (
               <>
-                <Link
-                  href={`/tree/${tree.id}`}
-                  className="min-w-0 flex-1 truncate font-text text-[17px] font-semibold text-ink underline-offset-4 hover:underline"
-                >
-                  {tree.name}
-                </Link>
+                {/* Admins see a tree's contents only as members, like everyone else */}
+                {mine.has(tree.id) ? (
+                  <Link
+                    href={`/tree/${tree.id}`}
+                    className="min-w-0 flex-1 truncate font-text text-[17px] font-semibold text-ink underline-offset-4 hover:underline"
+                  >
+                    {tree.name}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 flex-1 truncate font-text text-[17px] font-semibold text-ink">
+                    {tree.name}{' '}
+                    <span className="font-sans text-[13px] font-normal text-ink-muted">({t.admin.notMember})</span>
+                  </span>
+                )}
                 <span className="text-[13px] text-ink-muted">{t.admin.memberCount(members(tree.id))}</span>
                 <Button size="sm" variant="quiet" onClick={() => setEditing({ id: tree.id, name: tree.name })}>
                   {t.admin.rename}

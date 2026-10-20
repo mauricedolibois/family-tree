@@ -17,23 +17,25 @@ export async function currentUser(req: Pick<IncomingMessage, 'headers'>): Promis
   return user
 }
 
-export type Access = Role | 'admin'
+/** What someone may do in a tree: their role there */
+export type Access = Role
 
 /**
- * Access to a tree: admins always, others through their membership. Nobody, not
- * even an admin, has access to a tree that does not exist or is in the trash, so
- * its contents, photos and calendar are gone for everyone at once.
+ * Access to a tree comes only from a membership, for admins too: admin rights are
+ * about running the server (accounts, trees, invitations), and everyone who can
+ * read a tree appears in its member list. Nobody has access to a tree that does
+ * not exist or is in the trash, so its contents, photos and calendar are gone for
+ * everyone at once.
  */
-export async function treeAccess(user: Pick<UserRow, 'id' | 'is_admin'>, treeId: string): Promise<Access | null> {
+export async function treeAccess(user: Pick<UserRow, 'id'>, treeId: string): Promise<Access | null> {
   if (!(await getTree(treeId))) return null
-  if (user.is_admin) return 'admin'
   return roleIn(user.id, treeId)
 }
 
-export const canEdit = (access: Access | null) => access === 'admin' || access === 'moderator' || access === 'editor'
+export const canEdit = (access: Access | null) => access === 'moderator' || access === 'editor'
 
 /** Invite people to the tree and manage its members */
-export const canManage = (access: Access | null) => access === 'admin' || access === 'moderator'
+export const canManage = (access: Access | null) => access === 'moderator'
 
 type Handler<T> = (req: NextApiRequest, res: NextApiResponse, user: UserRow) => Promise<T> | T
 

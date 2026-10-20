@@ -138,9 +138,9 @@ describe('roles', () => {
   })
 
   it('moderators edit and manage, editors only edit, viewers neither', () => {
-    const table = (['admin', 'moderator', 'editor', 'viewer', null] as const).map((a) => [a, canEdit(a), canManage(a)])
+    // Admins have no role of their own in a tree: they get one by being a member
+    const table = (['moderator', 'editor', 'viewer', null] as const).map((a) => [a, canEdit(a), canManage(a)])
     expect(table).toEqual([
-      ['admin', true, true],
       ['moderator', true, true],
       ['editor', true, false],
       ['viewer', false, false],

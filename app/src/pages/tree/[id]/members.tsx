@@ -126,6 +126,7 @@ export default function MembersPage({ treeId }: Props) {
                             <span className="flex flex-wrap items-center gap-1.5 text-[15px] text-ink">
                               {m.name}
                               {self && <Badge>{t.admin.you}</Badge>}
+                              {m.isAdmin && <Badge>{t.roles.admin}</Badge>}
                               {!m.verified && <Badge>{t.admin.unverified}</Badge>}
                               {m.disabled && <Badge>{t.admin.disabled}</Badge>}
                             </span>
