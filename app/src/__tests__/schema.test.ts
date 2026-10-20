@@ -2,9 +2,12 @@
  * @jest-environment node
  */
 
-// A tiny stand-in for the Supabase client: answers for app_meta and users, records invites
-const answers: { meta: { data: unknown; error: unknown }; users: number } = {
+// A tiny stand-in for the Supabase client: answers for app_meta, the old families
+// table and users, records invites
+const MISSING = { code: 'PGRST205', message: 'Could not find the table' }
+const answers: { meta: { data: unknown; error: unknown }; legacy: boolean; users: number } = {
   meta: { data: null, error: null },
+  legacy: false,
   users: 0,
 }
 const invites: Array<Record<string, unknown>> = []
@@ -15,6 +18,10 @@ jest.mock('@/lib/supabaseServer', () => ({
       if (table === 'app_meta') {
         const chain = { select: () => chain, eq: () => chain, maybeSingle: async () => answers.meta }
         return chain
+      }
+      if (table === 'families') {
+        const result = answers.legacy ? { data: [], error: null } : { data: null, error: MISSING }
+        return { select: () => ({ limit: async () => result }) }
       }
       if (table === 'users') return { select: async () => ({ count: answers.users, error: null }) }
       if (table === 'invites') {
@@ -40,6 +47,7 @@ beforeEach(() => {
   resetSchemaCache()
   invites.length = 0
   answers.users = 0
+  answers.legacy = false
   jest.spyOn(console, 'log').mockImplementation(() => {})
   jest.spyOn(console, 'warn').mockImplementation(() => {})
   jest.spyOn(console, 'error').mockImplementation(() => {})
@@ -55,12 +63,18 @@ describe('schemaStatus', () => {
     expect((await schemaStatus()).state).toBe('current')
   })
 
-  it('treats a missing app_meta table or row as version 0', async () => {
-    answers.meta = { data: null, error: { code: 'PGRST205', message: 'Could not find the table' } }
+  it('calls an installation from before setup.sql version 0', async () => {
+    answers.meta = { data: null, error: MISSING }
+    answers.legacy = true
     expect(await schemaStatus()).toEqual({ state: 'outdated', have: 0, need: REQUIRED_SCHEMA })
     resetSchemaCache()
     answers.meta = version(null)
     expect((await schemaStatus()).have).toBe(0)
+  })
+
+  it('tells an empty database apart from an old one', async () => {
+    answers.meta = { data: null, error: MISSING }
+    expect(await schemaStatus()).toEqual({ state: 'missing', have: null, need: REQUIRED_SCHEMA })
   })
 
   it('does not claim an outdated database when it cannot tell', async () => {
@@ -86,7 +100,7 @@ describe('onServerStart', () => {
     answers.meta = version(String(REQUIRED_SCHEMA))
     await onServerStart()
     expect(invites).toHaveLength(1)
-    expect(invites[0]).toMatchObject({ make_admin: true, family_id: null, role: null, created_by: null, email: null })
+    expect(invites[0]).toMatchObject({ make_admin: true, tree_id: null, role: null, created_by: null, email: null })
     const logged = (console.log as jest.Mock).mock.calls.flat().join('\n')
     const token = /\/invite\/([A-Za-z0-9_-]{32,128})/.exec(logged)?.[1]
     expect(token && hashToken(token)).toBe(invites[0].token_hash)
@@ -100,8 +114,15 @@ describe('onServerStart', () => {
     expect(console.log).not.toHaveBeenCalled()
   })
 
-  it('asks for setup.sql instead of creating a link on an outdated database', async () => {
+  it('asks for the migrations instead of creating a link on an outdated database', async () => {
     answers.meta = version('0')
+    await onServerStart()
+    expect(invites).toHaveLength(0)
+    expect((console.warn as jest.Mock).mock.calls.flat().join(' ')).toContain('supabase/migrations')
+  })
+
+  it('asks for setup.sql on an empty database', async () => {
+    answers.meta = { data: null, error: MISSING }
     await onServerStart()
     expect(invites).toHaveLength(0)
     expect((console.warn as jest.Mock).mock.calls.flat().join(' ')).toContain('supabase/setup.sql')

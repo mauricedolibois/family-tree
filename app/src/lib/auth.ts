@@ -19,9 +19,9 @@ export async function currentUser(req: Pick<IncomingMessage, 'headers'>): Promis
 export type Access = Role | 'admin'
 
 /** Access to a tree: admins always, others through their membership */
-export async function treeAccess(user: Pick<UserRow, 'id' | 'is_admin'>, familyId: string): Promise<Access | null> {
+export async function treeAccess(user: Pick<UserRow, 'id' | 'is_admin'>, treeId: string): Promise<Access | null> {
   if (user.is_admin) return 'admin'
-  return roleIn(user.id, familyId)
+  return roleIn(user.id, treeId)
 }
 
 export const canEdit = (access: Access | null) => access === 'admin' || access === 'editor'

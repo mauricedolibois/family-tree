@@ -68,8 +68,8 @@ from the language picker; for invitations the inviting admin's language).
 The original version used one shared password per family; now only personal
 accounts can sign in.
 
-1. **Run `supabase/setup.sql`** in the Supabase SQL editor (see README, "Database").
-   Existing trees stay as they are.
+1. **Back up the database** and run `supabase/migrations/v1_from_legacy.sql` in the
+   Supabase SQL editor (see README, "Database"). Trees and backups are taken over.
 2. **Deploy** the new version.
 3. **Create the first admin:** while no account exists, the app writes a one-time
    link to its log on every start (`docker logs family-tree-app | grep setup`).
@@ -77,14 +77,11 @@ accounts can sign in.
    SQL editor gives you such a link too:
 
    ```sql
-   select verwaltung.admin_invite('you@example.org');
+   select admin.invite_admin('you@example.org');
    ```
 
    It returns a path like `/invite/3f9c…`; open `https://<your domain>/invite/3f9c…`.
 4. On `/admin`, **invite the family** to the existing tree, as editors or viewers.
-
-Rolling back stays possible: older versions ignore the new tables, and the old
-family passwords are still stored.
 
 **HTTP basic auth in front of the app:** invited people would need its credentials
 as well, before they even reach the invitation page. With personal accounts it is
@@ -95,7 +92,7 @@ still needs `auth_basic off;` for calendar subscriptions.
 
 - **An admin forgot their password:** another admin creates a reset link on
   `/admin`. If there is no other admin, create a new admin invitation in the SQL
-  editor (`select verwaltung.admin_invite('…');`) and use a new address, or sign in
+  editor (`select admin.invite_admin('…');`) and use a new address, or sign in
   with mail and use "forgot password".
 - **Someone left the family:** disable or delete the account on `/admin`, or just
   remove them from the tree. Their sessions end immediately.

@@ -6,6 +6,7 @@ import { currentUser } from '@/lib/auth'
 import { registrationOpen } from '@/lib/features'
 import { setupNotice, type SetupNotice } from '@/lib/firstStart'
 import { safeNext } from '@/lib/pageAuth'
+import { logError } from '@/lib/log'
 import { Button } from '@/components/ui/Button'
 import { AuthLayout, FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -16,7 +17,12 @@ type Props = { canRegister: boolean; next: string; setup: SetupNotice; locale: L
 
 export const getServerSideProps: GetServerSideProps<Props> = async ({ req, query }) => {
   const next = safeNext(query.next) ?? '/'
-  if (await currentUser(req)) return { redirect: { destination: next, permanent: false } }
+  // A broken or empty database must not hide the page that explains what to do
+  const user = await currentUser(req).catch((err) => {
+    logError('login', err)
+    return null
+  })
+  if (user) return { redirect: { destination: next, permanent: false } }
   return {
     props: { canRegister: registrationOpen(), next, setup: await setupNotice(), locale: localeFromRequest(req) },
   }
@@ -85,7 +91,11 @@ export default function LoginPage({ canRegister, next, setup }: Props) {
       {setup && (
         <div className="mb-4">
           <FormMessage tone="info">
-            {setup.kind === 'outdated' ? t.setup.outdated(setup.have, setup.need) : t.setup.noAccount}
+            {setup.kind === 'missing'
+              ? t.setup.missing
+              : setup.kind === 'outdated'
+              ? t.setup.outdated(setup.have, setup.need)
+              : t.setup.noAccount}
           </FormMessage>
         </div>
       )}

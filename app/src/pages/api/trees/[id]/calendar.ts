@@ -8,13 +8,13 @@ import { treeIdParam } from '@/lib/ids'
 const icsPath = (token: string) => `/api/kalender/${token}.ics`
 
 export default withUser('api/trees/[id]/calendar', async (req, res, user) => {
-  const fid = treeIdParam(req.query.id)
-  const access = fid ? await treeAccess(user, fid) : null
-  if (!fid || !access) return res.status(404).json({ error: 'not found' })
-  if (req.method === 'GET') return res.status(200).json({ path: icsPath(await getCalendarToken(fid)) })
+  const treeId = treeIdParam(req.query.id)
+  const access = treeId ? await treeAccess(user, treeId) : null
+  if (!treeId || !access) return res.status(404).json({ error: 'not found' })
+  if (req.method === 'GET') return res.status(200).json({ path: icsPath(await getCalendarToken(treeId)) })
   if (req.method === 'POST') {
     if (!canEdit(access)) return res.status(403).json({ error: 'read only' })
-    return res.status(200).json({ path: icsPath(await renewCalendarToken(fid)) })
+    return res.status(200).json({ path: icsPath(await renewCalendarToken(treeId)) })
   }
   res.setHeader('Allow', 'GET, POST')
   return res.status(405).end()

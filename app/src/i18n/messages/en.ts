@@ -495,8 +495,9 @@ export const en: Messages = {
     noneAdmin: 'There is no family tree yet. Create one in the administration.',
   },
   setup: {
+    missing: 'The database is not set up yet. An admin has to run supabase/setup.sql in the Supabase SQL editor.',
     outdated: (have, need) =>
-      `The database is at version ${have}, this app needs version ${need}. An admin has to run supabase/setup.sql in the Supabase SQL editor.`,
+      `The database is at version ${have}, this app needs version ${need}. An admin has to run the missing scripts from supabase/migrations in the Supabase SQL editor.`,
     noAccount:
       'There is no account yet. The app writes the link for the first admin to its log when it starts (docker logs family-tree-app).',
   },

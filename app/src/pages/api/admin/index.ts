@@ -19,6 +19,7 @@ export default withAdmin('api/admin', async (req, res, admin) => {
   return res.status(200).json({
     me: admin.id,
     mail: canSendMail(),
+    // Admins can only get here with a database that has accounts, so never 'missing'
     schema: schema.state === 'outdated' ? { have: schema.have, need: schema.need } : null,
     users,
     trees,

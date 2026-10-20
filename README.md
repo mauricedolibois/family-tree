@@ -37,18 +37,18 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 - Personal accounts with email and password; admins, editors and viewers per tree; invitation links; optional email verification and mail over SMTP ([docs/accounts.md](docs/accounts.md)).
 - Signed session cookies (HMAC) that can be ended everywhere at once, and throttling against password guessing.
 - The server validates every tree before saving, and only saves if nobody changed the tree on another device in the meantime.
-- Automatic backups: before **every** change (with a note about what changed, e.g. "bearbeitet: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
-- Emergency restore from the Supabase SQL editor (schema `verwaltung`, not reachable through the API; the names are German):
+- Automatic backups: before **every** change (with a note about what changed, e.g. "edited: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
+- Emergency tools in the Supabase SQL editor (schema `admin`, not reachable through the API):
 
   ```sql
-  select * from verwaltung.staende limit 20;         -- latest backups
-  select verwaltung.wiederherstellen(NUMMER);         -- preview only: what would happen?
-  select verwaltung.wiederherstellen(NUMMER, true);   -- actually restore (the current version is backed up first)
-  select verwaltung.sichern('vor dem Familienfest');  -- manual backup now
-  select verwaltung.admin_invite('you@example.org');  -- one-time link for another admin
+  select * from admin.backups limit 20;              -- latest backups
+  select admin.restore(NUMBER);                      -- preview only: what would happen?
+  select admin.restore(NUMBER, true);                -- actually restore (the current version is backed up first)
+  select admin.backup('before the family reunion');  -- manual backup of every tree
+  select admin.invite_admin('you@example.org');      -- one-time link for another admin
   ```
 
-  Replace `NUMMER` with the `id` from the list. The placeholder is there on purpose so the lines cannot be run unchanged by accident. Without `true` the function only shows a preview and changes nothing.
+  Replace `NUMBER` with the `id` from the list. The placeholder is there on purpose so the lines cannot be run unchanged by accident. Without `true` the function only shows a preview and changes nothing.
 
 - Photos and documents are not deleted right away when someone removes them: the daily backup only deletes a file once neither the current tree nor any backup refers to it (and it is older than a week), so restored versions keep their images. If a file is missing anyway, the app shows initials or "Bild fehlt" (image missing).
 
@@ -106,28 +106,31 @@ Optionally add a weekly schedule for `main` in GitLab under *Build → Pipeline 
 
 The app needs a Supabase instance (self-hosted or cloud); it only talks to it through
 `SUPABASE_URL` and the service role key and never needs database admin rights.
-Everything the database needs is in one file, [`supabase/setup.sql`](supabase/setup.sql):
+Scripts are run by hand in the Supabase SQL editor (or with `psql`). Each one runs in
+a single transaction, so a failure changes nothing.
 
-- **New installation:** run the whole file once in the Supabase SQL editor, then start
-  the app. Nobody can sign in yet, so the app writes a one-time link for the first
-  admin to its log:
+- **New installation:** run [`supabase/setup.sql`](supabase/setup.sql), then start the
+  app. Nobody can sign in yet, so the app writes a one-time link for the first admin
+  to its log:
 
   ```bash
   docker logs family-tree-app | grep setup
   ```
 
   Open the link (valid for 7 days), create your account and invite people on `/admin`.
-- **Existing installation, also the original version with one shared password per
-  family:** run the same file. It only adds what is missing and leaves trees, photos
-  and accounts alone. After moving from a shared password, the app writes the admin
-  link to its log as above.
-- **Updates:** when a new app version needs database changes, the log, the admin page
-  and the sign-in page say so. Run the current `supabase/setup.sql` again; it is safe
-  to run any number of times and changes nothing if the database is already current.
+- **Installations from before `setup.sql`** (the original version with one shared
+  password per family, and every later state up to personal accounts): back up the
+  database, then run [`supabase/migrations/v1_from_legacy.sql`](supabase/migrations/v1_from_legacy.sql)
+  once and deploy the new app. Trees, backups, accounts and open invitations are taken
+  over; the result is identical to a new installation. Older app versions do not work
+  with it any more. Without accounts yet, the admin link appears in the log as above.
+- **Updates:** when a new version needs database changes, it comes with a script
+  `supabase/migrations/vN_….sql`, and the log, the admin page and the sign-in page say
+  which version is missing. Run the missing scripts in order. `setup.sql` always
+  creates the current version directly.
 
-The file runs in one transaction, so a failure changes nothing. With shell access to
-the database container, `psql` works as well:
-`docker exec -i supabase-db psql -U postgres -v ON_ERROR_STOP=1 < supabase/setup.sql`.
+`supabase/check.sh` verifies that `setup.sql` and the migrations lead to exactly the
+same schema (CI runs it whenever something under `supabase/` changes).
 
 **Notes:**
 
@@ -160,7 +163,7 @@ the database container, `psql` works as well:
 | `app/src/pages/api/`           | Accounts, trees, uploads, calendar, administration                    |
 | `app/src/lib/`                 | Server side: database, accounts, sessions, mail, throttling           |
 | `app/scripts/`                 | Maintenance scripts (daily backup, keep-alive)                        |
-| `supabase/setup.sql`           | Database setup and upgrades (one file, safe to run again)             |
+| `supabase/`                    | `setup.sql` for new databases, `migrations/` for existing ones        |
 
 ## Roadmap
 

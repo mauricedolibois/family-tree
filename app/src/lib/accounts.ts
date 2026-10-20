@@ -132,20 +132,20 @@ export type AdminUserView = PublicUser & {
 export async function listUsers(): Promise<AdminUserView[]> {
   const { data, error } = await db()
     .from('users')
-    .select(`${USER_COLUMNS},memberships(role,family_id,families(name))`)
+    .select(`${USER_COLUMNS},memberships(role,tree_id,trees(name))`)
     .order('name')
   if (error) throw error
   return (data ?? []).map((u) => {
     // Without generated types supabase-js types embedded rows as arrays; many-to-one embeds are objects
     const row = u as unknown as UserRow & {
-      memberships: Array<{ role: Role; family_id: string; families: { name: string } | null }>
+      memberships: Array<{ role: Role; tree_id: string; trees: { name: string } | null }>
     }
     return {
       ...toPublicUser(row),
       disabled: !!row.disabled_at,
       created_at: row.created_at,
       trees: row.memberships
-        .map((m) => ({ id: m.family_id, name: m.families?.name ?? '', role: m.role }))
+        .map((m) => ({ id: m.tree_id, name: m.trees?.name ?? '', role: m.role }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     }
   })
@@ -154,70 +154,70 @@ export async function listUsers(): Promise<AdminUserView[]> {
 // ── Trees and memberships ───────────────────────────────────────────────────
 
 export async function listTrees(): Promise<Array<{ id: string; name: string; created_at: string }>> {
-  const { data, error } = await db().from('families').select('id,name,created_at').order('name')
+  const { data, error } = await db().from('trees').select('id,name,created_at').order('name')
   if (error) throw error
   return data ?? []
 }
 
 export async function getTree(id: string): Promise<{ id: string; name: string } | null> {
-  const { data, error } = await db().from('families').select('id,name').eq('id', id).maybeSingle()
+  const { data, error } = await db().from('trees').select('id,name').eq('id', id).maybeSingle()
   if (error) throw error
   return data
 }
 
-/** New tree with its starter content; the old shared password stays empty */
+/** New tree with its starter content */
 export async function createTree(name: string, starter: StoredTree): Promise<{ id: string; name: string }> {
-  const { data, error } = await db().from('families').insert({ name: name.trim() }).select('id,name').single()
+  const { data, error } = await db()
+    .from('trees')
+    .insert({ name: name.trim(), data: starter })
+    .select('id,name')
+    .single()
   if (error) throw error
-  const { error: treeError } = await db()
-    .from('family_trees')
-    .insert({ family_id: data.id, tree_json: starter, updated_at: new Date().toISOString() })
-  if (treeError) throw treeError
   return data
 }
 
 export async function renameTree(id: string, name: string): Promise<void> {
-  const { error } = await db().from('families').update({ name: name.trim() }).eq('id', id)
+  const { error } = await db().from('trees').update({ name: name.trim() }).eq('id', id)
   if (error) throw error
 }
 
 /** Trees the user can open: all of them for admins, otherwise their memberships */
 export async function treesOf(user: Pick<UserRow, 'id' | 'is_admin'>): Promise<TreeSummary[]> {
   if (user.is_admin) {
-    const own = new Map((await membershipRows(user.id)).map((m) => [m.family_id, m.role]))
+    const own = new Map((await membershipRows(user.id)).map((m) => [m.tree_id, m.role]))
     return (await listTrees()).map((t) => ({ id: t.id, name: t.name, role: own.get(t.id) ?? 'admin' }))
   }
   return (await membershipRows(user.id))
-    .map((m) => ({ id: m.family_id, name: m.families?.name ?? '', role: m.role }))
+    .map((m) => ({ id: m.tree_id, name: m.trees?.name ?? '', role: m.role }))
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 async function membershipRows(userId: string) {
-  const { data, error } = await db().from('memberships').select('family_id,role,families(name)').eq('user_id', userId)
+  const { data, error } = await db().from('memberships').select('tree_id,role,trees(name)').eq('user_id', userId)
   if (error) throw error
-  return (data ?? []) as unknown as Array<{ family_id: string; role: Role; families: { name: string } | null }>
+  return (data ?? []) as unknown as Array<{ tree_id: string; role: Role; trees: { name: string } | null }>
 }
 
-export async function roleIn(userId: string, familyId: string): Promise<Role | null> {
+export async function roleIn(userId: string, treeId: string): Promise<Role | null> {
   const { data, error } = await db()
     .from('memberships')
     .select('role')
     .eq('user_id', userId)
-    .eq('family_id', familyId)
+    .eq('tree_id', treeId)
     .maybeSingle()
   if (error) throw error
   return (data?.role as Role | undefined) ?? null
 }
 
-export async function setMembership(userId: string, familyId: string, role: Role): Promise<void> {
+export async function setMembership(userId: string, treeId: string, role: Role): Promise<void> {
   const { error } = await db()
     .from('memberships')
-    .upsert({ user_id: userId, family_id: familyId, role }, { onConflict: 'user_id,family_id' })
+    .upsert({ user_id: userId, tree_id: treeId, role }, { onConflict: 'user_id,tree_id' })
   if (error) throw error
 }
 
-export async function removeMembership(userId: string, familyId: string): Promise<void> {
-  const { error } = await db().from('memberships').delete().eq('user_id', userId).eq('family_id', familyId)
+export async function removeMembership(userId: string, treeId: string): Promise<void> {
+  const { error } = await db().from('memberships').delete().eq('user_id', userId).eq('tree_id', treeId)
   if (error) throw error
 }
 
@@ -226,7 +226,7 @@ export async function removeMembership(userId: string, familyId: string): Promis
 export type InviteRow = {
   id: string
   email: string | null
-  family_id: string | null
+  tree_id: string | null
   role: Role | null
   make_admin: boolean
   created_by: string | null
@@ -236,12 +236,12 @@ export type InviteRow = {
   revoked_at: string | null
 }
 
-const INVITE_COLUMNS = 'id,email,family_id,role,make_admin,created_by,created_at,expires_at,used_at,revoked_at'
+const INVITE_COLUMNS = 'id,email,tree_id,role,make_admin,created_by,created_at,expires_at,used_at,revoked_at'
 
 export async function createInvite(input: {
   tokenHash: string
   email: string | null
-  familyId: string | null
+  treeId: string | null
   role: Role | null
   makeAdmin: boolean
   /** null for the first-admin link written at start */
@@ -253,7 +253,7 @@ export async function createInvite(input: {
     .insert({
       token_hash: input.tokenHash,
       email: input.email ? normalizeEmail(input.email) : null,
-      family_id: input.familyId,
+      tree_id: input.treeId,
       role: input.role,
       make_admin: input.makeAdmin,
       created_by: input.createdBy,
@@ -270,14 +270,14 @@ export type InviteDetails = InviteRow & { tree_name: string | null; inviter_name
 export async function findInvite(tokenHash: string): Promise<InviteDetails | null> {
   const { data, error } = await db()
     .from('invites')
-    .select(`${INVITE_COLUMNS},families(name),users!invites_created_by_fkey(name)`)
+    .select(`${INVITE_COLUMNS},trees(name),users!invites_created_by_fkey(name)`)
     .eq('token_hash', tokenHash)
     .maybeSingle()
   if (error) throw error
   if (!data) return null
-  const row = data as unknown as InviteRow & { families: { name: string } | null; users: { name: string } | null }
-  const { families, users, ...invite } = row
-  return { ...invite, tree_name: families?.name ?? null, inviter_name: users?.name ?? null }
+  const row = data as unknown as InviteRow & { trees: { name: string } | null; users: { name: string } | null }
+  const { trees, users, ...invite } = row
+  return { ...invite, tree_name: trees?.name ?? null, inviter_name: users?.name ?? null }
 }
 
 /** Open = neither used, revoked nor expired */
@@ -287,16 +287,16 @@ export const inviteIsOpen = (i: Pick<InviteRow, 'used_at' | 'revoked_at' | 'expi
 export async function listOpenInvites(): Promise<InviteDetails[]> {
   const { data, error } = await db()
     .from('invites')
-    .select(`${INVITE_COLUMNS},families(name),users!invites_created_by_fkey(name)`)
+    .select(`${INVITE_COLUMNS},trees(name),users!invites_created_by_fkey(name)`)
     .is('used_at', null)
     .is('revoked_at', null)
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []).map((d) => {
-    const row = d as unknown as InviteRow & { families: { name: string } | null; users: { name: string } | null }
-    const { families, users, ...invite } = row
-    return { ...invite, tree_name: families?.name ?? null, inviter_name: users?.name ?? null }
+    const row = d as unknown as InviteRow & { trees: { name: string } | null; users: { name: string } | null }
+    const { trees, users, ...invite } = row
+    return { ...invite, tree_name: trees?.name ?? null, inviter_name: users?.name ?? null }
   })
 }
 

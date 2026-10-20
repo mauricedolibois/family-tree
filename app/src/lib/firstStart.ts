@@ -11,7 +11,11 @@ import { logError } from './log'
 
 const LINK_DAYS = 7
 
-export type SetupNotice = { kind: 'outdated'; have: number; need: number } | { kind: 'noAccount' } | null
+export type SetupNotice =
+  | { kind: 'missing' }
+  | { kind: 'outdated'; have: number; need: number }
+  | { kind: 'noAccount' }
+  | null
 
 // Once someone has an account this stays true; no need to count on every page view
 let accountsExist = false
@@ -19,6 +23,7 @@ let accountsExist = false
 /** What the sign-in and admin pages should tell people about the installation */
 export async function setupNotice(): Promise<SetupNotice> {
   const status = await schemaStatus()
+  if (status.state === 'missing') return { kind: 'missing' }
   if (status.state === 'outdated') return { kind: 'outdated', have: status.have, need: status.need }
   if (status.state !== 'current' || accountsExist) return null
   try {
@@ -33,10 +38,16 @@ export async function setupNotice(): Promise<SetupNotice> {
 export async function onServerStart(): Promise<void> {
   try {
     const status = await schemaStatus()
+    if (status.state === 'missing') {
+      console.warn(
+        '[setup] The database is empty. Run supabase/setup.sql in the Supabase SQL editor (see README, "Database").',
+      )
+      return
+    }
     if (status.state === 'outdated') {
       console.warn(
         `[setup] The database is at version ${status.have}, this app needs version ${status.need}. ` +
-          'Run supabase/setup.sql in the Supabase SQL editor (see README, "Database").',
+          'Run the missing scripts from supabase/migrations in the Supabase SQL editor (see README, "Database").',
       )
       return
     }
@@ -47,7 +58,7 @@ export async function onServerStart(): Promise<void> {
     await createInvite({
       tokenHash: hashToken(token),
       email: null,
-      familyId: null,
+      treeId: null,
       role: null,
       makeAdmin: true,
       createdBy: null,
