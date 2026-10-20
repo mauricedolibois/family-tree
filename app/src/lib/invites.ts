@@ -22,7 +22,7 @@ export const inviteDays = (value: unknown) => Math.min(Math.max(Math.round(Numbe
  * The link is returned either way, so it can also be passed on by hand.
  */
 export async function issueInvite(input: {
-  inviter: Pick<UserRow, 'id' | 'name' | 'locale'>
+  inviter: Pick<UserRow, 'id' | 'name'>
   email: string | null
   tree: { id: string; name: string } | null
   role: Role | null
@@ -46,7 +46,6 @@ export async function issueInvite(input: {
         path,
         inviter: input.inviter.name,
         tree: input.tree?.name ?? null,
-        locale: input.inviter.locale,
       })
     : false
   return { id: invite.id, path, mailed }

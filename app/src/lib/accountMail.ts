@@ -12,19 +12,19 @@ export const RESET_HOURS = 2
 
 export type IssuedLink = { path: string; mailed: boolean }
 
-export async function sendVerification(user: Pick<UserRow, 'id' | 'email' | 'name' | 'locale'>): Promise<IssuedLink> {
+export async function sendVerification(user: Pick<UserRow, 'id' | 'email' | 'name'>): Promise<IssuedLink> {
   const token = newToken()
   await createAuthToken(user.id, 'verify', hashToken(token), new Date(Date.now() + VERIFY_HOURS * HOUR))
   const path = `/verify/${token}`
-  const mailed = await sendMail({ kind: 'verify', to: user.email, locale: user.locale, path, name: user.name })
+  const mailed = await sendMail({ kind: 'verify', to: user.email, path, name: user.name })
   return { path, mailed }
 }
 
-export async function issueReset(user: Pick<UserRow, 'id' | 'email' | 'name' | 'locale'>): Promise<IssuedLink> {
+export async function issueReset(user: Pick<UserRow, 'id' | 'email' | 'name'>): Promise<IssuedLink> {
   const token = newToken()
   await createAuthToken(user.id, 'reset', hashToken(token), new Date(Date.now() + RESET_HOURS * HOUR))
   const path = `/reset/${token}`
-  const mailed = await sendMail({ kind: 'reset', to: user.email, locale: user.locale, path, name: user.name })
+  const mailed = await sendMail({ kind: 'reset', to: user.email, path, name: user.name })
   return { path, mailed }
 }
 
@@ -33,12 +33,10 @@ export async function mailInvite(input: {
   path: string
   inviter: string
   tree: string | null
-  locale: string | null
 }): Promise<boolean> {
   return sendMail({
     kind: 'invite',
     to: input.to,
-    locale: input.locale,
     path: input.path,
     name: input.inviter,
     tree: input.tree ?? '',

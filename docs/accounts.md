@@ -55,8 +55,9 @@ Without `APP_URL` no mail is sent.
 Without mail everything still works: invitation and reset links appear on the admin
 page, and "forgot password" asks people to contact an admin.
 
-Mails go out in the recipient's language (the account language, set on `/account`
-from the language picker; for invitations the inviting admin's language).
+Every mail is written in German and, below it, in English, so it does not matter
+which language the recipient chose (or, for invitations, whether they have an
+account yet). The languages are set in `MAIL_LOCALES` in `app/src/lib/mail.ts`.
 
 ## Sessions and security
 
