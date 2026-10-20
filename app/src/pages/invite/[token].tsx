@@ -13,7 +13,7 @@ type Props = { token: string; locale: Locale }
 
 type Info = {
   tree: string | null
-  role: 'editor' | 'viewer' | null
+  role: 'viewer' | 'editor' | 'moderator' | null
   admin: boolean
   email: string | null
   inviter: string | null
@@ -76,8 +76,7 @@ export default function InvitePage({ token }: Props) {
 
   const what = info
     ? info.tree
-      ? t.invite.joinTree(info.tree, info.role === 'viewer' ? t.roles.viewer : t.roles.editor) +
-        (info.admin ? ` ${t.invite.andAdmin}` : '')
+      ? t.invite.joinTree(info.tree, t.roles[info.role ?? 'editor']) + (info.admin ? ` ${t.invite.andAdmin}` : '')
       : t.invite.becomeAdmin
     : ''
 

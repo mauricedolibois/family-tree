@@ -34,7 +34,7 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 
 ## Security and data
 
-- Personal accounts with email and password; admins, editors and viewers per tree; invitation links; optional email verification and mail over SMTP ([docs/accounts.md](docs/accounts.md)).
+- Personal accounts with email and password; admins, and moderators, editors and viewers per tree; invitation links from admins and moderators; optional email verification and mail over SMTP ([docs/accounts.md](docs/accounts.md)).
 - Signed session cookies (HMAC) that can be ended everywhere at once, and throttling against password guessing.
 - The server validates every tree before saving, and only saves if nobody changed the tree on another device in the meantime.
 - Automatic backups: before **every** change (with a note about what changed, e.g. "edited: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.

@@ -2,7 +2,7 @@ import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { serialize } from 'cookie'
 import { getTree, treesOf } from '@/lib/accounts'
-import { canEdit, treeAccess } from '@/lib/auth'
+import { canEdit, canManage, treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
 import { LAST_TREE_COOKIE, requirePageUser } from '@/lib/pageAuth'
 import { FamilyProvider } from '@/components/app/FamilyProvider'
@@ -40,7 +40,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
       treeId,
       familyName: tree.name,
       editable: canEdit(access),
-      viewer: { name: user.name, isAdmin: user.is_admin, treeCount: trees.length },
+      viewer: { name: user.name, isAdmin: user.is_admin, treeCount: trees.length, canManage: canManage(access) },
       locale: localeFromRequest(ctx.req),
     },
   }

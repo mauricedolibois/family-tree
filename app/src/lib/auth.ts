@@ -3,7 +3,8 @@
 
 import type { IncomingMessage } from 'http'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getUser, roleIn, type Role, type UserRow } from './accounts'
+import { getTree, getUser, roleIn, type Role, type UserRow } from './accounts'
+import { treeIdParam } from './ids'
 import { sessionFromReq } from './session'
 import { logError } from './log'
 
@@ -24,7 +25,10 @@ export async function treeAccess(user: Pick<UserRow, 'id' | 'is_admin'>, treeId:
   return roleIn(user.id, treeId)
 }
 
-export const canEdit = (access: Access | null) => access === 'admin' || access === 'editor'
+export const canEdit = (access: Access | null) => access === 'admin' || access === 'moderator' || access === 'editor'
+
+/** Invite people to the tree and manage its members */
+export const canManage = (access: Access | null) => access === 'admin' || access === 'moderator'
 
 type Handler<T> = (req: NextApiRequest, res: NextApiResponse, user: UserRow) => Promise<T> | T
 
@@ -54,3 +58,28 @@ export function withAdmin<T>(name: string, handler: Handler<T>) {
 /** First value of a query parameter */
 export const queryParam = (value: string | string[] | undefined): string | undefined =>
   Array.isArray(value) ? value[0] : value
+
+/**
+ * For the member management routes of one tree (/api/trees/[id]/...): the tree if
+ * the user is one of its moderators or an admin. Otherwise answers the request
+ * (404 without access, as for trees that do not exist; 403 for other members)
+ * and returns null.
+ */
+export async function managedTree(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  user: UserRow,
+): Promise<{ id: string; name: string; access: Access } | null> {
+  const treeId = treeIdParam(req.query.id)
+  const access = treeId ? await treeAccess(user, treeId) : null
+  const tree = treeId && access ? await getTree(treeId) : null
+  if (!tree || !access) {
+    res.status(404).json({ error: 'not found' })
+    return null
+  }
+  if (!canManage(access)) {
+    res.status(403).json({ error: 'forbidden' })
+    return null
+  }
+  return { ...tree, access }
+}

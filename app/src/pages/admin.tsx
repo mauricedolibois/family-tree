@@ -6,12 +6,13 @@ import Head from 'next/head'
 import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
 import clsx from 'clsx'
-import { ArrowLeft, Copy, KeyRound, Plus, Trash2, UserMinus } from 'lucide-react'
+import { ArrowLeft, KeyRound, Plus, Trash2, UserMinus } from 'lucide-react'
 import type { AdminUserView } from '@/lib/accounts'
 import { requirePageUser } from '@/lib/pageAuth'
 import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
+import { Badge, Card, LinkBox, RoleSelect, selectClass as select } from '@/components/manage/parts'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
@@ -25,7 +26,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   return { props: { locale: localeFromRequest(ctx.req) } }
 }
 
-type Role = 'editor' | 'viewer'
+type Role = 'viewer' | 'editor' | 'moderator'
 type Tree = { id: string; name: string; created_at: string }
 type Invite = {
   id: string
@@ -45,44 +46,6 @@ type Overview = {
   trees: Tree[]
   invites: Invite[]
 }
-
-const fullUrl = (path: string) => (typeof window === 'undefined' ? path : window.location.origin + path)
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="parchment rounded-card border border-gilt/60 p-4 shadow-card sm:p-5">
-      <h2 className="mb-3 font-display text-[1.4rem] text-ink">{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-/** A link to pass on, with a copy button */
-function LinkBox({ path, note }: { path: string; note: string }) {
-  const { t } = useI18n()
-  const [copied, setCopied] = useState(false)
-  const url = fullUrl(path)
-  return (
-    <div className="mt-3 flex flex-col gap-2 rounded-control border border-gilt/60 bg-gilt-soft/40 p-3">
-      <p className="text-sm text-ink">{note}</p>
-      <div className="flex items-center gap-2">
-        <input readOnly value={url} className="field h-9 flex-1 text-sm" onFocus={(e) => e.target.select()} />
-        <Button
-          size="sm"
-          icon={<Copy className="h-4 w-4" />}
-          onClick={async () => {
-            await navigator.clipboard.writeText(url).catch(() => undefined)
-            setCopied(true)
-          }}
-        >
-          {copied ? t.subscribe.copied : t.admin.copy}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-const select = 'field h-9 py-0 text-sm'
 
 export default function AdminPage() {
   const { t, locale } = useI18n()
@@ -199,10 +162,7 @@ function InviteCard({ trees, mail, onCreated }: { trees: Tree[]; mail: boolean; 
         </label>
         <label className="flex flex-col gap-1">
           <span className="field-label">{t.admin.role}</span>
-          <select className={select} value={role} disabled={!treeId} onChange={(e) => setRole(e.target.value as Role)}>
-            <option value="editor">{t.roles.editor}</option>
-            <option value="viewer">{t.roles.viewer}</option>
-          </select>
+          <RoleSelect value={role} disabled={!treeId} onChange={setRole} />
         </label>
         <label className="flex items-center gap-2 text-[15px] text-ink">
           <input type="checkbox" checked={admin} onChange={(e) => setAdmin(e.target.checked)} />
@@ -379,15 +339,12 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                 {u.trees.map((m) => (
                   <li key={m.id} className="flex items-center gap-2 text-[15px]">
                     <span className="min-w-0 flex-1 truncate text-ink">{m.name}</span>
-                    <select
-                      className={clsx(select, 'w-36')}
+                    <RoleSelect
+                      className={clsx(select, 'w-40')}
                       value={m.role}
-                      aria-label={t.admin.role}
-                      onChange={(e) => run(`/api/admin/users/${u.id}/trees/${m.id}`, { role: e.target.value }, 'PUT')}
-                    >
-                      <option value="editor">{t.roles.editor}</option>
-                      <option value="viewer">{t.roles.viewer}</option>
-                    </select>
+                      label={t.admin.role}
+                      onChange={(role) => run(`/api/admin/users/${u.id}/trees/${m.id}`, { role }, 'PUT')}
+                    />
                     <button
                       type="button"
                       aria-label={t.admin.removeFromTree(m.name)}
@@ -477,22 +434,10 @@ function AddToTree({ trees, onAdd }: { trees: Tree[]; onAdd: (treeId: string, ro
           </option>
         ))}
       </select>
-      <select
-        className={clsx(select, 'w-36')}
-        value={role}
-        onChange={(e) => setRole(e.target.value as Role)}
-        aria-label={t.admin.role}
-      >
-        <option value="editor">{t.roles.editor}</option>
-        <option value="viewer">{t.roles.viewer}</option>
-      </select>
+      <RoleSelect className={clsx(select, 'w-40')} value={role} label={t.admin.role} onChange={setRole} />
       <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => onAdd(treeId, role)}>
         {t.admin.addToTree}
       </Button>
     </div>
   )
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-full bg-linen-tint px-2 py-0.5 text-[12px] font-medium text-linen">{children}</span>
 }

@@ -37,7 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const user = await createUser({ email, name, passHash: await hashPassword(body.password), locale })
     const tree = await createTree(treeName, starterTree(locale))
-    await setMembership(user.id, tree.id, 'editor')
+    // Whoever creates a tree runs it
+    await setMembership(user.id, tree.id, 'moderator')
     await recordAttempt('register', [ipKey], true)
 
     if (emailVerificationRequired()) {

@@ -1,4 +1,4 @@
--- Family tree database, version 2: everything a new installation needs.
+-- Family tree database, version 3: everything a new installation needs.
 --
 -- Run the whole file once in the Supabase SQL editor (or with psql) on a database
 -- without family tree tables. Existing installations do not use this file; they
@@ -59,11 +59,13 @@ create table public.users (
 );
 create unique index users_email_key on public.users (lower(email));
 
--- Who may see or edit which tree. Admins may do everything without a membership.
+-- Who may do what in which tree: viewers read, editors also change the tree,
+-- moderators also invite people and manage the members of the tree. Admins may do
+-- everything everywhere without a membership.
 create table public.memberships (
   user_id uuid not null references public.users (id) on delete cascade,
   tree_id uuid not null references public.trees (id) on delete cascade,
-  role text not null check (role in ('editor', 'viewer')),
+  role text not null check (role in ('viewer', 'editor', 'moderator')),
   created_at timestamptz not null default now(),
   primary key (user_id, tree_id)
 );
@@ -77,7 +79,7 @@ create table public.invites (
   -- When set, the account must use this address
   email text,
   tree_id uuid references public.trees (id) on delete cascade,
-  role text check (role in ('editor', 'viewer')),
+  role text check (role in ('viewer', 'editor', 'moderator')),
   make_admin boolean not null default false,
   created_by uuid references public.users (id) on delete set null,
   created_at timestamptz not null default now(),
@@ -115,7 +117,7 @@ create table public.app_meta (
   key text primary key,
   value text not null
 );
-insert into public.app_meta (key, value) values ('schema_version', '2');
+insert into public.app_meta (key, value) values ('schema_version', '3');
 
 -- ── Access ───────────────────────────────────────────────────────────────────
 
@@ -253,4 +255,4 @@ notify pgrst, 'reload schema';
 
 commit;
 
-select 'Database is set up (version 2).' as result;
+select 'Database is set up (version 3).' as result;

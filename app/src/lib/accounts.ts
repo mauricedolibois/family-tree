@@ -5,7 +5,12 @@
 import { getSupaAdmin } from './supabaseServer'
 import type { StoredTree } from '@/storage/schema'
 
-export type Role = 'editor' | 'viewer'
+export type Role = 'viewer' | 'editor' | 'moderator'
+
+export const ROLES: readonly Role[] = ['viewer', 'editor', 'moderator']
+
+/** A role from a request body, or null */
+export const parseRole = (value: unknown): Role | null => (ROLES.includes(value as Role) ? (value as Role) : null)
 
 export type UserRow = {
   id: string
@@ -221,6 +226,32 @@ export async function removeMembership(userId: string, treeId: string): Promise<
   if (error) throw error
 }
 
+export type TreeMember = { id: string; name: string; email: string; role: Role; verified: boolean; disabled: boolean }
+
+/** Members of one tree, for its moderators and admins */
+export async function listTreeMembers(treeId: string): Promise<TreeMember[]> {
+  const { data, error } = await db()
+    .from('memberships')
+    .select('role,users(id,name,email,email_verified_at,disabled_at)')
+    .eq('tree_id', treeId)
+  if (error) throw error
+  const rows = (data ?? []) as unknown as Array<{
+    role: Role
+    users: Pick<UserRow, 'id' | 'name' | 'email' | 'email_verified_at' | 'disabled_at'> | null
+  }>
+  return rows
+    .filter((r) => r.users)
+    .map(({ role, users: u }) => ({
+      id: u!.id,
+      name: u!.name,
+      email: u!.email,
+      role,
+      verified: !!u!.email_verified_at,
+      disabled: !!u!.disabled_at,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
 // ── Invitations ───────────────────────────────────────────────────────────────
 
 export type InviteRow = {
@@ -284,14 +315,16 @@ export async function findInvite(tokenHash: string): Promise<InviteDetails | nul
 export const inviteIsOpen = (i: Pick<InviteRow, 'used_at' | 'revoked_at' | 'expires_at'>, now = Date.now()) =>
   !i.used_at && !i.revoked_at && Date.parse(i.expires_at) > now
 
-export async function listOpenInvites(): Promise<InviteDetails[]> {
-  const { data, error } = await db()
+/** Open invitations, all of them or those of one tree */
+export async function listOpenInvites(treeId?: string): Promise<InviteDetails[]> {
+  let query = db()
     .from('invites')
     .select(`${INVITE_COLUMNS},trees(name),users!invites_created_by_fkey(name)`)
     .is('used_at', null)
     .is('revoked_at', null)
     .gt('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false })
+  if (treeId) query = query.eq('tree_id', treeId)
+  const { data, error } = await query.order('created_at', { ascending: false })
   if (error) throw error
   return (data ?? []).map((d) => {
     const row = d as unknown as InviteRow & { trees: { name: string } | null; users: { name: string } | null }
@@ -314,9 +347,16 @@ export async function claimInvite(id: string, userId: string): Promise<boolean> 
   return (data ?? []).length === 1
 }
 
-export async function revokeInvite(id: string): Promise<void> {
-  const { error } = await db().from('invites').update({ revoked_at: new Date().toISOString() }).eq('id', id)
+/**
+ * Revokes an invitation. With a tree only one of that tree that grants no admin
+ * rights (those stay with the admins). True if there was one to revoke.
+ */
+export async function revokeInvite(id: string, treeId?: string): Promise<boolean> {
+  let query = db().from('invites').update({ revoked_at: new Date().toISOString() }).eq('id', id)
+  if (treeId) query = query.eq('tree_id', treeId).eq('make_admin', false)
+  const { data, error } = await query.select('id')
   if (error) throw error
+  return (data ?? []).length > 0
 }
 
 // ── One-time tokens: email verification and password reset ──────────────────

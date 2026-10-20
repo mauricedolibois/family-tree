@@ -5,7 +5,8 @@ to several family trees; what they may do is set per tree.
 
 | Role | May do |
 | --- | --- |
-| **Admin** (global) | Everything: every tree, accounts, invitations, new trees. Needs no membership. |
+| **Admin** (global) | Everything: every tree, accounts, invitations, new trees, admin rights. Needs no membership. |
+| **Moderator** (per tree) | Like an editor, and also invite people to the tree, change the roles of its members and remove them (`/tree/<id>/members`). |
 | **Editor** (per tree) | Read and change the tree, upload photos, renew the calendar link. |
 | **Viewer** (per tree) | Read the tree, use views, birthdays, PDF export and the calendar subscription. |
 
@@ -15,9 +16,10 @@ not exist.
 
 ## Joining
 
-People join through **invitation links** created on `/admin`:
+People join through **invitation links**, created by admins on `/admin` or by a
+tree's moderators on its members page (menu → Members):
 
-- for one tree with a role, for admin rights, or both;
+- for one tree with a role, for admin rights, or both (admin rights only from admins);
 - optionally bound to an email address (then only that address can use it, and it
   counts as verified);
 - valid for 1 to 30 days and usable once; open invitations can be revoked.
@@ -26,8 +28,13 @@ With mail enabled and an address given, the invitation is mailed. Otherwise the
 admin page shows the link to pass on. Someone who already has an account opens the
 link while signed in and joins with one click.
 
+Moderators manage everyone in their tree except themselves, so nobody locks
+themselves out by accident; they cannot hand out admin rights and do not see
+invitations that grant them. They can create 20 invitations per hour, because an
+invitation can send mail to any address.
+
 **Public registration** is off. With `ALLOW_REGISTRATION=true` anyone can sign up
-at `/register` and gets a new tree of their own as editor.
+at `/register` and gets a new tree of their own as its moderator.
 
 ## Mail
 
@@ -62,6 +69,10 @@ from the language picker; for invitations the inviting admin's language).
 - Invitation, verification and reset tokens are 256-bit random values; only their
   SHA-256 hash is stored.
 - The last active admin can neither lose admin rights nor be disabled or deleted.
+- Changes through the API are only accepted from the app's own pages: browsers mark
+  each request with `Sec-Fetch-Site`, and anything but `same-origin` is refused. The
+  session cookie alone (`SameSite=Lax`) would still let other subdomains of the same
+  domain send changes.
 
 ## Rollout on an existing installation
 

@@ -384,7 +384,7 @@ export const es: Messages = {
       },
     },
   },
-  roles: { editor: 'Puede editar', viewer: 'Solo ver', admin: 'Admin' },
+  roles: { editor: 'Puede editar', viewer: 'Solo ver', moderator: 'Moderador', admin: 'Admin' },
   login: {
     pageTitle: 'Árbol genealógico – Iniciar sesión',
     intro: 'Inicia sesión con tu correo electrónico.',
@@ -502,6 +502,21 @@ export const es: Messages = {
       `La base de datos está en la versión ${have}, esta aplicación necesita la versión ${need}. Un administrador debe ejecutar los scripts que faltan de supabase/migrations en el editor SQL de Supabase.`,
     noAccount:
       'Todavía no hay ninguna cuenta. Al arrancar, la aplicación escribe en su registro el enlace para el primer administrador (docker logs family-tree-app).',
+  },
+  members: {
+    title: 'Miembros',
+    intro: (tree) => `¿Quién forma parte del árbol «${tree}»? Aquí invitas a gente nueva y gestionas los miembros.`,
+    rolesHelp:
+      'Solo ver: leer el árbol. Puede editar: además cambiar personas y subir fotos. Moderador: además invitar y gestionar los miembros.',
+    backToTree: 'Volver al árbol',
+    noMembers: 'Aparte de los administradores, todavía no forma parte nadie.',
+    remove: 'Quitar',
+    confirmRemove: (name, tree) => `¿Quitar a ${name} del árbol «${tree}»?`,
+    status: {
+      self: 'Aquí no puedes cambiar tu propio rol.',
+      'too many attempts': 'Demasiadas invitaciones en poco tiempo. Vuelve a intentarlo más tarde.',
+      'invalid email': 'Esta dirección de correo no parece válida.',
+    },
   },
   admin: {
     title: 'Administración',

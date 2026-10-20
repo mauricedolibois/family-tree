@@ -389,7 +389,7 @@ export const de = {
       },
     },
   },
-  roles: { editor: 'Darf bearbeiten', viewer: 'Nur ansehen', admin: 'Admin' },
+  roles: { editor: 'Darf bearbeiten', viewer: 'Nur ansehen', moderator: 'Moderator', admin: 'Admin' },
   login: {
     pageTitle: 'Stammbaum – Anmelden',
     intro: 'Melde dich mit deiner E-Mail-Adresse an.',
@@ -507,6 +507,22 @@ export const de = {
       `Die Datenbank ist auf Version ${have}, diese App braucht Version ${need}. Ein Admin muss die fehlenden Skripte aus supabase/migrations im Supabase-SQL-Editor ausführen.`,
     noAccount:
       'Es gibt noch kein Konto. Den Link für den ersten Admin schreibt die App beim Start in ihr Log (docker logs family-tree-app).',
+  },
+  members: {
+    title: 'Mitglieder',
+    intro: (tree: string) =>
+      `Wer gehört zum Stammbaum „${tree}“? Hier lädst du neue Leute ein und verwaltest die Mitglieder.`,
+    rolesHelp:
+      'Nur ansehen: Stammbaum lesen. Darf bearbeiten: auch Personen ändern und Fotos hochladen. Moderator: zusätzlich einladen und Mitglieder verwalten.',
+    backToTree: 'Zurück zum Stammbaum',
+    noMembers: 'Außer den Admins gehört noch niemand dazu.',
+    remove: 'Entfernen',
+    confirmRemove: (name: string, tree: string) => `${name} aus „${tree}“ entfernen?`,
+    status: {
+      self: 'Deine eigene Rolle kannst du hier nicht ändern.',
+      'too many attempts': 'Zu viele Einladungen in kurzer Zeit. Bitte versuche es später noch einmal.',
+      'invalid email': 'Diese E-Mail-Adresse sieht nicht gültig aus.',
+    } as Record<string, string>,
   },
   admin: {
     title: 'Verwaltung',

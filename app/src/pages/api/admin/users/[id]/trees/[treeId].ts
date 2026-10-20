@@ -1,6 +1,6 @@
 // A user's role in a tree: PUT {role} sets it, DELETE removes the membership
 
-import { getTree, getUser, removeMembership, setMembership } from '@/lib/accounts'
+import { getTree, getUser, parseRole, removeMembership, setMembership } from '@/lib/accounts'
 import { withAdmin } from '@/lib/auth'
 import { isUuid, treeIdParam } from '@/lib/ids'
 
@@ -11,8 +11,8 @@ export default withAdmin('api/admin/users/[id]/trees/[treeId]', async (req, res)
   if (!(await getUser(userId)) || !(await getTree(treeId))) return res.status(404).json({ error: 'not found' })
 
   if (req.method === 'PUT') {
-    const role = (req.body || {}).role
-    if (role !== 'editor' && role !== 'viewer') return res.status(400).json({ error: 'invalid role' })
+    const role = parseRole((req.body || {}).role)
+    if (!role) return res.status(400).json({ error: 'invalid role' })
     await setMembership(userId, treeId, role)
     return res.status(200).json({ ok: true })
   }
