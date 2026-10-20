@@ -51,6 +51,13 @@ describe('validateStoredTree', () => {
     expect(r.ok && r.tree.members.a.profile?.media?.[0].url).toBe(photo)
   })
 
+  it('accepts links into an export archive only for imports', () => {
+    const profile = { titleImageUrl: 'media/0f0e-anna.jpg', media: [] }
+    const input = tree({ a: member('a', { profile }) })
+    expect(validateStoredTree(input).ok).toBe(false)
+    expect(validateStoredTree(input, { archiveLinks: true }).ok).toBe(true)
+  })
+
   it('keeps birth place and maiden name', () => {
     const profile = { birthDate: '1950', birthPlace: 'Saarlouis', maidenName: 'Müller', media: [] }
     const r = validateStoredTree(tree({ a: member('a', { profile }) }))

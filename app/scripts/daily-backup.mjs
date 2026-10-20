@@ -7,6 +7,8 @@
  * - Deletes photos and documents only once neither the current tree nor any
  *   backup refers to them (and they are older than a week), so restored
  *   versions keep their images.
+ * - Empties the trash: trees deleted more than 30 days ago go for good, with
+ *   their backups and files.
  * Runs daily via cron inside the app container (see README, "Deployment").
  */
 import { createClient } from '@supabase/supabase-js'
@@ -25,7 +27,10 @@ const KEEP = [
   { kind: 'change', days: 90 },
   { kind: 'restore', days: 90 },
   { kind: 'daily', days: 365 },
+  { kind: 'import', days: 365 },
 ]
+/** Deleted trees stay in the trash this long, then they go for good with their files */
+const TRASH_DAYS = 30
 
 /** Stable fingerprint of a JSON value (keys sorted). */
 function fingerprint(value) {
@@ -45,7 +50,11 @@ function fingerprint(value) {
 }
 
 async function main() {
-  const { data: trees, error } = await supabase.from('trees').select('id, data').not('data', 'is', null)
+  const { data: trees, error } = await supabase
+    .from('trees')
+    .select('id, data')
+    .not('data', 'is', null)
+    .is('deleted_at', null)
   if (error) throw error
 
   let saved = 0
@@ -148,8 +157,30 @@ async function removeOrphanFiles() {
   return removed
 }
 
+/** Trees in the trash for longer than TRASH_DAYS: files first, then the row (backups follow) */
+async function emptyTrash() {
+  const cutoff = new Date(Date.now() - TRASH_DAYS * 86400_000).toISOString()
+  const { data: old, error } = await supabase.from('trees').select('id').lt('deleted_at', cutoff)
+  if (error) throw error
+  for (const { id } of old) {
+    for (;;) {
+      const { data: files, error: listErr } = await supabase.storage.from(BUCKET).list(id, { limit: 1000 })
+      if (listErr) throw listErr
+      if (!files.length) break
+      const { error: rmErr } = await supabase.storage.from(BUCKET).remove(files.map((f) => `${id}/${f.name}`))
+      if (rmErr) throw rmErr
+      if (files.length < 1000) break
+    }
+    const { error: delErr } = await supabase.from('trees').delete().eq('id', id)
+    if (delErr) throw delErr
+  }
+  return old.length
+}
+
 main()
   .then(async () => {
+    const purged = await emptyTrash()
+    if (purged) console.log(`🗑️ deleted ${purged} trees from the trash for good`)
     const files = await removeOrphanFiles()
     console.log(`🧹 removed ${files} unused files`)
   })

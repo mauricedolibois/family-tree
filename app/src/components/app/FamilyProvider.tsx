@@ -63,6 +63,11 @@ export function FamilyProvider({
         window.location.href = '/login'
         return
       }
+      // Deleted, or access taken away: the start page says so
+      if (res.status === 404) {
+        window.location.href = '/?gone=1'
+        return
+      }
       if (!res.ok) throw new Error(`GET ${url} ${res.status}`)
       version.current = res.headers.get(TREE_VERSION_HEADER)
       setTree((await res.json()) as Tree)
@@ -97,6 +102,15 @@ export function FamilyProvider({
         if (res.status === 401) {
           window.location.href = '/login'
           throw new Error('not signed in')
+        }
+        if (res.status === 404) {
+          window.location.href = '/?gone=1'
+          throw new Error('tree gone')
+        }
+        // Editing rights taken away meanwhile: reload, the page then shows the tree read-only
+        if (res.status === 403) {
+          window.location.reload()
+          throw new Error('read only')
         }
         if (!res.ok) throw new Error(`saving failed (${res.status})`)
         version.current = res.headers.get(TREE_VERSION_HEADER)

@@ -19,8 +19,13 @@ export async function currentUser(req: Pick<IncomingMessage, 'headers'>): Promis
 
 export type Access = Role | 'admin'
 
-/** Access to a tree: admins always, others through their membership */
+/**
+ * Access to a tree: admins always, others through their membership. Nobody, not
+ * even an admin, has access to a tree that does not exist or is in the trash, so
+ * its contents, photos and calendar are gone for everyone at once.
+ */
 export async function treeAccess(user: Pick<UserRow, 'id' | 'is_admin'>, treeId: string): Promise<Access | null> {
+  if (!(await getTree(treeId))) return null
   if (user.is_admin) return 'admin'
   return roleIn(user.id, treeId)
 }

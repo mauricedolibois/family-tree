@@ -50,9 +50,13 @@ function optFlag(v: unknown, field: string): boolean {
 }
 
 /** Uploaded files (/api/media/<tree>/<file>) or, from older versions, full web addresses */
-function url(v: unknown, field: string): string {
+const SAVED_LINKS = /^(https?:\/\/|\/api\/media\/)/i
+/** Imports may also link to files inside the export archive (media/<file>) */
+const ARCHIVE_LINKS = /^(https?:\/\/|\/api\/media\/|media\/)/i
+
+function url(v: unknown, field: string, links: RegExp): string {
   const s = str(v, field, LIMITS.url)
-  if (!/^(https?:\/\/|\/api\/media\/)/i.test(s)) throw new Invalid(`${field}: invalid URL`)
+  if (!links.test(s)) throw new Invalid(`${field}: invalid URL`)
   return s
 }
 
@@ -68,7 +72,7 @@ function idList(v: unknown, field: string, ids: Set<string>): string[] {
   return out
 }
 
-function media(v: unknown, field: string): StoredMedia[] {
+function media(v: unknown, field: string, links: RegExp): StoredMedia[] {
   if (v === undefined || v === null) return []
   if (!Array.isArray(v)) throw new Invalid(`${field}: expected a list`)
   if (v.length > LIMITS.mediaPerMember) throw new Invalid(`${field}: too many files`)
@@ -78,7 +82,7 @@ function media(v: unknown, field: string): StoredMedia[] {
     if (!MEDIA_KINDS.has(kind)) throw new Invalid(`${field}[${i}].kind: unknown`)
     return {
       id: str(m.id, `${field}[${i}].id`, 100),
-      url: url(m.url, `${field}[${i}].url`),
+      url: url(m.url, `${field}[${i}].url`, links),
       kind,
       title: optStr(m.title, `${field}[${i}].title`, LIMITS.shortText),
       createdAt: optStr(m.createdAt, `${field}[${i}].createdAt`, 40),
@@ -86,7 +90,7 @@ function media(v: unknown, field: string): StoredMedia[] {
   })
 }
 
-function profile(v: unknown, field: string): StoredProfile {
+function profile(v: unknown, field: string, links: RegExp): StoredProfile {
   if (v === undefined || v === null) v = {}
   if (!isObj(v)) throw new Invalid(`${field}: expected an object`)
   const title = v.titleImageUrl
@@ -100,12 +104,18 @@ function profile(v: unknown, field: string): StoredProfile {
     city: optStr(v.city, `${field}.city`, LIMITS.shortText),
     job: optStr(v.job, `${field}.job`, LIMITS.shortText),
     comments: optStr(v.comments, `${field}.comments`, LIMITS.comments),
-    titleImageUrl: title === undefined || title === null || title === '' ? null : url(title, `${field}.titleImageUrl`),
-    media: media(v.media, `${field}.media`),
+    titleImageUrl:
+      title === undefined || title === null || title === '' ? null : url(title, `${field}.titleImageUrl`, links),
+    media: media(v.media, `${field}.media`, links),
   }
 }
 
-export function validateStoredTree(input: unknown): ValidationResult {
+/**
+ * Checks a tree before it is saved. `archiveLinks` also accepts links into an
+ * export archive, for imports that rewrite them before saving.
+ */
+export function validateStoredTree(input: unknown, { archiveLinks = false } = {}): ValidationResult {
+  const links = archiveLinks ? ARCHIVE_LINKS : SAVED_LINKS
   try {
     if (!isObj(input)) throw new Invalid('tree: expected an object')
     if (input.version !== 3) throw new Invalid('tree: expected version 3')
@@ -140,7 +150,7 @@ export function validateStoredTree(input: unknown): ValidationResult {
         adoptedChildrenIds: idList(raw.adoptedChildrenIds, `${f}.adoptedChildrenIds`, ids).filter((c) =>
           childrenIds.includes(c),
         ),
-        profile: profile(raw.profile, `${f}.profile`),
+        profile: profile(raw.profile, `${f}.profile`, links),
       }
     }
 

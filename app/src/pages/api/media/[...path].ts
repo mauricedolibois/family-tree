@@ -7,15 +7,13 @@ import { Readable } from 'stream'
 import type { ReadableStream as NodeWebStream } from 'stream/web'
 import { currentUser, treeAccess } from '@/lib/auth'
 import { isUuid } from '@/lib/ids'
-import { supabaseConfig } from '@/lib/supabaseServer'
+import { ALLOWED_TYPES, openMedia } from '@/lib/media'
 import { logError } from '@/lib/log'
 
 export const config = { api: { responseLimit: false } }
 
 /** One path segment; uploads use [\w.-], older files may contain other characters */
 const FILE_NAME = /^(?!\.\.?$)[^/\\]{1,300}$/
-/** Types the upload accepts. Anything else (older files) is only offered as a download. */
-const INLINE = /^(image\/(jpeg|png|webp|gif|heic|heif)|video\/(mp4|quicktime|webm)|application\/pdf)$/
 // Every upload gets a new name, so a file never changes; "private" keeps it out of shared caches
 const CACHE = 'private, max-age=604800, immutable'
 const PASSED_ON = ['content-length', 'content-range', 'accept-ranges', 'last-modified']
@@ -36,10 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const user = await currentUser(req)
     if (!user || !(await treeAccess(user, treeId))) return res.status(404).end()
 
-    const { url, serviceKey } = supabaseConfig()
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${serviceKey}`,
-      apikey: serviceKey,
       // Content-Length must stay the length of what the browser receives
       'Accept-Encoding': 'identity',
     }
@@ -48,12 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const abort = new AbortController()
     res.on('close', () => abort.abort())
-    const key = `${treeId}/${encodeURIComponent(file)}`
-    const upstream = await fetch(`${url}/storage/v1/object/authenticated/media/${key}`, {
-      method: req.method,
-      headers,
-      signal: abort.signal,
-    })
+    const upstream = await openMedia(treeId, file, { method: req.method, headers, signal: abort.signal })
 
     if (upstream.status === 416) return res.status(416).end()
     if (upstream.status !== 200 && upstream.status !== 206 && upstream.status !== 304) {
@@ -71,7 +61,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const type = upstream.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? ''
-    if (INLINE.test(type)) {
+    // Types the upload accepts are shown inline; anything else (older files) only as a download
+    if (ALLOWED_TYPES.test(type)) {
       res.setHeader('Content-Type', type)
     } else {
       res.setHeader('Content-Type', 'application/octet-stream')

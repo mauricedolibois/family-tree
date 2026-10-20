@@ -59,6 +59,23 @@ Every mail is written in German and, below it, in English, so it does not matter
 which language the recipient chose (or, for invitations, whether they have an
 account yet). The languages are set in `MAIL_LOCALES` in `app/src/lib/mail.ts`.
 
+## Deleting trees
+
+Admins delete trees on `/admin`. A deleted tree goes to the trash first: from that
+moment nobody sees it, not even admins outside the trash. Members find it gone
+from their list; an open tab or an old link leads to the start page with a notice,
+the calendar subscription stops and open invitations to it lapse. Admins can
+restore it with everything in it, or delete it for good, which removes its
+backups and photos too. The daily job does that on its own after 30 days.
+
+## Export and import
+
+Everyone in a tree can download it with all photos as a ZIP file (menu → Export
+with photos). Admins turn such a file, or a JSON backup from the menu, into a new
+tree on `/admin`; moderators can replace their tree with one on the members page,
+after an automatic backup. Photos come along only in ZIP files; links in a JSON
+backup to photos of trees the importing person cannot see are dropped.
+
 ## Sessions and security
 
 - Passwords: at least 8 characters, bcrypt with cost 12.

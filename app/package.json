@@ -21,6 +21,7 @@
     "clsx": "^2.0.0",
     "cookie": "^1.0.2",
     "elkjs": "^0.11.0",
+    "fflate": "0.8.2",
     "formidable": "^3.5.4",
     "lucide-react": "^0.542.0",
     "next": "15.5.27",

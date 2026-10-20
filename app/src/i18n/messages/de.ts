@@ -54,6 +54,7 @@ export const de = {
     exportPdf: 'Als PDF exportieren',
     startTour: 'Einführung starten',
     downloadBackup: 'Sicherung herunterladen',
+    exportZip: 'Export mit Bildern (ZIP)',
     logout: 'Abmelden',
     switchTree: 'Stammbaum wechseln',
     backupFile: 'stammbaum',
@@ -499,6 +500,7 @@ export const de = {
     choose: 'Deine Stammbäume',
     none: 'Du gehörst noch zu keinem Stammbaum. Bitte jemanden, dich einzuladen.',
     noneAdmin: 'Es gibt noch keinen Stammbaum. Lege in der Verwaltung einen an.',
+    gone: 'Dieser Stammbaum ist nicht mehr verfügbar. Vielleicht wurde er gelöscht oder du wurdest entfernt.',
   },
   setup: {
     missing:
@@ -548,6 +550,17 @@ export const de = {
     anyone: 'beliebige Person',
     inviteMeta: (inviter: string, date: string) => `von ${inviter}, gültig bis ${date}`,
     revoke: 'Widerrufen',
+    deleteTree: 'Löschen',
+    confirmDeleteTree: (name: string) =>
+      `„${name}“ in den Papierkorb verschieben? Niemand sieht den Stammbaum dann mehr, offene Einladungen verfallen. Wiederherstellen ist möglich, bis er endgültig gelöscht wird.`,
+    trashTitle: 'Papierkorb',
+    trashHint:
+      'Gelöschte Stammbäume sieht niemand mehr. Nach 30 Tagen entfernt der tägliche Job sie samt Backups und Bildern, oder du löschst sie hier sofort.',
+    deletedOn: (date: string) => `gelöscht am ${date}`,
+    restore: 'Wiederherstellen',
+    purge: 'Endgültig löschen',
+    confirmPurge: (name: string) =>
+      `„${name}“ endgültig löschen? Stammbaum, Backups und alle Bilder werden entfernt. Das lässt sich nicht rückgängig machen.`,
     treesTitle: 'Stammbäume',
     memberCount: (n: number) => (n === 1 ? '1 Mitglied' : `${n} Mitglieder`),
     rename: 'Umbenennen',
@@ -573,6 +586,26 @@ export const de = {
       self: 'Das eigene Konto lässt sich hier nicht löschen.',
       'invalid email': 'Diese E-Mail-Adresse sieht nicht gültig aus.',
       'nothing to grant': 'Wähle einen Stammbaum oder Admin-Rechte.',
+      'invalid name': 'Bitte einen Namen eingeben.',
+    } as Record<string, string>,
+  },
+  transfer: {
+    importTitle: 'Stammbaum importieren',
+    importHint: 'Ein Export (ZIP, mit Bildern) oder ein Backup (JSON) wird zu einem neuen Stammbaum.',
+    name: 'Name des Stammbaums',
+    file: 'Datei',
+    importButton: 'Importieren',
+    created: (name: string, people: number) => `„${name}“ ist angelegt (${people} Personen).`,
+    replaceTitle: 'Aus Datei ersetzen',
+    replaceHint:
+      'Ersetzt den ganzen Stammbaum durch einen Export (ZIP) oder ein Backup (JSON). Der jetzige Stand wird vorher gesichert und lässt sich von einem Admin zurückholen.',
+    replaceButton: 'Stammbaum ersetzen',
+    confirmReplace: (name: string) => `Den ganzen Stammbaum „${name}“ durch den Inhalt der Datei ersetzen?`,
+    replaced: (people: number) => `Ersetzt: ${people} Personen.`,
+    status: {
+      unreadable: 'Die Datei lässt sich nicht lesen. Erwartet wird ein Export (ZIP) oder ein Backup (JSON).',
+      'too large': 'Die Datei ist zu groß (höchstens 200 MB, je Bild 25 MB, 2000 Dateien).',
+      'invalid tree': 'Die Datei enthält keinen gültigen Stammbaum.',
       'invalid name': 'Bitte einen Namen eingeben.',
     } as Record<string, string>,
   },

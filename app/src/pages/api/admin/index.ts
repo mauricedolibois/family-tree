@@ -1,6 +1,6 @@
 // Everything the admin page shows: users with their trees, trees, open invitations
 
-import { listOpenInvites, listTrees, listUsers } from '@/lib/accounts'
+import { listDeletedTrees, listOpenInvites, listTrees, listUsers } from '@/lib/accounts'
 import { withAdmin } from '@/lib/auth'
 import { canSendMail } from '@/lib/mail'
 import { schemaStatus } from '@/lib/schema'
@@ -10,9 +10,10 @@ export default withAdmin('api/admin', async (req, res, admin) => {
     res.setHeader('Allow', 'GET')
     return res.status(405).end()
   }
-  const [users, trees, invites, schema] = await Promise.all([
+  const [users, trees, trash, invites, schema] = await Promise.all([
     listUsers(),
     listTrees(),
+    listDeletedTrees(),
     listOpenInvites(),
     schemaStatus(),
   ])
@@ -23,6 +24,7 @@ export default withAdmin('api/admin', async (req, res, admin) => {
     schema: schema.state === 'outdated' ? { have: schema.have, need: schema.need } : null,
     users,
     trees,
+    trash,
     invites: invites.map((i) => ({
       id: i.id,
       email: i.email,

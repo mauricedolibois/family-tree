@@ -51,6 +51,7 @@ export const es: Messages = {
     exportPdf: 'Exportar como PDF',
     startTour: 'Iniciar la visita guiada',
     downloadBackup: 'Descargar copia de seguridad',
+    exportZip: 'Exportar con fotos (ZIP)',
     logout: 'Cerrar sesión',
     switchTree: 'Cambiar de árbol',
     backupFile: 'arbol-genealogico',
@@ -494,6 +495,7 @@ export const es: Messages = {
     choose: 'Tus árboles genealógicos',
     none: 'Todavía no perteneces a ningún árbol. Pide a alguien que te invite.',
     noneAdmin: 'Todavía no hay ningún árbol. Crea uno en la administración.',
+    gone: 'Este árbol ya no está disponible. Quizá se eliminó o te quitaron de él.',
   },
   setup: {
     missing:
@@ -542,6 +544,17 @@ export const es: Messages = {
     anyone: 'cualquier persona',
     inviteMeta: (inviter, date) => `de ${inviter}, válida hasta el ${date}`,
     revoke: 'Revocar',
+    deleteTree: 'Eliminar',
+    confirmDeleteTree: (name) =>
+      `¿Mover «${name}» a la papelera? Nadie verá ya el árbol y las invitaciones abiertas caducan. Se puede restaurar hasta que se elimine definitivamente.`,
+    trashTitle: 'Papelera',
+    trashHint:
+      'Nadie ve ya los árboles eliminados. A los 30 días, la tarea diaria los borra con sus copias y fotos, o los eliminas aquí al momento.',
+    deletedOn: (date) => `eliminado el ${date}`,
+    restore: 'Restaurar',
+    purge: 'Eliminar definitivamente',
+    confirmPurge: (name) =>
+      `¿Eliminar «${name}» definitivamente? Se borran el árbol, sus copias y todas las fotos. No se puede deshacer.`,
     treesTitle: 'Árboles genealógicos',
     memberCount: (n) => (n === 1 ? '1 miembro' : `${n} miembros`),
     rename: 'Cambiar nombre',
@@ -568,6 +581,26 @@ export const es: Messages = {
       'invalid email': 'Este correo electrónico no parece válido.',
       'nothing to grant': 'Elige un árbol o derechos de admin.',
       'invalid name': 'Introduce un nombre.',
+    },
+  },
+  transfer: {
+    importTitle: 'Importar un árbol',
+    importHint: 'Una exportación (ZIP, con fotos) o una copia (JSON) se convierte en un árbol nuevo.',
+    name: 'Nombre del árbol',
+    file: 'Archivo',
+    importButton: 'Importar',
+    created: (name, people) => `«${name}» se ha creado (${people} personas).`,
+    replaceTitle: 'Reemplazar desde un archivo',
+    replaceHint:
+      'Reemplaza todo el árbol por una exportación (ZIP) o una copia (JSON). La versión actual se guarda antes y un administrador puede recuperarla.',
+    replaceButton: 'Reemplazar el árbol',
+    confirmReplace: (name) => `¿Reemplazar todo el árbol «${name}» por el contenido del archivo?`,
+    replaced: (people) => `Reemplazado: ${people} personas.`,
+    status: {
+      unreadable: 'No se puede leer el archivo. Se espera una exportación (ZIP) o una copia (JSON).',
+      'too large': 'El archivo es demasiado grande (máximo 200 MB, 25 MB por foto, 2000 archivos).',
+      'invalid tree': 'El archivo no contiene un árbol válido.',
+      'invalid name': 'Escribe un nombre.',
     },
   },
   mail: {

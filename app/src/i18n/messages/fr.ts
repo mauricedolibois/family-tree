@@ -51,6 +51,7 @@ export const fr: Messages = {
     exportPdf: 'Exporter en PDF',
     startTour: 'Lancer la visite guidée',
     downloadBackup: 'Télécharger une sauvegarde',
+    exportZip: 'Exporter avec les photos (ZIP)',
     logout: 'Se déconnecter',
     switchTree: 'Changer d’arbre',
     backupFile: 'arbre-genealogique',
@@ -498,6 +499,7 @@ export const fr: Messages = {
     choose: 'Tes arbres généalogiques',
     none: 'Tu ne fais encore partie d’aucun arbre. Demande à quelqu’un de t’inviter.',
     noneAdmin: 'Il n’y a encore aucun arbre. Crée-en un dans l’administration.',
+    gone: 'Cet arbre n’est plus disponible. Il a peut-être été supprimé, ou tu en as été retiré.',
   },
   setup: {
     missing:
@@ -546,6 +548,17 @@ export const fr: Messages = {
     anyone: 'n’importe qui',
     inviteMeta: (inviter, date) => `par ${inviter}, valable jusqu’au ${date}`,
     revoke: 'Révoquer',
+    deleteTree: 'Supprimer',
+    confirmDeleteTree: (name) =>
+      `Mettre « ${name} » à la corbeille ? Plus personne ne verra l’arbre et les invitations en cours expirent. Il peut être restauré tant qu’il n’est pas supprimé définitivement.`,
+    trashTitle: 'Corbeille',
+    trashHint:
+      'Plus personne ne voit les arbres supprimés. Après 30 jours, la tâche quotidienne les efface avec leurs sauvegardes et leurs photos, ou tu les supprimes ici tout de suite.',
+    deletedOn: (date) => `supprimé le ${date}`,
+    restore: 'Restaurer',
+    purge: 'Supprimer définitivement',
+    confirmPurge: (name) =>
+      `Supprimer définitivement « ${name} » ? L’arbre, ses sauvegardes et toutes les photos seront effacés. C’est irréversible.`,
     treesTitle: 'Arbres généalogiques',
     memberCount: (n) => (n === 1 ? '1 membre' : `${n} membres`),
     rename: 'Renommer',
@@ -572,6 +585,26 @@ export const fr: Messages = {
       'invalid email': 'Cette adresse e-mail ne semble pas valide.',
       'nothing to grant': 'Choisis un arbre ou des droits d’admin.',
       'invalid name': 'Indique un nom.',
+    },
+  },
+  transfer: {
+    importTitle: 'Importer un arbre',
+    importHint: 'Un export (ZIP, avec les photos) ou une sauvegarde (JSON) devient un nouvel arbre.',
+    name: 'Nom de l’arbre',
+    file: 'Fichier',
+    importButton: 'Importer',
+    created: (name, people) => `« ${name} » a été créé (${people} personnes).`,
+    replaceTitle: 'Remplacer depuis un fichier',
+    replaceHint:
+      'Remplace tout l’arbre par un export (ZIP) ou une sauvegarde (JSON). La version actuelle est sauvegardée avant et un admin peut la récupérer.',
+    replaceButton: 'Remplacer l’arbre',
+    confirmReplace: (name) => `Remplacer tout l’arbre « ${name} » par le contenu du fichier ?`,
+    replaced: (people) => `Remplacé : ${people} personnes.`,
+    status: {
+      unreadable: 'Impossible de lire le fichier. Un export (ZIP) ou une sauvegarde (JSON) est attendu.',
+      'too large': 'Le fichier est trop volumineux (200 Mo au plus, 25 Mo par photo, 2000 fichiers).',
+      'invalid tree': 'Le fichier ne contient pas d’arbre valide.',
+      'invalid name': 'Merci de saisir un nom.',
     },
   },
   mail: {

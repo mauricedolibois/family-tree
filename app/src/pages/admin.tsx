@@ -6,13 +6,13 @@ import Head from 'next/head'
 import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
 import clsx from 'clsx'
-import { ArrowLeft, KeyRound, Plus, Trash2, UserMinus } from 'lucide-react'
+import { ArrowLeft, KeyRound, Plus, Trash2, Upload, UserMinus } from 'lucide-react'
 import type { AdminUserView } from '@/lib/accounts'
 import { requirePageUser } from '@/lib/pageAuth'
 import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
-import { Badge, Card, LinkBox, RoleSelect, selectClass as select } from '@/components/manage/parts'
+import { Badge, Card, LinkBox, RoleSelect, selectClass as select, sendForm } from '@/components/manage/parts'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
@@ -28,6 +28,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
 
 type Role = 'viewer' | 'editor' | 'moderator'
 type Tree = { id: string; name: string; created_at: string }
+type DeletedTree = { id: string; name: string; deleted_at: string }
 type Invite = {
   id: string
   email: string | null
@@ -44,6 +45,7 @@ type Overview = {
   schema: { have: number; need: number } | null
   users: AdminUserView[]
   trees: Tree[]
+  trash: DeletedTree[]
   invites: Invite[]
 }
 
@@ -104,6 +106,8 @@ export default function AdminPage() {
                 onRevoke={(id) => run(`/api/admin/invites/${id}`, null, 'DELETE')}
               />
               <TreesCard trees={data.trees} users={data.users} run={run} />
+              <ImportCard onDone={load} />
+              <TrashCard trash={data.trash} date={date} run={run} />
               <UsersCard data={data} run={run} />
             </>
           )}
@@ -283,6 +287,16 @@ function TreesCard({ trees, users, run }: { trees: Tree[]; users: AdminUserView[
                 <Button size="sm" variant="quiet" onClick={() => setEditing({ id: tree.id, name: tree.name })}>
                   {t.admin.rename}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="quiet"
+                  onClick={() =>
+                    window.confirm(t.admin.confirmDeleteTree(tree.name)) &&
+                    run(`/api/admin/trees/${tree.id}`, null, 'DELETE')
+                  }
+                >
+                  {t.admin.deleteTree}
+                </Button>
               </>
             )}
           </li>
@@ -307,6 +321,103 @@ function TreesCard({ trees, users, run }: { trees: Tree[]; users: AdminUserView[
           {t.admin.createTree}
         </Button>
       </form>
+    </Card>
+  )
+}
+
+function ImportCard({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n()
+  const [name, setName] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<{ tone: 'error' | 'info'; text: string } | null>(null)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!file) return
+    setBusy(true)
+    setMessage(null)
+    const form = new FormData()
+    form.append('name', name)
+    form.append('file', file)
+    try {
+      const { ok, data } = await sendForm('/api/trees/import', form)
+      const tree = data.tree as { name: string } | undefined
+      if (ok && tree) {
+        setMessage({ tone: 'info', text: t.transfer.created(tree.name, Number(data.people)) })
+        setName('')
+        setFile(null)
+        onDone()
+      } else {
+        setMessage({ tone: 'error', text: t.transfer.status[String(data.error)] ?? t.common.retry })
+      }
+    } catch {
+      setMessage({ tone: 'error', text: t.common.offline })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card title={t.transfer.importTitle}>
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        <p className="text-sm text-ink-muted">{t.transfer.importHint}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className="field-label">{t.transfer.name}</span>
+            <input className="field h-10" value={name} onChange={(e) => setName(e.target.value)} required />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="field-label">{t.transfer.file}</span>
+            <input
+              type="file"
+              accept=".zip,.json,application/zip,application/json"
+              className="text-sm text-ink"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              required
+            />
+          </label>
+        </div>
+        {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
+        <div>
+          <Button type="submit" variant="primary" disabled={busy || !file} icon={<Upload className="h-4 w-4" />}>
+            {busy ? t.auth.wait : t.transfer.importButton}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  )
+}
+
+function TrashCard({ trash, date, run }: { trash: DeletedTree[]; date: (iso: string) => string; run: Run }) {
+  const { t } = useI18n()
+  if (trash.length === 0) return null
+  return (
+    <Card title={t.admin.trashTitle}>
+      <p className="mb-2 text-sm text-ink-muted">{t.admin.trashHint}</p>
+      <ul className="flex flex-col divide-y divide-card-rule">
+        {trash.map((tree) => (
+          <li key={tree.id} className="flex flex-wrap items-center gap-2 py-2">
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-serif text-[17px] font-semibold text-ink">{tree.name}</span>
+              <span className="block text-[13px] text-ink-muted">{t.admin.deletedOn(date(tree.deleted_at))}</span>
+            </span>
+            <Button size="sm" onClick={() => run(`/api/admin/trees/${tree.id}`, { restore: true }, 'PATCH')}>
+              {t.admin.restore}
+            </Button>
+            <Button
+              size="sm"
+              variant="quiet"
+              onClick={() =>
+                window.confirm(t.admin.confirmPurge(tree.name)) &&
+                run(`/api/admin/trees/${tree.id}?permanent=1`, null, 'DELETE')
+              }
+            >
+              {t.admin.purge}
+            </Button>
+          </li>
+        ))}
+      </ul>
     </Card>
   )
 }
