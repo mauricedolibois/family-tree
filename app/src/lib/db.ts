@@ -52,6 +52,29 @@ export async function snapshotBeforeSave(treeId: string, current: StoredTree, ne
   if (error) logError('db.snapshotBeforeSave', error)
 }
 
+/**
+ * Replaces the whole tree, for imports: backs up the current version first (kind
+ * "import"), so an import can be undone with admin.restore. Open editing sessions
+ * elsewhere get a conflict on their next save, as after any other change.
+ */
+export async function replaceTree(treeId: string, tree: StoredTree): Promise<string> {
+  const current = await loadTree(treeId)
+  if (current) {
+    const { error } = await getSupaAdmin()
+      .from('tree_backups')
+      .insert({ tree_id: treeId, data: current.tree, kind: 'import', note: 'before import' })
+    if (error) throw error
+  }
+  const { data, error } = await getSupaAdmin()
+    .from('trees')
+    .update({ data: tree, updated_at: new Date().toISOString() })
+    .eq('id', treeId)
+    .select('updated_at')
+    .single()
+  if (error) throw error
+  return data.updated_at
+}
+
 // ── Calendar subscription ─────────────────────────────────────────────────────
 
 const newCalendarToken = () => randomBytes(24).toString('base64url')
@@ -84,7 +107,13 @@ export async function renewCalendarToken(treeId: string): Promise<string> {
 }
 
 export async function getTreeByCalendarToken(token: string): Promise<{ id: string; name: string } | null> {
-  const { data, error } = await getSupaAdmin().from('trees').select('id,name').eq('calendar_token', token).maybeSingle()
+  // Deleted trees take their calendar with them
+  const { data, error } = await getSupaAdmin()
+    .from('trees')
+    .select('id,name')
+    .eq('calendar_token', token)
+    .is('deleted_at', null)
+    .maybeSingle()
   if (error) throw error
   return data
 }

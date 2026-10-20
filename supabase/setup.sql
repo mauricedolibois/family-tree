@@ -1,4 +1,4 @@
--- Family tree database, version 3: everything a new installation needs.
+-- Family tree database, version 4: everything a new installation needs.
 --
 -- Run the whole file once in the Supabase SQL editor (or with psql) on a database
 -- without family tree tables. Existing installations do not use this file; they
@@ -27,16 +27,20 @@ create table public.trees (
   -- Secret of the birthday calendar subscription. Calendar apps cannot sign in, so
   -- anyone with the link sees names and birthdays of living people.
   calendar_token text unique,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Set when an admin deletes the tree: it is hidden from everyone and can be
+  -- restored until an admin deletes it for good (then rows and files are removed)
+  deleted_at timestamptz
 );
 
--- Earlier versions of a tree. The app takes one before every change and once a
--- day (scripts/daily-backup.mjs prunes old ones by kind); admins add manual ones.
+-- Earlier versions of a tree. The app takes one before every change, before an
+-- import replaces the tree and once a day (scripts/daily-backup.mjs prunes old
+-- ones by kind); admins add manual ones.
 create table public.tree_backups (
   id bigint generated always as identity primary key,
   tree_id uuid not null references public.trees (id) on delete cascade,
   data jsonb not null,
-  kind text not null check (kind in ('change', 'daily', 'manual', 'restore')),
+  kind text not null check (kind in ('change', 'daily', 'manual', 'restore', 'import')),
   note text,
   created_at timestamptz not null default now()
 );
@@ -117,7 +121,7 @@ create table public.app_meta (
   key text primary key,
   value text not null
 );
-insert into public.app_meta (key, value) values ('schema_version', '3');
+insert into public.app_meta (key, value) values ('schema_version', '4');
 
 -- ── Access ───────────────────────────────────────────────────────────────────
 
@@ -255,4 +259,4 @@ notify pgrst, 'reload schema';
 
 commit;
 
-select 'Database is set up (version 3).' as result;
+select 'Database is set up (version 4).' as result;

@@ -78,3 +78,10 @@ export function RoleSelect({
     </select>
   )
 }
+
+/** Sends a form with a file (multipart); same answer shape as postJson */
+export async function sendForm(url: string, form: FormData) {
+  const res = await fetch(url, { method: 'POST', body: form })
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+  return { status: res.status, ok: res.ok, data }
+}

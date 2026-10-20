@@ -39,7 +39,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const invite = await findInvite(hashToken(token))
     if (!invite) return res.status(404).json({ error: 'invalid link' })
-    if (!inviteIsOpen(invite)) return res.status(410).json({ error: 'expired' })
+    // An invitation to a deleted tree is as good as expired
+    if (!inviteIsOpen(invite) || invite.tree_deleted) return res.status(410).json({ error: 'expired' })
     const me = await currentUser(req)
 
     if (req.method === 'GET') {

@@ -1,20 +1,17 @@
-// Uploads photos and documents of a tree (editors and admins).
+// Uploads photos and documents of a tree (editors, moderators and admins).
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { IncomingForm, type File } from 'formidable'
 import fs from 'fs'
-import { randomUUID } from 'crypto'
-import { getSupaAdmin } from '@/lib/supabaseServer'
 import { canEdit, currentUser, treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
+import { ALLOWED_TYPES, storeMedia } from '@/lib/media'
 import { logError } from '@/lib/log'
 
 export const config = { api: { bodyParser: false } }
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024
 const MAX_FILES = 10
-/** Allowed file types: images, common video formats, PDFs */
-const ALLOWED = /^(image\/(jpeg|png|webp|gif|heic|heif)|video\/(mp4|quicktime|webm)|application\/pdf)$/
 
 function parseForm(req: NextApiRequest): Promise<File[]> {
   return new Promise((resolve, reject) => {
@@ -22,7 +19,7 @@ function parseForm(req: NextApiRequest): Promise<File[]> {
       multiples: true,
       maxFiles: MAX_FILES,
       maxFileSize: MAX_FILE_BYTES,
-      filter: ({ mimetype }) => !!mimetype && ALLOWED.test(mimetype),
+      filter: ({ mimetype }) => !!mimetype && ALLOWED_TYPES.test(mimetype),
     })
     form.parse(req, (err, _fields, files) => {
       if (err) return reject(err)
@@ -30,16 +27,6 @@ function parseForm(req: NextApiRequest): Promise<File[]> {
       resolve(Array.isArray(raw) ? raw : raw ? [raw] : [])
     })
   })
-}
-
-/** Keep only safe characters in file names so storage paths stay clean. */
-function safeName(original: string | null): string {
-  const cleaned = (original || 'datei')
-    .normalize('NFKD')
-    .replace(/[^\w.-]+/g, '_')
-    .replace(/_+/g, '_')
-    .slice(-80)
-  return cleaned || 'datei'
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -74,13 +61,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const urls: string[] = []
     for (const f of files) {
       const buffer = await fs.promises.readFile(f.filepath)
-      const key = `${treeId}/${randomUUID()}-${safeName(f.originalFilename)}`
-      const { error } = await getSupaAdmin()
-        .storage.from('media')
-        .upload(key, buffer, { upsert: false, contentType: f.mimetype || undefined })
-      if (error) throw error
       // The bucket is private; /api/media serves the file to people who may see the tree
-      urls.push(`/api/media/${key}`)
+      urls.push(await storeMedia(treeId!, f.originalFilename ?? 'datei', buffer, f.mimetype!))
     }
     return res.status(200).json({ urls })
   } catch (err) {

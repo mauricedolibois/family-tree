@@ -30,7 +30,7 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 - **Deceased, date unknown:** an "is deceased" switch when editing ("already deceased" when adding); the date of death becomes optional. The card shows e.g. "1888–†" and the person drops out of birthdays and the calendar.
 - **Export as PDF** from the menu: your line, a relation or the whole family, portrait or landscape, A4 to A1. A print-ready sheet with gold frame, title and date, saved through the print dialog ("Save as PDF") so everything stays vector-sharp.
 - **Country flag** for every person with a country of origin.
-- **Download a backup** as JSON from the menu.
+- **Download a backup** as JSON, or **export everything with photos** as a ZIP file, from the menu. Admins import such files as new trees, moderators can replace their tree with one.
 
 ## Security and data
 
@@ -54,6 +54,7 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 
 - Calendar apps cannot sign in, so the subscription is protected only by a secret token in the link (`families.calendar_token`). Anyone with the link sees names and birthdays; "create new link" invalidates the old one.
 
+- Every endpoint and who may use it: [docs/security.md](docs/security.md).
 - The database (Supabase) is only accessed server side with the service role key; the public roles have no rights.
 - Photos and documents lie in a private storage bucket. The app serves them at `/api/media/…` only to people who may see the tree, so Supabase does not need to be reachable from the internet ([docs/supabase.md](docs/supabase.md)).
 

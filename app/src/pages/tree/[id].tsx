@@ -26,8 +26,8 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const treeId = treeIdParam(ctx.params?.id)
   const access = treeId ? await treeAccess(user, treeId) : null
   const tree = treeId && access ? await getTree(treeId) : null
-  // Unknown trees and trees without access look the same
-  if (!treeId || !access || !tree) return { notFound: true }
+  // Unknown, deleted and inaccessible trees look the same: back to the start page
+  if (!treeId || !access || !tree) return { redirect: { destination: '/?gone=1', permanent: false } }
 
   // Remembered so the start page opens this tree next time
   ctx.res.setHeader(

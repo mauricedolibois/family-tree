@@ -137,19 +137,20 @@ export type AdminUserView = PublicUser & {
 export async function listUsers(): Promise<AdminUserView[]> {
   const { data, error } = await db()
     .from('users')
-    .select(`${USER_COLUMNS},memberships(role,tree_id,trees(name))`)
+    .select(`${USER_COLUMNS},memberships(role,tree_id,trees(name,deleted_at))`)
     .order('name')
   if (error) throw error
   return (data ?? []).map((u) => {
     // Without generated types supabase-js types embedded rows as arrays; many-to-one embeds are objects
     const row = u as unknown as UserRow & {
-      memberships: Array<{ role: Role; tree_id: string; trees: { name: string } | null }>
+      memberships: Array<{ role: Role; tree_id: string; trees: { name: string; deleted_at: string | null } | null }>
     }
     return {
       ...toPublicUser(row),
       disabled: !!row.disabled_at,
       created_at: row.created_at,
       trees: row.memberships
+        .filter((m) => m.trees && !m.trees.deleted_at)
         .map((m) => ({ id: m.tree_id, name: m.trees?.name ?? '', role: m.role }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     }
@@ -158,20 +159,100 @@ export async function listUsers(): Promise<AdminUserView[]> {
 
 // ── Trees and memberships ───────────────────────────────────────────────────
 
+// Deleted trees (deleted_at set) are invisible everywhere except the admin trash.
+
 export async function listTrees(): Promise<Array<{ id: string; name: string; created_at: string }>> {
-  const { data, error } = await db().from('trees').select('id,name,created_at').order('name')
+  const { data, error } = await db().from('trees').select('id,name,created_at').is('deleted_at', null).order('name')
   if (error) throw error
   return data ?? []
 }
 
 export async function getTree(id: string): Promise<{ id: string; name: string } | null> {
-  const { data, error } = await db().from('trees').select('id,name').eq('id', id).maybeSingle()
+  const { data, error } = await db().from('trees').select('id,name').eq('id', id).is('deleted_at', null).maybeSingle()
   if (error) throw error
   return data
 }
 
-/** New tree with its starter content */
-export async function createTree(name: string, starter: StoredTree): Promise<{ id: string; name: string }> {
+export async function listDeletedTrees(): Promise<Array<{ id: string; name: string; deleted_at: string }>> {
+  const { data, error } = await db()
+    .from('trees')
+    .select('id,name,deleted_at')
+    .not('deleted_at', 'is', null)
+    .order('deleted_at', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Moves a tree to the trash: hidden from everyone at once, its open invitations
+ * revoked. Memberships, backups and files stay, so it can be restored.
+ */
+export async function trashTree(id: string): Promise<boolean> {
+  const now = new Date().toISOString()
+  const { data, error } = await db()
+    .from('trees')
+    .update({ deleted_at: now })
+    .eq('id', id)
+    .is('deleted_at', null)
+    .select('id')
+  if (error) throw error
+  if (!data?.length) return false
+  const { error: inviteError } = await db()
+    .from('invites')
+    .update({ revoked_at: now })
+    .eq('tree_id', id)
+    .is('used_at', null)
+    .is('revoked_at', null)
+  if (inviteError) throw inviteError
+  return true
+}
+
+export async function restoreTree(id: string): Promise<boolean> {
+  const { data, error } = await db()
+    .from('trees')
+    .update({ deleted_at: null })
+    .eq('id', id)
+    .not('deleted_at', 'is', null)
+    .select('id')
+  if (error) throw error
+  return !!data?.length
+}
+
+/**
+ * Deletes a tree from the trash for good: its photos and documents, then the row,
+ * which takes backups, memberships and invitations with it. Only for trees that
+ * are already in the trash.
+ */
+export async function purgeTree(id: string): Promise<boolean> {
+  const { data: tree, error } = await db()
+    .from('trees')
+    .select('id')
+    .eq('id', id)
+    .not('deleted_at', 'is', null)
+    .maybeSingle()
+  if (error) throw error
+  if (!tree) return false
+  await removeTree(id)
+  return true
+}
+
+/** Removes a tree with all its files right away, for instance after a failed import */
+export async function removeTree(id: string): Promise<void> {
+  const bucket = db().storage.from('media')
+  for (;;) {
+    const { data: files, error: listError } = await bucket.list(id, { limit: 1000 })
+    if (listError) throw listError
+    if (!files?.length) break
+    const { error: removeError } = await bucket.remove(files.map((f) => `${id}/${f.name}`))
+    if (removeError) throw removeError
+    if (files.length < 1000) break
+  }
+  const { error: deleteError } = await db().from('trees').delete().eq('id', id)
+  if (deleteError) throw deleteError
+}
+
+/** New tree with its starter content; null leaves it empty for an import to fill */
+export async function createTree(name: string, starter: StoredTree | null): Promise<{ id: string; name: string }> {
   const { data, error } = await db()
     .from('trees')
     .insert({ name: name.trim(), data: starter })
@@ -182,7 +263,7 @@ export async function createTree(name: string, starter: StoredTree): Promise<{ i
 }
 
 export async function renameTree(id: string, name: string): Promise<void> {
-  const { error } = await db().from('trees').update({ name: name.trim() }).eq('id', id)
+  const { error } = await db().from('trees').update({ name: name.trim() }).eq('id', id).is('deleted_at', null)
   if (error) throw error
 }
 
@@ -198,7 +279,11 @@ export async function treesOf(user: Pick<UserRow, 'id' | 'is_admin'>): Promise<T
 }
 
 async function membershipRows(userId: string) {
-  const { data, error } = await db().from('memberships').select('tree_id,role,trees(name)').eq('user_id', userId)
+  const { data, error } = await db()
+    .from('memberships')
+    .select('tree_id,role,trees!inner(name)')
+    .eq('user_id', userId)
+    .is('trees.deleted_at', null)
   if (error) throw error
   return (data ?? []) as unknown as Array<{ tree_id: string; role: Role; trees: { name: string } | null }>
 }
@@ -296,19 +381,36 @@ export async function createInvite(input: {
   return data
 }
 
-export type InviteDetails = InviteRow & { tree_name: string | null; inviter_name: string | null }
+export type InviteDetails = InviteRow & {
+  tree_name: string | null
+  inviter_name: string | null
+  /** The invitation's tree is in the trash; the invitation must not be used */
+  tree_deleted: boolean
+}
+
+type InviteJoin = InviteRow & {
+  trees: { name: string; deleted_at: string | null } | null
+  users: { name: string } | null
+}
+
+function inviteDetails(row: InviteJoin): InviteDetails {
+  const { trees, users, ...invite } = row
+  return {
+    ...invite,
+    tree_name: trees?.name ?? null,
+    inviter_name: users?.name ?? null,
+    tree_deleted: !!trees?.deleted_at,
+  }
+}
 
 export async function findInvite(tokenHash: string): Promise<InviteDetails | null> {
   const { data, error } = await db()
     .from('invites')
-    .select(`${INVITE_COLUMNS},trees(name),users!invites_created_by_fkey(name)`)
+    .select(`${INVITE_COLUMNS},trees(name,deleted_at),users!invites_created_by_fkey(name)`)
     .eq('token_hash', tokenHash)
     .maybeSingle()
   if (error) throw error
-  if (!data) return null
-  const row = data as unknown as InviteRow & { trees: { name: string } | null; users: { name: string } | null }
-  const { trees, users, ...invite } = row
-  return { ...invite, tree_name: trees?.name ?? null, inviter_name: users?.name ?? null }
+  return data ? inviteDetails(data as unknown as InviteJoin) : null
 }
 
 /** Open = neither used, revoked nor expired */
@@ -319,18 +421,14 @@ export const inviteIsOpen = (i: Pick<InviteRow, 'used_at' | 'revoked_at' | 'expi
 export async function listOpenInvites(treeId?: string): Promise<InviteDetails[]> {
   let query = db()
     .from('invites')
-    .select(`${INVITE_COLUMNS},trees(name),users!invites_created_by_fkey(name)`)
+    .select(`${INVITE_COLUMNS},trees(name,deleted_at),users!invites_created_by_fkey(name)`)
     .is('used_at', null)
     .is('revoked_at', null)
     .gt('expires_at', new Date().toISOString())
   if (treeId) query = query.eq('tree_id', treeId)
   const { data, error } = await query.order('created_at', { ascending: false })
   if (error) throw error
-  return (data ?? []).map((d) => {
-    const row = d as unknown as InviteRow & { trees: { name: string } | null; users: { name: string } | null }
-    const { trees, users, ...invite } = row
-    return { ...invite, tree_name: trees?.name ?? null, inviter_name: users?.name ?? null }
-  })
+  return (data ?? []).map((d) => inviteDetails(d as unknown as InviteJoin)).filter((i) => !i.tree_deleted)
 }
 
 /** Marks the invite as used, at most once even with concurrent requests; true if this call won */

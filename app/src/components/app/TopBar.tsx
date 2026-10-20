@@ -7,6 +7,7 @@ import {
   BookOpen,
   Cake,
   Download,
+  FileArchive,
   Flame,
   LogOut,
   Menu,
@@ -188,6 +189,16 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
           </MenuItem>
           <MenuItem icon={<Download className="h-4 w-4" />} onClick={downloadBackup}>
             {t.topBar.downloadBackup}
+          </MenuItem>
+          <MenuItem
+            icon={<FileArchive className="h-4 w-4" />}
+            onClick={() => {
+              // The server sends it as a download; the page stays where it is
+              window.location.href = `/api/trees/${treeId}/export`
+              setOpen(false)
+            }}
+          >
+            {t.topBar.exportZip}
           </MenuItem>
           {viewer.treeCount > 1 && (
             <MenuItem icon={<ArrowLeftRight className="h-4 w-4" />} onClick={() => (window.location.href = '/?pick=1')}>
