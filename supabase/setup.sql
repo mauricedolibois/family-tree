@@ -1,4 +1,4 @@
--- Family tree database, version 5: everything a new installation needs.
+-- Family tree database, version 6: everything a new installation needs.
 --
 -- Run the whole file once in the Supabase SQL editor (or with psql) on a database
 -- without family tree tables. Existing installations do not use this file; they
@@ -72,8 +72,9 @@ create unique index users_email_key on public.users (lower(email));
 alter table public.tree_backups add column created_by uuid references public.users (id) on delete set null;
 
 -- Who may do what in which tree: viewers read, editors also change the tree,
--- moderators also invite people and manage the members of the tree. Admins may do
--- everything everywhere without a membership.
+-- moderators also invite people and manage the members of the tree. This is the
+-- only way into a tree, for admins too: admin rights are about running the server,
+-- and everyone who can read a tree appears among its members.
 create table public.memberships (
   user_id uuid not null references public.users (id) on delete cascade,
   tree_id uuid not null references public.trees (id) on delete cascade,
@@ -129,7 +130,7 @@ create table public.app_meta (
   key text primary key,
   value text not null
 );
-insert into public.app_meta (key, value) values ('schema_version', '5');
+insert into public.app_meta (key, value) values ('schema_version', '6');
 
 -- ── Access ───────────────────────────────────────────────────────────────────
 
@@ -269,4 +270,4 @@ notify pgrst, 'reload schema';
 
 commit;
 
-select 'Database is set up (version 5).' as result;
+select 'Database is set up (version 6).' as result;

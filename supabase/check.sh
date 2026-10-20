@@ -74,9 +74,13 @@ expect $db "select string_agg(name || ':' || (data is not null)::text || ':' || 
 expect $db "select string_agg(kind || ':' || coalesce(note, '-'), ' ' order by id) from tree_backups" \
   'change:bearbeitet: Anna daily:- manual:- restore:before restoring backup 2' 'backup kinds and notes converted, orphan dropped'
 expect $db "select count(*) from users where session_epoch = 2 and is_admin" '1' 'accounts taken over'
-expect $db "select (select count(*) from memberships) + (select count(*) from invites) + (select count(*) from auth_tokens)" '3' \
+expect $db "select (select count(*) from memberships m join users u on u.id = m.user_id where not u.is_admin) + (select count(*) from invites) + (select count(*) from auth_tokens)" '3' \
   'memberships, invitations and tokens taken over'
 expect $db "select count(*) from pg_namespace where nspname in ('legacy', 'verwaltung')" '0' 'old schemas removed'
+expect $db "select count(*) from memberships m join users u on u.id = m.user_id where u.is_admin and m.role = 'moderator'" \
+  "$(q -d $db -At -c "select count(*) from trees where deleted_at is null")" 'admins are members of every tree after v6'
+expect $db "select role from memberships m join users u on u.id = m.user_id where not u.is_admin" 'viewer' \
+  'other memberships untouched by v6'
 expect $db "select count(*) from (select data from trees union all select data from tree_backups) d where data::text like '%/object/public/%'" '0' \
   'no public storage links left'
 expect $db "select count(*) from trees where data::text like '%\"/api/media/11111111-1111-1111-1111-111111111111/77aa-brief.pdf\"%'" '1' \

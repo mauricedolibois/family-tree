@@ -495,7 +495,8 @@ export const de = {
     hello: (name: string) => `Hallo ${name}`,
     choose: 'Deine Stammbäume',
     none: 'Du gehörst noch zu keinem Stammbaum. Bitte jemanden, dich einzuladen.',
-    noneAdmin: 'Es gibt noch keinen Stammbaum. Lege in der Verwaltung einen an.',
+    noneAdmin:
+      'Du bist noch in keinem Stammbaum Mitglied. In der Verwaltung legst du einen an oder trägst dich in einen bestehenden ein.',
     gone: 'Dieser Stammbaum ist nicht mehr verfügbar. Vielleicht wurde er gelöscht oder du wurdest entfernt.',
   },
   setup: {
@@ -559,6 +560,7 @@ export const de = {
       `„${name}“ endgültig löschen? Stammbaum, Backups und alle Bilder werden entfernt. Das lässt sich nicht rückgängig machen.`,
     treesTitle: 'Stammbäume',
     memberCount: (n: number) => (n === 1 ? '1 Mitglied' : `${n} Mitglieder`),
+    notMember: 'du bist nicht Mitglied',
     rename: 'Umbenennen',
     newTreeName: 'Name des neuen Stammbaums',
     createTree: 'Anlegen',

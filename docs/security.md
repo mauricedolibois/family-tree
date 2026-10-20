@@ -6,25 +6,26 @@ role cannot use.
 
 ## Who may do what
 
-Access to a tree is checked on every request (`treeAccess` in `app/src/lib/auth.ts`):
-admins have access to every tree, everybody else through a membership. **Nobody**,
-admins included, has access to a tree that does not exist or is in the trash.
+Access to a tree is checked on every request (`treeAccess` in `app/src/lib/auth.ts`)
+and comes **only from a membership**, for admins too: admin rights are about running
+the server, and everyone who can read a tree is listed among its members (admins
+with a badge). Nobody has access to a tree that does not exist or is in the trash.
 Trees without access answer exactly like trees that do not exist (404), so tree
 ids cannot be probed.
 
-| Endpoint | Not signed in | Viewer | Editor | Moderator | Other trees' members | Admin |
+| Endpoint | Not signed in | Viewer | Editor | Moderator | Not a member (admins included) | Admin |
 | --- | --- | --- | --- | --- | --- | --- |
-| `GET /api/trees/<id>` tree contents | 401 | ✓ | ✓ | ✓ | 404 | ✓ |
-| `PUT /api/trees/<id>` save | 401 | 403 | ✓ | ✓ | 404 | ✓ |
-| `GET /api/trees/<id>/calendar` subscription link | 401 | ✓ | ✓ | ✓ | 404 | ✓ |
-| `POST /api/trees/<id>/calendar` new link | 401 | 403 | ✓ | ✓ | 404 | ✓ |
-| `POST /api/trees/<id>/media` upload | 401 | 403 | ✓ | ✓ | 404 | ✓ |
-| `GET /api/media/<id>/<file>` photo or document | 404 | ✓ | ✓ | ✓ | 404 | ✓ |
-| `GET /api/trees/<id>/download` ZIP with photos | 401 | ✓ | ✓ | ✓ | 404 | ✓ |
-| `GET /api/trees/<id>/members`, invitations, roles | 401 | 403 | 403 | ✓ | 404 | ✓ |
-| `/api/trees/<id>/history` versions, restore, download | 401 | 403 | 403 | ✓ | 404 | ✓ |
-| `POST /api/trees/<id>/import` replace from file | 401 | 403 | 403 | ✓ | 404 | ✓ |
-| `POST /api/trees/import` new tree from file | 401 | 403 | 403 | 403 | 403 | ✓ |
+| `GET /api/trees/<id>` tree contents | 401 | ✓ | ✓ | ✓ | 404 | by role |
+| `PUT /api/trees/<id>` save | 401 | 403 | ✓ | ✓ | 404 | by role |
+| `GET /api/trees/<id>/calendar` subscription link | 401 | ✓ | ✓ | ✓ | 404 | by role |
+| `POST /api/trees/<id>/calendar` new link | 401 | 403 | ✓ | ✓ | 404 | by role |
+| `POST /api/trees/<id>/media` upload | 401 | 403 | ✓ | ✓ | 404 | by role |
+| `GET /api/media/<id>/<file>` photo or document | 404 | ✓ | ✓ | ✓ | 404 | by role |
+| `GET /api/trees/<id>/download` ZIP with photos | 401 | ✓ | ✓ | ✓ | 404 | by role |
+| `GET /api/trees/<id>/members`, invitations, roles | 401 | 403 | 403 | ✓ | 404 | by role |
+| `/api/trees/<id>/history` versions, restore, download | 401 | 403 | 403 | ✓ | 404 | by role |
+| `POST /api/trees/<id>/import` replace from file | 401 | 403 | 403 | ✓ | 404 | by role |
+| `POST /api/trees/import` new tree from file | 401 | 403 | 403 | 403 | 403 | ✓ (becomes moderator) |
 | `/api/admin/…` accounts, trees, trash, invitations | 401 | 403 | 403 | 403 | 403 | ✓ |
 | `GET /api/kalender/<token>.ics` calendar feed | by secret token (192 bit), no sign-in |
 | `/api/invite/<token>` | by secret token (256 bit), attempts throttled |

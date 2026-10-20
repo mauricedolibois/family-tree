@@ -1,6 +1,7 @@
-// A new tree from an export (ZIP) or a tree JSON. Admins only, like creating trees.
+// A new tree from an export (ZIP) or a tree JSON. Admins only, like creating trees;
+// the admin becomes its moderator.
 
-import { createTree, removeTree } from '@/lib/accounts'
+import { createTree, removeTree, setMembership } from '@/lib/accounts'
 import { treeAccess, withAdmin } from '@/lib/auth'
 import { saveTree } from '@/lib/db'
 import { cleanName } from '@/lib/passwords'
@@ -25,6 +26,7 @@ export default withAdmin('api/trees/import', async (req, res, admin) => {
     const imported = await prepareImport(unpacked, created.id, mayRead, [])
     const saved = await saveTree(created.id, imported, null)
     if (saved.status !== 'saved') throw new Error('new tree was filled meanwhile')
+    await setMembership(admin.id, created.id, 'moderator')
     return res.status(200).json({ ok: true, tree: created, people: Object.keys(imported.members).length })
   } catch (err) {
     // Nothing half-imported stays behind: the new tree goes with its files

@@ -37,7 +37,7 @@ export const toPublicUser = (u: UserRow): PublicUser => ({
   verified: !!u.email_verified_at,
 })
 
-export type TreeSummary = { id: string; name: string; role: Role | 'admin' }
+export type TreeSummary = { id: string; name: string; role: Role }
 
 const USER_COLUMNS =
   'id,email,name,pass_hash,is_admin,email_verified_at,session_epoch,locale,disabled_at,created_at' as const
@@ -267,12 +267,8 @@ export async function renameTree(id: string, name: string): Promise<void> {
   if (error) throw error
 }
 
-/** Trees the user can open: all of them for admins, otherwise their memberships */
-export async function treesOf(user: Pick<UserRow, 'id' | 'is_admin'>): Promise<TreeSummary[]> {
-  if (user.is_admin) {
-    const own = new Map((await membershipRows(user.id)).map((m) => [m.tree_id, m.role]))
-    return (await listTrees()).map((t) => ({ id: t.id, name: t.name, role: own.get(t.id) ?? 'admin' }))
-  }
+/** Trees the user can open: their memberships (admins included) */
+export async function treesOf(user: Pick<UserRow, 'id'>): Promise<TreeSummary[]> {
   return (await membershipRows(user.id))
     .map((m) => ({ id: m.tree_id, name: m.trees?.name ?? '', role: m.role }))
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -311,18 +307,27 @@ export async function removeMembership(userId: string, treeId: string): Promise<
   if (error) throw error
 }
 
-export type TreeMember = { id: string; name: string; email: string; role: Role; verified: boolean; disabled: boolean }
+export type TreeMember = {
+  id: string
+  name: string
+  email: string
+  role: Role
+  /** Also runs the server; shown so everyone sees who that is */
+  isAdmin: boolean
+  verified: boolean
+  disabled: boolean
+}
 
-/** Members of one tree, for its moderators and admins */
+/** Members of one tree, for its moderators */
 export async function listTreeMembers(treeId: string): Promise<TreeMember[]> {
   const { data, error } = await db()
     .from('memberships')
-    .select('role,users(id,name,email,email_verified_at,disabled_at)')
+    .select('role,users(id,name,email,is_admin,email_verified_at,disabled_at)')
     .eq('tree_id', treeId)
   if (error) throw error
   const rows = (data ?? []) as unknown as Array<{
     role: Role
-    users: Pick<UserRow, 'id' | 'name' | 'email' | 'email_verified_at' | 'disabled_at'> | null
+    users: Pick<UserRow, 'id' | 'name' | 'email' | 'is_admin' | 'email_verified_at' | 'disabled_at'> | null
   }>
   return rows
     .filter((r) => r.users)
@@ -331,6 +336,7 @@ export async function listTreeMembers(treeId: string): Promise<TreeMember[]> {
       name: u!.name,
       email: u!.email,
       role,
+      isAdmin: u!.is_admin,
       verified: !!u!.email_verified_at,
       disabled: !!u!.disabled_at,
     }))
