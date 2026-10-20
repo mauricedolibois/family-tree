@@ -120,7 +120,9 @@ export default function AdminPage() {
 function InviteCard({ trees, mail, onCreated }: { trees: Tree[]; mail: boolean; onCreated: () => void }) {
   const { t } = useI18n()
   const [email, setEmail] = useState('')
-  const [treeId, setTreeId] = useState(trees[0]?.id ?? '')
+  // As in AddToTree: a picked tree that has gone (deleted meanwhile) falls back to the shown one
+  const [picked, setPicked] = useState<string | null>(null)
+  const treeId = picked === '' || trees.some((tr) => tr.id === picked) ? picked! : (trees[0]?.id ?? '')
   const [role, setRole] = useState<Role>('editor')
   const [admin, setAdmin] = useState(false)
   const [days, setDays] = useState(7)
@@ -155,7 +157,7 @@ function InviteCard({ trees, mail, onCreated }: { trees: Tree[]; mail: boolean; 
         </label>
         <label className="flex flex-col gap-1">
           <span className="field-label">{t.admin.tree}</span>
-          <select className={select} value={treeId} onChange={(e) => setTreeId(e.target.value)}>
+          <select className={select} value={treeId} onChange={(e) => setPicked(e.target.value)}>
             <option value="">{t.admin.noTree}</option>
             {trees.map((tree) => (
               <option key={tree.id} value={tree.id}>
@@ -529,14 +531,18 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
 
 function AddToTree({ trees, onAdd }: { trees: Tree[]; onAdd: (treeId: string, role: Role) => void }) {
   const { t } = useI18n()
-  const [treeId, setTreeId] = useState(trees[0].id)
+  // Only what was picked is remembered, and only while it is still offered: the
+  // list shrinks as soon as the person joins a tree, and the shown and the sent
+  // tree must never differ
+  const [picked, setPicked] = useState<string | null>(null)
+  const treeId = trees.some((tr) => tr.id === picked) ? picked! : trees[0].id
   const [role, setRole] = useState<Role>('viewer')
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
       <select
         className={clsx(select, 'min-w-0 flex-1')}
         value={treeId}
-        onChange={(e) => setTreeId(e.target.value)}
+        onChange={(e) => setPicked(e.target.value)}
         aria-label={t.admin.tree}
       >
         {trees.map((tr) => (
