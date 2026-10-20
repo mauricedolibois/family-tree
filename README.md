@@ -55,6 +55,7 @@ The interface speaks German, English, French and Spanish; see [docs/i18n.md](doc
 - Calendar apps cannot sign in, so the subscription is protected only by a secret token in the link (`families.calendar_token`). Anyone with the link sees names and birthdays; "create new link" invalidates the old one.
 
 - The database (Supabase) is only accessed server side with the service role key; the public roles have no rights.
+- Photos and documents lie in a private storage bucket. The app serves them at `/api/media/…` only to people who may see the tree, so Supabase does not need to be reachable from the internet ([docs/supabase.md](docs/supabase.md)).
 
 ## Development
 
@@ -129,7 +130,8 @@ a single transaction, so a failure changes nothing.
   which version is missing. Run the missing scripts in order. `setup.sql` always
   creates the current version directly.
 
-`supabase/check.sh` verifies that `setup.sql` and the migrations lead to exactly the
+Every migration checks the version it starts from and refuses to run on any
+other database. `supabase/check.sh` verifies that `setup.sql` and the migrations lead to exactly the
 same schema (CI runs it whenever something under `supabase/` changes).
 
 **Notes:**

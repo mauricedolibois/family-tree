@@ -8,3 +8,7 @@ services:
       - "3000:3000"
     env_file:
       - prod.env
+    # Lets SUPABASE_URL point at a Supabase on the same host without going through
+    # the internet: http://host.docker.internal:8000 (see docs/supabase.md)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -81,14 +81,14 @@ async function main() {
 
 const BUCKET = 'media'
 const ORPHAN_DAYS = 7
-const PUBLIC_MARKER = `/object/public/${BUCKET}/`
+/** Uploaded files are linked as /api/media/<tree>/<file> */
+const MEDIA_PREFIX = '/api/media/'
 
 /** Storage paths of all images and documents a tree refers to */
 function collectPaths(tree, into) {
   const add = (url) => {
     if (typeof url !== 'string') return
-    const i = url.indexOf(PUBLIC_MARKER)
-    if (i >= 0) into.add(decodeURIComponent(url.slice(i + PUBLIC_MARKER.length).split('?')[0]))
+    if (url.startsWith(MEDIA_PREFIX)) into.add(decodeURIComponent(url.slice(MEDIA_PREFIX.length).split('?')[0]))
   }
   for (const m of Object.values(tree?.members ?? {})) {
     add(m?.profile?.titleImageUrl)

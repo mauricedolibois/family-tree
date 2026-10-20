@@ -49,9 +49,10 @@ function optFlag(v: unknown, field: string): boolean {
   return v
 }
 
+/** Uploaded files (/api/media/<tree>/<file>) or, from older versions, full web addresses */
 function url(v: unknown, field: string): string {
   const s = str(v, field, LIMITS.url)
-  if (!/^https?:\/\//i.test(s)) throw new Invalid(`${field}: invalid URL`)
+  if (!/^(https?:\/\/|\/api\/media\/)/i.test(s)) throw new Invalid(`${field}: invalid URL`)
   return s
 }
 

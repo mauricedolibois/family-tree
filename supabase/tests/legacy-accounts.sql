@@ -19,7 +19,7 @@ insert into public.families (id, name, pass_hash) values
   ('22222222-2222-2222-2222-222222222222', 'Empty', '$2b$10$abcdefghijklmnopqrstuu'),
   ('33333333-3333-3333-3333-333333333333', '__keep_alive_test_family__', 'keep_alive_dummy_hash');
 insert into public.family_trees (family_id, tree_json) values
-  ('11111111-1111-1111-1111-111111111111', '{"version":3,"rootId":"a","members":{"a":{"id":"a","name":"Anna","gender":"FEMALE","childrenIds":[]}}}');
+  ('11111111-1111-1111-1111-111111111111', '{"version":3,"rootId":"a","members":{"a":{"id":"a","name":"Anna","gender":"FEMALE","childrenIds":[],"profile":{"titleImageUrl":"https://supabase.example.org/storage/v1/object/public/media/11111111-1111-1111-1111-111111111111/0f0e-anna.jpg","media":[{"id":"m1","kind":"image","url":"https://supabase.example.org/storage/v1/object/public/media/11111111-1111-1111-1111-111111111111/0f0e-anna.jpg"},{"id":"m2","kind":"pdf","url":"http://supabase.example.org:8000/storage/v1/object/public/media/11111111-1111-1111-1111-111111111111/77aa-brief.pdf"}]}}}}');
 
 -- ════ 20261017180000_backups_and_drafts.sql ════
 
@@ -341,7 +341,7 @@ alter function verwaltung.wiederherstellen(bigint) set search_path = public;
 update public.families set calendar_token = 'calendar-token-0123456789' where name = 'Reiser';
 insert into public.family_trees_backup (family_id, tree_json, note, backed_up_at) values
   ('11111111-1111-1111-1111-111111111111', '{"members":{"a":{}}}', 'automatisch: vor Änderung (bearbeitet: Anna)', now() - interval '3 days'),
-  ('11111111-1111-1111-1111-111111111111', '{"members":{"a":{}}}', 'automatisch: tägliche Sicherung', now() - interval '2 days'),
+  ('11111111-1111-1111-1111-111111111111', '{"members":{"a":{"profile":{"titleImageUrl":"https://supabase.example.org/storage/v1/object/public/media/11111111-1111-1111-1111-111111111111/old.jpg"}}}}', 'automatisch: tägliche Sicherung', now() - interval '2 days'),
   ('11111111-1111-1111-1111-111111111111', '{"members":{"a":{}}}', 'von Hand gesichert', now() - interval '1 day'),
   ('11111111-1111-1111-1111-111111111111', '{"members":{"a":{}}}', 'vor dem Zurückholen von Stand 2', now() - interval '1 hour'),
   ('99999999-9999-9999-9999-999999999999', '{"members":{}}', 'tree deleted since', now());

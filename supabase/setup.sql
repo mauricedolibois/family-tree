@@ -1,4 +1,4 @@
--- Family tree database, version 1: everything a new installation needs.
+-- Family tree database, version 2: everything a new installation needs.
 --
 -- Run the whole file once in the Supabase SQL editor (or with psql) on a database
 -- without family tree tables. Existing installations do not use this file; they
@@ -115,7 +115,7 @@ create table public.app_meta (
   key text primary key,
   value text not null
 );
-insert into public.app_meta (key, value) values ('schema_version', '1');
+insert into public.app_meta (key, value) values ('schema_version', '2');
 
 -- ── Access ───────────────────────────────────────────────────────────────────
 
@@ -133,11 +133,14 @@ begin
 end
 $$;
 
--- Photos and documents. Only exists on Supabase (not on a plain Postgres).
+-- Photos and documents. Private: the app serves them at /api/media/<tree>/<file>
+-- after checking that the viewer may see the tree. Only exists on Supabase (not on
+-- a plain Postgres).
 do $$
 begin
   if to_regclass('storage.buckets') is not null then
-    insert into storage.buckets (id, name, public) values ('media', 'media', true) on conflict (id) do nothing;
+    insert into storage.buckets (id, name, public) values ('media', 'media', false)
+    on conflict (id) do update set public = false;
   end if;
 end
 $$;
@@ -250,4 +253,4 @@ notify pgrst, 'reload schema';
 
 commit;
 
-select 'Database is set up (version 1).' as result;
+select 'Database is set up (version 2).' as result;

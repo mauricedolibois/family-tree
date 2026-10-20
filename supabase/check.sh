@@ -1,7 +1,8 @@
 #!/bin/sh
 # Checks that supabase/setup.sql and the migrations lead to exactly the same schema:
 # a new database from setup.sql is compared with old installations (tests/legacy-*.sql)
-# after all migrations. Also checks the data taken over and the guards.
+# after all migrations. Also checks the data taken over and that every script
+# refuses a database it does not belong to.
 #
 # Needs psql and pg_dump and a Postgres server where it may create databases
 # (PGHOST, PGUSER, PGPASSWORD). Locally, for example:
@@ -76,10 +77,19 @@ expect $db "select count(*) from users where session_epoch = 2 and is_admin" '1'
 expect $db "select (select count(*) from memberships) + (select count(*) from invites) + (select count(*) from auth_tokens)" '3' \
   'memberships, invitations and tokens taken over'
 expect $db "select count(*) from pg_namespace where nspname in ('legacy', 'verwaltung')" '0' 'old schemas removed'
+expect $db "select count(*) from (select data from trees union all select data from tree_backups) d where data::text like '%/object/public/%'" '0' \
+  'no public storage links left'
+expect $db "select count(*) from trees where data::text like '%\"/api/media/11111111-1111-1111-1111-111111111111/77aa-brief.pdf\"%'" '1' \
+  'photo and document links point to /api/media/'
+for d in check_setup check_legacy_original check_legacy_accounts; do
+  expect $d "select public from storage.buckets where id = 'media'" 'f' "photo bucket private ($d)"
+done
 
-if q -d check_setup -f migrations/v1_from_legacy.sql >/dev/null 2>&1; then
-  echo "FAIL  v1_from_legacy.sql must refuse a new database"; failed=1
-else echo "ok    v1_from_legacy.sql refuses a new database"; fi
+for m in $(migrations); do
+  if q -d check_setup -f "migrations/$m" >/dev/null 2>&1; then
+    echo "FAIL  $m must refuse a database that is already current"; failed=1
+  else echo "ok    $m refuses a database that is already current"; fi
+done
 if q -d check_setup -f setup.sql >/dev/null 2>&1; then
   echo "FAIL  setup.sql must refuse a database with tables"; failed=1
 else echo "ok    setup.sql refuses a database with tables"; fi
