@@ -45,7 +45,7 @@ export default withUser('api/trees/[id]', async (req, res, user) => {
     if (!current) return res.status(404).json({ error: 'not found' })
     if (current.version !== baseVersion) return res.status(409).json({ error: 'conflict' })
 
-    await snapshotBeforeSave(treeId, current.tree, checked.tree)
+    await snapshotBeforeSave(treeId, current.tree, checked.tree, user.id)
     const saved = await saveTree(treeId, checked.tree, baseVersion)
     if (saved.status === 'conflict') return res.status(409).json({ error: 'conflict' })
 

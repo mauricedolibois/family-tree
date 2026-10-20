@@ -68,7 +68,9 @@ async function main() {
     if (lastErr) throw lastErr
     if (last?.[0] && fingerprint(last[0].data) === fingerprint(t.data)) continue
 
-    const { error: insErr } = await supabase.from('tree_backups').insert({ tree_id: t.id, data: t.data, kind: 'daily' })
+    const { error: insErr } = await supabase
+      .from('tree_backups')
+      .insert({ tree_id: t.id, data: t.data, kind: 'daily', people: Object.keys(t.data.members ?? {}).length })
     if (insErr) throw insErr
     saved++
   }

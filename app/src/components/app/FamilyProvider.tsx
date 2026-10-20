@@ -17,6 +17,8 @@ export class TreeConflictError extends Error {
 
 type Status = 'loading' | 'ready' | 'error'
 
+export type Undo = () => Promise<void>
+
 type FamilyCtx = {
   tree: Tree
   index: TreeIndex
@@ -24,8 +26,11 @@ type FamilyCtx = {
   treeId: string
   /** Editors and admins may change the tree; viewers only read it */
   canEdit: boolean
-  /** Saves exactly this version and then displays it */
-  commit: (next: Tree) => Promise<void>
+  /**
+   * Saves exactly this version and then displays it. Returns a function that
+   * saves the version from before again, for an "Undo" right after the change.
+   */
+  commit: (next: Tree) => Promise<Undo>
   saving: boolean
 }
 
@@ -83,8 +88,15 @@ export function FamilyProvider({
     void load()
   }, [load])
 
+  // The tree as last saved, for undoing the next change
+  const current = useRef<Tree | null>(null)
+  useEffect(() => {
+    current.current = tree
+  }, [tree])
+
   const commit = useCallback(
-    async (next: Tree) => {
+    async (next: Tree): Promise<Undo> => {
+      const before = current.current
       setSaving(true)
       try {
         const res = await fetch(url, {
@@ -114,13 +126,21 @@ export function FamilyProvider({
         }
         if (!res.ok) throw new Error(`saving failed (${res.status})`)
         version.current = res.headers.get(TREE_VERSION_HEADER)
+        current.current = next
         setTree(next)
       } finally {
         setSaving(false)
       }
+      // A normal save of the earlier version: if someone else changed the tree
+      // meanwhile, it ends in the usual conflict notice instead of overwriting them
+      return async () => {
+        if (before) await commitRef.current(before)
+      }
     },
     [url],
   )
+  const commitRef = useRef(commit)
+  commitRef.current = commit
 
   const index = useMemo(() => (tree ? buildIndex(tree) : null), [tree])
   const value = useMemo(

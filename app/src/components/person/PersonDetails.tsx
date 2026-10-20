@@ -50,9 +50,9 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
     if (!window.confirm(t.person.confirmRemove(person.name))) return
     setDeleting(true)
     try {
-      await commit(deletePerson(tree, person.id))
+      const undo = await commit(deletePerson(tree, person.id))
       select(null)
-      notify({ message: t.person.removed(person.name) })
+      notify({ message: t.person.removed(person.name), undo })
     } catch (e) {
       if (!(e instanceof TreeConflictError)) notify({ message: errorText(e, t, locale, t.errors.deleteFailed) })
     } finally {

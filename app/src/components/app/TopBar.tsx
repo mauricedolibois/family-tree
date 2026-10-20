@@ -7,8 +7,8 @@ import {
   BookOpen,
   Cake,
   Download,
-  FileArchive,
   Flame,
+  History,
   LogOut,
   Menu,
   Printer,
@@ -104,7 +104,7 @@ function ThemeButton() {
 }
 
 function AppMenu({ viewer }: { viewer: Viewer }) {
-  const { tree, familyName, treeId } = useFamily()
+  const { treeId } = useFamily()
   const { setExportOpen, setTourOpen, showBirthdays, select } = useView()
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
@@ -122,19 +122,6 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
       document.removeEventListener('keydown', close)
     }
   }, [open])
-
-  const downloadBackup = () => {
-    const blob = new Blob([JSON.stringify(tree, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${t.topBar.backupFile}-${familyName.toLowerCase().replace(/[^a-z0-9äöüß]+/gi, '-')}-${new Date()
-      .toISOString()
-      .slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-    setOpen(false)
-  }
 
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -187,18 +174,15 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
           >
             {t.topBar.startTour}
           </MenuItem>
-          <MenuItem icon={<Download className="h-4 w-4" />} onClick={downloadBackup}>
-            {t.topBar.downloadBackup}
-          </MenuItem>
           <MenuItem
-            icon={<FileArchive className="h-4 w-4" />}
+            icon={<Download className="h-4 w-4" />}
             onClick={() => {
-              // The server sends it as a download; the page stays where it is
-              window.location.href = `/api/trees/${treeId}/export`
+              // The server sends a ZIP file with the tree and its photos; the page stays
+              window.location.href = `/api/trees/${treeId}/download`
               setOpen(false)
             }}
           >
-            {t.topBar.exportZip}
+            {t.topBar.download}
           </MenuItem>
           {viewer.treeCount > 1 && (
             <MenuItem icon={<ArrowLeftRight className="h-4 w-4" />} onClick={() => (window.location.href = '/?pick=1')}>
@@ -206,12 +190,20 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
             </MenuItem>
           )}
           {viewer.canManage && (
-            <MenuItem
-              icon={<Users className="h-4 w-4" />}
-              onClick={() => (window.location.href = `/tree/${treeId}/members`)}
-            >
-              {t.members.title}
-            </MenuItem>
+            <>
+              <MenuItem
+                icon={<Users className="h-4 w-4" />}
+                onClick={() => (window.location.href = `/tree/${treeId}/members`)}
+              >
+                {t.members.title}
+              </MenuItem>
+              <MenuItem
+                icon={<History className="h-4 w-4" />}
+                onClick={() => (window.location.href = `/tree/${treeId}/history`)}
+              >
+                {t.history.title}
+              </MenuItem>
+            </>
           )}
           <MenuItem icon={<Settings className="h-4 w-4" />} onClick={() => (window.location.href = '/account')}>
             {t.account.title}

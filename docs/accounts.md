@@ -68,13 +68,26 @@ the calendar subscription stops and open invitations to it lapse. Admins can
 restore it with everything in it, or delete it for good, which removes its
 backups and photos too. The daily job does that on its own after 30 days.
 
-## Export and import
+## History and undo
 
-Everyone in a tree can download it with all photos as a ZIP file (menu → Export
-with photos). Admins turn such a file, or a JSON backup from the menu, into a new
-tree on `/admin`; moderators can replace their tree with one on the members page,
-after an automatic backup. Photos come along only in ZIP files; links in a JSON
-backup to photos of trees the importing person cannot see are dropped.
+Before every change, import and restore the whole tree is saved as a version,
+with who made the change and what it did. Right after their own change, editors
+see **Undo**: it saves the version from just before again, with the usual
+conflict check, so it never overwrites what someone else changed meanwhile.
+
+Moderators and admins open the **history** (menu → History): every version with
+what changed, who and when, newest first. **Restore** sets the whole tree back to
+a version; the current one is saved first, so a restore can be undone the same
+way. **Download** gives a version as a ZIP file with its photos.
+
+## Download and import
+
+Everyone in a tree can download it with all photos as a ZIP file (menu →
+Download). Admins turn such a file, or a JSON backup from earlier versions of the
+app, into a new tree on `/admin`; moderators can replace their tree with one on
+the members page, after an automatic backup. Photos come along only in ZIP files;
+links in a JSON backup to photos of trees the importing person cannot see are
+dropped.
 
 ## Sessions and security
 

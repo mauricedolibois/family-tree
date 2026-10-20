@@ -103,10 +103,10 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         },
       })
       if (stepParent && alsoParent) next = addExistingParent(next, person.id, stepParent.id)
-      await commit(next)
+      const undo = await commit(next)
       // Removed files stay in storage so older backups keep their images.
       // The daily backup job (scripts/daily-backup.mjs) cleans them up.
-      notify({ message: t.form.saved })
+      notify({ message: t.form.saved, undo })
       onDone()
     } catch (err) {
       if (err instanceof TreeConflictError) return

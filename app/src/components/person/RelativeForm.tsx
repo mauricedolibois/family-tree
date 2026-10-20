@@ -77,11 +77,12 @@ export function RelativeForm({ person, relation, onDone, onEditNew }: Props) {
         born || dead
           ? updatePerson(added.tree, added.id, { profile: { birthDate: born, deceased: dead || undefined } })
           : added.tree
-      await commit(next)
+      const undo = await commit(next)
       const newName = name.trim()
       onDone()
       notify({
         message: t.relative.added(newName),
+        undo,
         action: {
           label: t.relative.completeDetails,
           run: () => {

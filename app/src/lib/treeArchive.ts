@@ -28,6 +28,16 @@ export const IMPORT_LIMITS = {
 
 // ── Export ───────────────────────────────────────────────────────────────────
 
+/** ASCII file name for a download, e.g. stammbaum-reiser-2026-10-20.zip */
+export const downloadName = (name: string, date: Date) =>
+  `stammbaum-${
+    name
+      .normalize('NFKD')
+      .replace(/[^\w]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase() || 'export'
+  }-${date.toISOString().slice(0, 10)}.zip`
+
 /**
  * Writes the export ZIP of a tree to the response. `mayRead(treeId)` decides which
  * linked files go in: those of other trees only if the user may see them.
