@@ -55,7 +55,7 @@ export default function ResetPage({ token }: Props) {
       {invalid ? (
         <div className="flex flex-col gap-3">
           <FormMessage>{t.reset.invalid}</FormMessage>
-          <Link href="/forgot" className="text-[15px] text-linen underline underline-offset-4">
+          <Link href="/forgot" className="text-[15px] text-link underline underline-offset-4">
             {t.reset.requestNew}
           </Link>
         </div>

@@ -252,7 +252,7 @@ export function TreeCanvas() {
   const count = Object.keys(viewTree.members).length
 
   return (
-    <div ref={box} className="desk relative h-full w-full overflow-hidden">
+    <div ref={box} className="page-backdrop relative h-full w-full overflow-hidden">
       <TransformWrapper
         ref={api}
         minScale={MIN_SCALE}
@@ -322,14 +322,14 @@ export function TreeCanvas() {
       )}
       {!layout && !error && (
         <div className="absolute inset-0 grid place-items-center" role="status">
-          <p className="parchment rounded-full border border-card-rule px-5 py-2 font-display text-lg text-ink-muted shadow-card">
+          <p className="surface rounded-full border border-card-rule px-5 py-2 font-display text-lg text-ink-muted shadow-card">
             {t.tree.drawing}
           </p>
         </div>
       )}
 
       {/* Zoom */}
-      <div className="parchment absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 flex flex-col overflow-hidden rounded-control border border-gilt/50 shadow-card">
+      <div className="surface absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 flex flex-col overflow-hidden rounded-control border border-frame/50 shadow-card">
         <ZoomButton label={t.tree.zoomIn} onClick={() => api.current?.zoomIn(0.35)}>
           <Plus className="h-5 w-5" />
         </ZoomButton>
@@ -351,7 +351,7 @@ function ZoomButton({ label, onClick, children }: { label: string; onClick: () =
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid h-11 w-11 place-items-center border-b border-card-rule/70 text-ink-muted last:border-b-0 hover:bg-gilt-soft/60 hover:text-ink"
+      className="grid h-11 w-11 place-items-center border-b border-card-rule/70 text-ink-muted last:border-b-0 hover:bg-accent-soft/60 hover:text-ink"
     >
       {children}
     </button>

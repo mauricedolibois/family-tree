@@ -23,7 +23,7 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
   return (
     <section
       aria-label={t.views.adjustLine}
-      className="parchment pointer-events-auto relative w-full rounded-card border border-gilt/60 p-3 pt-2 shadow-card md:w-[380px]"
+      className="surface pointer-events-auto relative w-full rounded-card border border-frame/60 p-3 pt-2 shadow-card md:w-[380px]"
     >
       <div className="flex items-center justify-between">
         <h2 className="font-display text-[1.2rem] text-ink">{t.scope.title}</h2>
@@ -31,7 +31,7 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
           type="button"
           onClick={onClose}
           aria-label={t.sheet.close}
-          className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+          className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
         >
           <X className="h-4 w-4" />
         </button>
@@ -68,9 +68,9 @@ export function LineScopeCard({ personId, count, onClose }: { personId: string; 
       <button
         type="button"
         onClick={() => setExportOpen(true)}
-        className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-control border border-gilt/60 text-[15px] text-ink hover:bg-gilt-soft/40"
+        className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-control border border-frame/60 text-[15px] text-ink hover:bg-accent-soft/40"
       >
-        <Printer className="h-4 w-4 text-gilt-deep" />
+        <Printer className="h-4 w-4 text-accent-deep" />
         {t.scope.printLine}
       </button>
     </section>
@@ -105,7 +105,7 @@ function Stepper({
       <StepButton label={t.scope.less(label)} onClick={less} disabled={max === 0 || current === 0}>
         <Minus className="h-4 w-4" />
       </StepButton>
-      <span className="w-[8.5rem] text-center font-serif text-[16px] tabular-nums text-ink" aria-live="polite">
+      <span className="w-[8.5rem] text-center font-text text-[16px] tabular-nums text-ink" aria-live="polite">
         {text}
       </span>
       <StepButton label={t.scope.more(label)} onClick={more} disabled={max === 0 || current >= max}>
@@ -133,7 +133,7 @@ function StepButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className="grid h-10 w-10 place-items-center rounded-full border border-gilt/50 text-gilt-deep hover:bg-gilt-soft/50 disabled:border-card-rule disabled:text-ink-faint disabled:hover:bg-transparent"
+      className="grid h-10 w-10 place-items-center rounded-full border border-frame/50 text-accent-deep hover:bg-accent-soft/50 disabled:border-card-rule disabled:text-ink-faint disabled:hover:bg-transparent"
     >
       {children}
     </button>

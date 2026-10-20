@@ -42,7 +42,10 @@ export default function ForgotPage({ mail }: Props) {
       title={t.forgot.pageTitle}
       intro={t.forgot.intro}
       footer={
-        <Link href="/login" className="font-medium text-gilt-soft underline decoration-gilt/60 underline-offset-4">
+        <Link
+          href="/login"
+          className="font-medium text-on-primary-accent underline decoration-accent/60 underline-offset-4"
+        >
           {t.forgot.back}
         </Link>
       }

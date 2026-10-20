@@ -1,15 +1,12 @@
 /** @type {import('next').NextConfig} */
-const { createHash } = require('crypto')
-const { THEME_SCRIPT } = require('./src/lib/themeScript')
-
 const isDev = process.env.NODE_ENV !== 'production'
-const themeScriptHash = `'sha256-${createHash('sha256').update(THEME_SCRIPT).digest('base64')}'`
 
-// What pages may load. Scripts only from this origin plus the single inline script by hash.
-// Photos and videos live on the Supabase domain, which is only known at runtime, hence https:.
+// What pages may load. Scripts only from this origin, no inline scripts at all (the
+// theme is rendered by the server). Uploaded photos come from this origin as well;
+// https: stays for web addresses older trees may still link to.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' ${themeScriptHash}${isDev ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",

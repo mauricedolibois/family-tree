@@ -54,7 +54,10 @@ export default function RegisterPage() {
       footer={
         <>
           {t.register.haveAccount}{' '}
-          <Link href="/login" className="font-medium text-gilt-soft underline decoration-gilt/60 underline-offset-4">
+          <Link
+            href="/login"
+            className="font-medium text-on-primary-accent underline decoration-accent/60 underline-offset-4"
+          >
             {t.login.submit}
           </Link>
         </>

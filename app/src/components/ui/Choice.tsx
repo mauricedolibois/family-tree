@@ -29,7 +29,7 @@ export function Segmented<T extends string>({
       <div
         role="radiogroup"
         aria-labelledby={id}
-        className="flex rounded-control border border-card-rule bg-paper-raised p-1"
+        className="flex rounded-control border border-card-rule bg-canvas-raised p-1"
       >
         {options.map((o) => (
           <button
@@ -43,7 +43,7 @@ export function Segmented<T extends string>({
               // dense: width follows content so long words do not touch the edges
               dense ? 'flex-auto px-2 text-sm' : 'flex-1 text-[15px]',
               value === o.value
-                ? 'bg-linen font-medium text-gilt-soft shadow-[inset_0_0_0_1px_rgb(var(--gilt)/0.5)]'
+                ? 'bg-primary font-medium text-on-primary-accent shadow-[inset_0_0_0_1px_rgb(var(--accent)/0.5)]'
                 : 'text-ink-muted hover:text-ink',
             )}
           >
@@ -74,7 +74,7 @@ export function Toggle({
         onClick={() => onChange(!checked)}
         className={clsx(
           'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-          checked ? 'bg-linen' : 'bg-card-rule',
+          checked ? 'bg-primary' : 'bg-card-rule',
         )}
       >
         <span

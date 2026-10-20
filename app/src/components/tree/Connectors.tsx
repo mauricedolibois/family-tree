@@ -1,5 +1,5 @@
 // src/components/tree/Connectors.tsx
-// Tree lines: sepia ink for all, gold leaf for the selected line.
+// Tree lines: the theme's line colour for all, the accent for the selected line.
 
 import { memo } from 'react'
 import clsx from 'clsx'
@@ -32,7 +32,7 @@ function star(x: number, y: number, r: number): string {
   } ${y} Q ${x - k} ${y - k} ${x} ${y - r} Z`
 }
 
-/** Sparkles at the bends of the gold line, at most 28 */
+/** Sparkles at the bends of the highlighted line, at most 28 (hidden in themes without ornaments) */
 function sparklePoints(list: Connector[]): Point[] {
   const pts: Point[] = []
   const seen = new Set<string>()
@@ -54,7 +54,7 @@ type Props = {
   marriages: MarriageLine[]
   /** Ids on the highlighted line (or null) */
   lineage: Set<string> | null
-  /** changes with every new selection → the gold line redraws */
+  /** changes with every new selection → the highlighted line redraws */
   drawKey: string
   /** For print: no animation, nothing dimmed */
   still?: boolean
@@ -105,7 +105,7 @@ export const Connectors = memo(function Connectors({
         const cx = (m.from.x + m.to.x) / 2
         return (
           <g key={m.id} className={clsx('transition-opacity duration-300', !still && lineage && !gold && 'opacity-30')}>
-            <g style={{ stroke: gold ? 'rgb(var(--gilt))' : 'rgb(var(--line))' }} strokeWidth={1.2}>
+            <g style={{ stroke: gold ? 'rgb(var(--accent))' : 'rgb(var(--line))' }} strokeWidth={1.2}>
               <line x1={m.from.x} y1={m.from.y - 2} x2={m.to.x} y2={m.to.y - 2} />
               <line x1={m.from.x} y1={m.from.y + 2} x2={m.to.x} y2={m.to.y + 2} />
             </g>
@@ -113,13 +113,13 @@ export const Connectors = memo(function Connectors({
               cx={cx}
               cy={m.from.y}
               r={10}
-              style={{ fill: 'rgb(var(--card))', stroke: gold ? 'rgb(var(--gilt))' : 'rgb(var(--card-rule))' }}
+              style={{ fill: 'rgb(var(--card))', stroke: gold ? 'rgb(var(--accent))' : 'rgb(var(--card-rule))' }}
               strokeWidth={1}
             />
             {/* ⚭ drawn as two interlocking rings */}
             <g
               fill="none"
-              style={{ stroke: gold ? 'rgb(var(--gilt-deep))' : 'rgb(var(--ink-muted))' }}
+              style={{ stroke: gold ? 'rgb(var(--accent-deep))' : 'rgb(var(--ink-muted))' }}
               strokeWidth={1.3}
             >
               <circle cx={cx - 2.6} cy={m.from.y} r={3.6} />
@@ -129,12 +129,12 @@ export const Connectors = memo(function Connectors({
         )
       })}
 
-      {/* Gold line of the selected person, drawn in like ink */}
+      {/* Highlighted line of the selected person, drawn in like ink */}
       {lineage && (
         <g key={drawKey}>
           <g
             fill="none"
-            style={{ stroke: 'rgb(var(--gilt))' }}
+            style={{ stroke: 'rgb(var(--accent))' }}
             strokeWidth={2.8}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -151,7 +151,7 @@ export const Connectors = memo(function Connectors({
             ))}
           </g>
           {!still && (
-            <g style={{ fill: 'rgb(var(--gilt-light))' }}>
+            <g style={{ fill: 'rgb(var(--accent-light))' }}>
               {sparklePoints(connectors.filter(inLine)).map((p, i) => (
                 <path
                   key={i}

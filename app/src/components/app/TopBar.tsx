@@ -1,5 +1,6 @@
 // src/components/app/TopBar.tsx
-// Header styled like a book cover: dark linen, title in gold leaf.
+// Header of the tree: title, search and menu. Its look comes from the theme
+// (slots header-bar and header-rule, e.g. book cloth with gold lettering).
 
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -7,7 +8,7 @@ import {
   BookOpen,
   Cake,
   Download,
-  Flame,
+  Moon,
   History,
   LogOut,
   Menu,
@@ -22,9 +23,10 @@ import {
 import { useFamily } from './FamilyProvider'
 import { useView } from './ViewProvider'
 import { SearchBox } from './SearchBox'
-import { useTheme } from './useTheme'
+import { useTheme } from '@/themes/ThemeProvider'
 import { useI18n } from '@/i18n/I18nProvider'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
+import { ThemePicker } from '@/components/ui/ThemePicker'
 
 /** The signed-in person, as far as the header needs to know */
 export type Viewer = {
@@ -41,7 +43,7 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
   const [mobileSearch, setMobileSearch] = useState(false)
 
   return (
-    <header className="book-cover relative z-50 shrink-0 pt-[env(safe-area-inset-top)] text-card shadow-[0_1px_0_rgb(var(--gilt)/0.7),0_3px_0_rgb(var(--linen-deep)),0_4px_0_rgb(var(--gilt)/0.35)]">
+    <header className="header-bar header-rule relative z-50 shrink-0 pt-[env(safe-area-inset-top)] text-on-primary">
       <div className="flex h-14 items-center gap-2 px-3 sm:gap-4 sm:px-5">
         {mobileSearch ? (
           <div className="flex flex-1 items-center gap-2 md:hidden">
@@ -51,7 +53,7 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
             <button
               type="button"
               onClick={() => setMobileSearch(false)}
-              className="grid h-10 w-10 place-items-center rounded-full text-card/80 hover:bg-white/10"
+              className="grid h-10 w-10 place-items-center rounded-full text-on-primary/80 hover:bg-on-primary/10"
               aria-label={t.topBar.closeSearch}
             >
               <X className="h-5 w-5" />
@@ -59,8 +61,8 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
           </div>
         ) : (
           <h1 className="min-w-0 flex-1 truncate font-display text-[1.6rem] leading-none">
-            <span className="mr-2 text-[1.05rem] italic text-gilt-soft/60">{t.app.title}</span>
-            <span className="gilt-text">{familyName}</span>
+            <span className="mr-2 text-[1.05rem] italic text-on-primary-accent/60">{t.app.title}</span>
+            <span className="title-text">{familyName}</span>
           </h1>
         )}
 
@@ -73,7 +75,7 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
           <button
             type="button"
             onClick={() => setMobileSearch(true)}
-            className="grid h-10 w-10 place-items-center rounded-full text-card/85 hover:bg-white/10 md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-full text-on-primary/85 hover:bg-on-primary/10 md:hidden"
             aria-label={t.topBar.searchPerson}
           >
             <Search className="h-5 w-5" />
@@ -85,20 +87,20 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
   )
 }
 
+/** Quick switch between light and dark; the full choice is in the menu */
 function ThemeButton() {
-  const { theme, toggle } = useTheme()
+  const { dark, setMode } = useTheme()
   const { t } = useI18n()
-  const night = theme === 'night'
   return (
     <button
       type="button"
-      onClick={toggle}
-      aria-pressed={night}
-      aria-label={night ? t.topBar.daylight : t.topBar.candlelight}
-      title={night ? t.topBar.daylight : t.topBar.candlelight}
-      className="grid h-10 w-10 place-items-center rounded-full text-gilt-soft/85 hover:bg-white/10"
+      onClick={() => setMode(dark ? 'light' : 'dark')}
+      aria-pressed={dark}
+      aria-label={dark ? t.theme.toLight : t.theme.toDark}
+      title={dark ? t.theme.toLight : t.theme.toDark}
+      className="grid h-10 w-10 place-items-center rounded-full text-on-primary-accent/85 hover:bg-on-primary/10"
     >
-      {night ? <Sun className="h-5 w-5" /> : <Flame className="h-5 w-5" />}
+      {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </button>
   )
 }
@@ -137,7 +139,7 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
         aria-haspopup="menu"
         aria-label={t.topBar.menu}
         data-tour="menu"
-        className="grid h-10 w-10 place-items-center rounded-full text-card/85 hover:bg-white/10"
+        className="grid h-10 w-10 place-items-center rounded-full text-on-primary/85 hover:bg-on-primary/10"
       >
         <Menu className="h-5 w-5" />
       </button>
@@ -216,8 +218,9 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
           <MenuItem icon={<LogOut className="h-4 w-4" />} onClick={logout}>
             {t.topBar.logout}
           </MenuItem>
-          <div className="mt-1 border-t border-card-rule px-3 pb-1.5 pt-2.5">
+          <div className="mt-1 flex flex-col gap-2 border-t border-card-rule px-3 pb-1.5 pt-2.5">
             <LanguagePicker className="w-full justify-between" />
+            <ThemePicker className="w-full" />
           </div>
         </div>
       )}
@@ -239,7 +242,7 @@ function MenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-[15px] hover:bg-paper-raised"
+      className="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left text-[15px] hover:bg-canvas-raised"
     >
       <span className="text-ink-muted">{icon}</span>
       {children}

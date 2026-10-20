@@ -69,19 +69,19 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-[1.75rem] leading-[1.1] text-ink">{person.name}</h2>
-          {lifeYears(person) && <p className="mt-0.5 font-serif text-[18px] text-ink-muted">{lifeYears(person)}</p>}
+          {lifeYears(person) && <p className="mt-0.5 font-text text-[18px] text-ink-muted">{lifeYears(person)}</p>}
           {kin && (
             <p
               className={clsx(
-                'mt-1 font-serif text-[17px] italic',
-                kin.byMarriage ? 'text-ink-muted' : 'text-gilt-deep',
+                'mt-1 font-text text-[17px] italic',
+                kin.byMarriage ? 'text-ink-muted' : 'text-accent-deep',
               )}
             >
               {kinshipLabel(kin, locale)}
             </p>
           )}
           {meId === person.id && (
-            <p className="mt-1 font-serif text-[17px] italic text-gilt-deep">{t.person.thatsYou}</p>
+            <p className="mt-1 font-text text-[17px] italic text-accent-deep">{t.person.thatsYou}</p>
           )}
         </div>
       </div>
@@ -152,14 +152,14 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
 
       {p.comments && (
         <section>
-          <h3 className="ornament-heading mb-3">{t.person.notes}</h3>
+          <h3 className="section-heading mb-3">{t.person.notes}</h3>
           <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{p.comments}</p>
         </section>
       )}
 
       {media.length > 0 && (
         <section>
-          <h3 className="ornament-heading mb-3">{t.person.media}</h3>
+          <h3 className="section-heading mb-3">{t.person.media}</h3>
           <ul className="grid grid-cols-3 gap-2">
             {media.map((m) => (
               <li key={m.id}>
@@ -167,7 +167,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
                   href={m.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block aspect-square overflow-hidden rounded-control border border-card-rule bg-paper-raised"
+                  className="block aspect-square overflow-hidden rounded-control border border-card-rule bg-canvas-raised"
                   title={m.title ?? undefined}
                 >
                   {m.kind === 'image' ? (
@@ -187,7 +187,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
 
       {/* Family */}
       <section className="flex flex-col gap-4">
-        <h3 className="ornament-heading">{t.person.family}</h3>
+        <h3 className="section-heading">{t.person.family}</h3>
         <Relatives
           title={t.person.parents}
           ids={parents}
@@ -232,7 +232,7 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <>
       <dt className="text-ink-muted">{label}</dt>
-      <dd className="font-serif text-[17px] leading-6 text-ink">{value}</dd>
+      <dd className="font-text text-[17px] leading-6 text-ink">{value}</dd>
     </>
   )
 }
@@ -266,12 +266,12 @@ function Relatives({
               <button
                 type="button"
                 onClick={() => onOpen(id)}
-                className="flex w-full items-center gap-3 rounded-control border border-card-rule bg-card/70 px-2.5 py-2 text-left transition-colors hover:border-gilt hover:bg-card"
+                className="flex w-full items-center gap-3 rounded-control border border-card-rule bg-card/70 px-2.5 py-2 text-left transition-colors hover:border-accent hover:bg-card"
               >
                 <Portrait person={p} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-serif text-base font-semibold text-ink">{p.name}</span>
-                  <span className="block font-serif text-[14px] text-ink-muted">
+                  <span className="block truncate font-text text-base font-semibold text-ink">{p.name}</span>
+                  <span className="block font-text text-[14px] text-ink-muted">
                     {[lifeYears(p), t].filter(Boolean).join(', ')}
                   </span>
                 </span>
@@ -286,9 +286,9 @@ function Relatives({
               type="button"
               onClick={add.run}
               data-tour={add.tour}
-              className="flex w-full items-center gap-3 rounded-control border border-dashed border-gilt/60 px-2.5 py-2 text-left text-[15px] text-ink-muted transition-colors hover:border-gilt hover:bg-gilt-soft/40 hover:text-ink"
+              className="flex w-full items-center gap-3 rounded-control border border-dashed border-frame/60 px-2.5 py-2 text-left text-[15px] text-ink-muted transition-colors hover:border-accent hover:bg-accent-soft/40 hover:text-ink"
             >
-              <span className="grid h-8 w-8 place-items-center rounded-full border border-gilt/50 text-gilt-deep">
+              <span className="grid h-8 w-8 place-items-center rounded-full border border-frame/50 text-accent-deep">
                 <Plus className="h-4 w-4" />
               </span>
               {add.label}

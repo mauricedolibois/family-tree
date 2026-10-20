@@ -79,7 +79,7 @@ export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?:
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={onKeyDown}
-          className="h-10 w-full rounded-full border border-transparent bg-paper-raised pl-10 pr-9 text-[15px] text-ink placeholder:text-ink-faint focus:border-gilt focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+          className="h-10 w-full rounded-full border border-transparent bg-canvas-raised pl-10 pr-9 text-[15px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
           <button
@@ -109,13 +109,13 @@ export function SearchBox({ autoFocus, onDone }: { autoFocus?: boolean; onDone?:
                 onMouseEnter={() => setActive(i)}
                 className={clsx(
                   'flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left',
-                  i === active && 'bg-paper-raised',
+                  i === active && 'bg-canvas-raised',
                 )}
               >
                 <Portrait person={p} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-serif text-base font-semibold text-ink">{p.name}</span>
-                  <span className="block truncate font-serif text-[14px] text-ink-muted">
+                  <span className="block truncate font-text text-base font-semibold text-ink">{p.name}</span>
+                  <span className="block truncate font-text text-[14px] text-ink-muted">
                     {[lifeYears(p), p.profile?.city].filter(Boolean).join(', ')}
                   </span>
                 </span>

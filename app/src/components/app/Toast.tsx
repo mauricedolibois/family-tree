@@ -40,14 +40,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toast && (
           <div
             key={toast.id}
-            className="pointer-events-auto flex max-w-md items-center gap-3 rounded-full bg-linen py-2 pl-4 pr-2 text-[15px] text-card shadow-lifted"
+            className="pointer-events-auto flex max-w-md items-center gap-3 rounded-full bg-primary py-2 pl-4 pr-2 text-[15px] text-on-primary shadow-lifted"
           >
             <span>{toast.message}</span>
             {toast.undo && (
               <button
                 type="button"
                 onClick={() => void undo(toast.undo!)}
-                className="rounded-full px-3 py-1 text-sm font-medium text-card underline decoration-gilt/70 underline-offset-4 hover:bg-white/10"
+                className="rounded-full px-3 py-1 text-sm font-medium text-on-primary underline decoration-accent/70 underline-offset-4 hover:bg-on-primary/10"
               >
                 {t.history.undo}
               </button>
@@ -59,7 +59,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   toast.action!.run()
                   setToast(null)
                 }}
-                className="rounded-full bg-gilt px-3 py-1 text-sm font-medium text-linen-deep hover:bg-gilt-soft"
+                className="rounded-full bg-accent px-3 py-1 text-sm font-medium text-on-accent hover:bg-accent/85"
               >
                 {toast.action.label}
               </button>

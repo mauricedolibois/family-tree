@@ -28,7 +28,7 @@ export function Portrait({
   return (
     <span
       className={clsx(
-        'cameo relative inline-grid shrink-0 place-items-center overflow-hidden bg-portrait font-display text-linen',
+        'portrait-frame relative inline-grid shrink-0 place-items-center overflow-hidden bg-portrait font-display text-on-portrait',
         SIZES[size],
         shape,
         className,

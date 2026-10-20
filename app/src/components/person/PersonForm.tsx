@@ -244,8 +244,8 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
               <li key={m.id} className="relative" data-tour="media-item">
                 <div
                   className={clsx(
-                    'aspect-square overflow-hidden rounded-control border bg-paper-raised',
-                    isTitle ? 'border-gilt ring-2 ring-gilt' : 'border-card-rule',
+                    'aspect-square overflow-hidden rounded-control border bg-canvas-raised',
+                    isTitle ? 'border-accent ring-2 ring-accent' : 'border-card-rule',
                   )}
                 >
                   {m.kind === 'image' ? (
@@ -266,7 +266,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
                       title={isTitle ? t.form.profilePhoto : t.form.useAsProfilePhoto}
                       className={clsx(
                         'grid h-7 w-7 place-items-center rounded-full shadow',
-                        isTitle ? 'bg-gilt text-linen-deep' : 'bg-card/90 text-ink-muted',
+                        isTitle ? 'bg-accent text-on-accent' : 'bg-card/90 text-ink-muted',
                       )}
                     >
                       <Star className="h-3.5 w-3.5" fill={isTitle ? 'currentColor' : 'none'} />
@@ -293,7 +293,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
               onClick={() => fileInput.current?.click()}
               data-tour="add-photo"
               disabled={uploading}
-              className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line/70 text-sm text-ink-muted hover:border-linen hover:text-linen"
+              className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line/70 text-sm text-ink-muted hover:border-link hover:text-link"
             >
               <ImagePlus className="h-6 w-6" />
               {uploading ? t.form.uploading : t.form.addFile}

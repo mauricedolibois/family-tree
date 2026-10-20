@@ -44,8 +44,6 @@ export const fr: Messages = {
   topBar: {
     closeSearch: 'Fermer la recherche',
     searchPerson: 'Chercher une personne',
-    daylight: 'Lumière du jour',
-    candlelight: 'Lueur de bougie',
     menu: 'Menu',
     birthdays: 'Prochains anniversaires',
     exportPdf: 'Exporter en PDF',
@@ -584,6 +582,14 @@ export const fr: Messages = {
       'nothing to grant': 'Choisis un arbre ou des droits d’admin.',
       'invalid name': 'Indique un nom.',
     },
+  },
+  theme: {
+    design: 'Style',
+    mode: 'Clair ou sombre',
+    names: { classic: 'Classique', modern: 'Moderne' },
+    modes: { light: 'Clair', dark: 'Sombre', system: 'Automatique' },
+    toLight: 'Affichage clair',
+    toDark: 'Affichage sombre',
   },
   history: {
     title: 'Historique',

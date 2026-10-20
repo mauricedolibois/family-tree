@@ -79,15 +79,15 @@ export default function AdminPage() {
       <Head>
         <title>{t.admin.title}</title>
       </Head>
-      <div className="desk min-h-dvh">
-        <header className="book-cover flex h-14 items-center gap-3 px-3 pt-[env(safe-area-inset-top)] text-card sm:px-5">
+      <div className="page-backdrop min-h-dvh">
+        <header className="header-bar flex h-14 items-center gap-3 px-3 pt-[env(safe-area-inset-top)] text-on-primary sm:px-5">
           <Link
             href="/?pick=1"
-            className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-card/90 hover:bg-white/10"
+            className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-on-primary/90 hover:bg-on-primary/10"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> {t.account.backToTrees}
           </Link>
-          <h1 className="flex-1 truncate font-display text-[1.35rem] text-gilt-soft">{t.admin.title}</h1>
+          <h1 className="flex-1 truncate font-display text-[1.35rem] text-on-primary-accent">{t.admin.title}</h1>
           <LanguagePicker tone="cover" className="hidden sm:inline-flex" />
         </header>
 
@@ -279,7 +279,7 @@ function TreesCard({ trees, users, run }: { trees: Tree[]; users: AdminUserView[
               <>
                 <Link
                   href={`/tree/${tree.id}`}
-                  className="min-w-0 flex-1 truncate font-serif text-[17px] font-semibold text-ink underline-offset-4 hover:underline"
+                  className="min-w-0 flex-1 truncate font-text text-[17px] font-semibold text-ink underline-offset-4 hover:underline"
                 >
                   {tree.name}
                 </Link>
@@ -399,7 +399,7 @@ function TrashCard({ trash, date, run }: { trash: DeletedTree[]; date: (iso: str
         {trash.map((tree) => (
           <li key={tree.id} className="flex flex-wrap items-center gap-2 py-2">
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-serif text-[17px] font-semibold text-ink">{tree.name}</span>
+              <span className="block truncate font-text text-[17px] font-semibold text-ink">{tree.name}</span>
               <span className="block text-[13px] text-ink-muted">{t.admin.deletedOn(date(tree.deleted_at))}</span>
             </span>
             <Button size="sm" onClick={() => run(`/api/admin/trees/${tree.id}`, { restore: true }, 'PATCH')}>
@@ -438,7 +438,7 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
               className={clsx('rounded-control border border-card-rule bg-card/70 p-3', u.disabled && 'opacity-70')}
             >
               <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-serif text-[17px] font-semibold text-ink">{u.name}</span>
+                <span className="font-text text-[17px] font-semibold text-ink">{u.name}</span>
                 <span className="text-sm text-ink-muted">{u.email}</span>
                 {u.is_admin && <Badge>{t.roles.admin}</Badge>}
                 {!u.verified && <Badge>{t.admin.unverified}</Badge>}
@@ -461,7 +461,7 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                       aria-label={t.admin.removeFromTree(m.name)}
                       title={t.admin.removeFromTree(m.name)}
                       onClick={() => run(`/api/admin/users/${u.id}/trees/${m.id}`, null, 'DELETE')}
-                      className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-danger"
+                      className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-danger"
                     >
                       <UserMinus className="h-4 w-4" />
                     </button>

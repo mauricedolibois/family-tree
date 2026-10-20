@@ -1,8 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 
-// "Parchment & ink" design system: every colour comes from CSS variables in
-// src/styles/tokens.css. This file only exposes them to Tailwind under
-// meaningful names (e.g. bg-linen, text-ink-muted).
+// Exposes the theme to Tailwind under role names (bg-primary, text-ink-muted,
+// font-display, rounded-card). The values come from CSS variables that every theme
+// in src/styles/themes/ sets, so switching the theme switches the whole interface
+// (see docs/themes.md).
 const v = (name) => `rgb(var(--${name}) / <alpha-value>)`
 
 module.exports = {
@@ -10,22 +11,30 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        linen: { DEFAULT: v('linen'), hover: v('linen-hover'), deep: v('linen-deep'), tint: v('linen-tint') },
-        paper: { DEFAULT: v('paper'), raised: v('paper-raised') },
+        primary: { DEFAULT: v('primary'), hover: v('primary-hover'), deep: v('primary-deep'), tint: v('primary-tint') },
+        // Text and icons on a coloured background, and links
+        'on-primary': { DEFAULT: v('on-primary'), accent: v('on-primary-accent') },
+        'on-accent': v('on-accent'),
+        'on-tint': v('on-tint'),
+        'on-portrait': v('on-portrait'),
+        link: v('link'),
+        canvas: { DEFAULT: v('canvas'), raised: v('canvas-raised') },
         card: { DEFAULT: v('card'), edge: v('card-edge'), rule: v('card-rule'), past: v('card-past') },
         ink: { DEFAULT: v('ink'), muted: v('ink-muted'), faint: v('ink-faint') },
         line: v('line'),
-        gilt: { DEFAULT: v('gilt'), light: v('gilt-light'), soft: v('gilt-soft'), deep: v('gilt-deep') },
+        // Decorative borders around cards, panels and frames
+        frame: v('frame'),
+        accent: { DEFAULT: v('accent'), light: v('accent-light'), soft: v('accent-soft'), deep: v('accent-deep') },
         portrait: v('portrait'),
         danger: { DEFAULT: v('danger'), soft: v('danger-soft') },
       },
       fontFamily: {
-        // Titles and headings: old letterpress typeface
-        display: ['"IM Fell English"', '"EB Garamond Variable"', 'Georgia', 'serif'],
-        // Names: classic Garamond
-        serif: ['"EB Garamond Variable"', 'Georgia', 'serif'],
-        // Controls and data: highly legible
-        sans: ['"Atkinson Hyperlegible Next"', 'system-ui', 'sans-serif'],
+        // Titles and headings
+        display: 'var(--font-display)',
+        // Names and longer text
+        text: 'var(--font-text)',
+        // Controls and data; also the default for everything else
+        sans: 'var(--font-ui)',
       },
       fontSize: {
         // Type scale (ratio ~1.2) with matching line heights
@@ -38,14 +47,14 @@ module.exports = {
         '3xl': ['2.074rem', { lineHeight: '2.5rem' }],
       },
       borderRadius: {
-        card: '12px',
-        panel: '20px',
-        control: '10px',
+        card: 'var(--radius-card)',
+        panel: 'var(--radius-panel)',
+        control: 'var(--radius-control)',
       },
       boxShadow: {
-        card: '0 1px 0 rgb(var(--linen) / 0.05), 0 3px 10px -6px rgb(var(--linen) / 0.35)',
-        lifted: '0 2px 0 rgb(var(--linen) / 0.04), 0 12px 32px -12px rgb(var(--linen-deep) / 0.45)',
-        sheet: '0 -8px 32px -16px rgb(var(--linen-deep) / 0.5)',
+        card: '0 1px 0 rgb(var(--shadow) / 0.05), 0 3px 10px -6px rgb(var(--shadow) / 0.35)',
+        lifted: '0 2px 0 rgb(var(--shadow) / 0.04), 0 12px 32px -12px rgb(var(--shadow-strong) / 0.45)',
+        sheet: '0 -8px 32px -16px rgb(var(--shadow-strong) / 0.5)',
       },
       transitionTimingFunction: {
         settle: 'cubic-bezier(0.2, 0.8, 0.2, 1)',

@@ -47,8 +47,6 @@ export const de = {
   topBar: {
     closeSearch: 'Suche schließen',
     searchPerson: 'Person suchen',
-    daylight: 'Tageslicht',
-    candlelight: 'Kerzenlicht',
     menu: 'Menü',
     birthdays: 'Nächste Geburtstage',
     exportPdf: 'Als PDF exportieren',
@@ -586,6 +584,14 @@ export const de = {
       'nothing to grant': 'Wähle einen Stammbaum oder Admin-Rechte.',
       'invalid name': 'Bitte einen Namen eingeben.',
     } as Record<string, string>,
+  },
+  theme: {
+    design: 'Design',
+    mode: 'Hell oder dunkel',
+    names: { classic: 'Klassisch', modern: 'Modern' } as Record<string, string>,
+    modes: { light: 'Hell', dark: 'Dunkel', system: 'Automatisch' } as Record<string, string>,
+    toLight: 'Helle Ansicht',
+    toDark: 'Dunkle Ansicht',
   },
   history: {
     title: 'Verlauf',

@@ -103,15 +103,15 @@ export default function HistoryPage({ treeId }: Props) {
       <Head>
         <title>{tree ? `${t.history.title} – ${tree.name}` : t.history.title}</title>
       </Head>
-      <div className="desk min-h-dvh">
-        <header className="book-cover flex h-14 items-center gap-3 px-3 pt-[env(safe-area-inset-top)] text-card sm:px-5">
+      <div className="page-backdrop min-h-dvh">
+        <header className="header-bar flex h-14 items-center gap-3 px-3 pt-[env(safe-area-inset-top)] text-on-primary sm:px-5">
           <Link
             href={`/tree/${treeId}`}
-            className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-card/90 hover:bg-white/10"
+            className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-on-primary/90 hover:bg-on-primary/10"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> {t.members.backToTree}
           </Link>
-          <h1 className="flex-1 truncate font-display text-[1.35rem] text-gilt-soft">{t.history.title}</h1>
+          <h1 className="flex-1 truncate font-display text-[1.35rem] text-on-primary-accent">{t.history.title}</h1>
           <LanguagePicker tone="cover" className="hidden sm:inline-flex" />
         </header>
 
@@ -144,7 +144,7 @@ export default function HistoryPage({ treeId }: Props) {
                           href={`${api}/${v.id}/download`}
                           title={t.history.download}
                           aria-label={t.history.download}
-                          className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-paper-raised hover:text-ink"
+                          className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
                         >
                           <Download className="h-4 w-4" aria-hidden />
                         </a>

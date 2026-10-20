@@ -7,9 +7,11 @@ import '@fontsource-variable/eb-garamond/wght-italic.css'
 import '@fontsource/atkinson-hyperlegible-next/400.css'
 import '@fontsource/atkinson-hyperlegible-next/500.css'
 import '@fontsource/atkinson-hyperlegible-next/600.css'
+import '@fontsource-variable/inter/wght.css'
 import '../styles/globals.css'
 import { I18nProvider, useI18n } from '@/i18n/I18nProvider'
 import { isLocale } from '@/i18n/locales'
+import { ThemeProvider } from '@/themes/ThemeProvider'
 
 function DefaultTitle() {
   const { t } = useI18n()
@@ -26,8 +28,10 @@ export default function App({ Component, pageProps }: AppProps) {
   const locale = isLocale(pageProps.locale) ? pageProps.locale : undefined
   return (
     <I18nProvider initial={locale}>
-      <DefaultTitle />
-      <Component {...pageProps} />
+      <ThemeProvider>
+        <DefaultTitle />
+        <Component {...pageProps} />
+      </ThemeProvider>
     </I18nProvider>
   )
 }
