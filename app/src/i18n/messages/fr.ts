@@ -49,7 +49,7 @@ export const fr: Messages = {
     exportPdf: 'Exporter en PDF',
     startTour: 'Lancer la visite guidée',
     logout: 'Se déconnecter',
-    download: 'Télécharger (avec les photos)',
+    download: 'Télécharger',
     switchTree: 'Changer d’arbre',
   },
   errors: {
@@ -467,10 +467,9 @@ export const fr: Messages = {
   account: {
     title: 'Mon compte',
     intro: (email) => `Connecté·e en tant que ${email}`,
-    backToTrees: 'Retour aux arbres',
     profile: 'Profil',
     name: 'Nom',
-    languageHint: 'Choisis la langue en bas de la page ; elle sert aussi pour les e-mails qui te sont envoyés.',
+    languageHint: 'Choisis la langue dans le menu en haut à droite.',
     saved: 'Enregistré.',
     email: 'Adresse e-mail',
     unverified: 'Cette adresse n’est pas encore confirmée.',
@@ -511,7 +510,6 @@ export const fr: Messages = {
     intro: (tree) => `Qui fait partie de l’arbre « ${tree} » ? Invite ici de nouvelles personnes et gère les membres.`,
     rolesHelp:
       'Lecture seule : consulter l’arbre. Peut modifier : aussi modifier les personnes et ajouter des photos. Modérateur : en plus inviter et gérer les membres.',
-    backToTree: 'Retour à l’arbre',
     noMembers: 'Personne n’en fait encore partie, à part les admins.',
     remove: 'Retirer',
     confirmRemove: (name, tree) => `Retirer ${name} de l’arbre « ${tree} » ?`,
@@ -559,6 +557,10 @@ export const fr: Messages = {
     treesTitle: 'Arbres généalogiques',
     memberCount: (n) => (n === 1 ? '1 membre' : `${n} membres`),
     notMember: 'tu n’en es pas membre',
+    memberOf: 'Membre de',
+    inNoTree: 'Dans aucun arbre',
+    addToOtherTree: 'Ajouter à un autre arbre',
+    chooseTree: 'Choisir un arbre …',
     rename: 'Renommer',
     newTreeName: 'Nom du nouvel arbre',
     createTree: 'Créer',
@@ -593,8 +595,13 @@ export const fr: Messages = {
     toLight: 'Affichage clair',
     toDark: 'Affichage sombre',
   },
+  nav: {
+    toTree: 'Vers l’arbre',
+    myTrees: 'Mes arbres',
+  },
   history: {
-    title: 'Historique',
+    title: 'Historique et sauvegardes',
+    versions: 'Versions précédentes',
     intro: (tree) =>
       `Versions précédentes de « ${tree} ». L’arbre entier est sauvegardé avant chaque modification, import et restauration.`,
     undo: 'Annuler',

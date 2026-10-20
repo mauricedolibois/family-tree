@@ -6,24 +6,25 @@ import Head from 'next/head'
 import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
 import clsx from 'clsx'
-import { ArrowLeft, KeyRound, Plus, Trash2, Upload, UserMinus } from 'lucide-react'
+import { KeyRound, Plus, Trash2, Upload, UserMinus } from 'lucide-react'
 import type { AdminUserView } from '@/lib/accounts'
-import { requirePageUser } from '@/lib/pageAuth'
+import { navContext, requirePageUser } from '@/lib/pageAuth'
 import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
-import { LanguagePicker } from '@/components/ui/LanguagePicker'
+import { PageHeader } from '@/components/app/PageHeader'
+import type { NavContext } from '@/components/app/NavMenu'
 import { Badge, Card, LinkBox, RoleSelect, selectClass as select, sendForm } from '@/components/manage/parts'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
 
-type Props = { locale: Locale }
+type Props = { nav: NavContext; locale: Locale }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const auth = await requirePageUser(ctx)
   if (auth.redirect) return { redirect: auth.redirect }
   if (!auth.user.is_admin) return { notFound: true }
-  return { props: { locale: localeFromRequest(ctx.req) } }
+  return { props: { nav: await navContext(auth.user), locale: localeFromRequest(ctx.req) } }
 }
 
 type Role = 'viewer' | 'editor' | 'moderator'
@@ -49,7 +50,7 @@ type Overview = {
   invites: Invite[]
 }
 
-export default function AdminPage() {
+export default function AdminPage({ nav }: Props) {
   const { t, locale } = useI18n()
   const [data, setData] = useState<Overview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -80,16 +81,7 @@ export default function AdminPage() {
         <title>{t.admin.title}</title>
       </Head>
       <div className="page-backdrop min-h-dvh">
-        <header className="header-bar flex h-14 items-center gap-3 px-3 pt-[env(safe-area-inset-top)] text-on-primary sm:px-5">
-          <Link
-            href="/?pick=1"
-            className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-on-primary/90 hover:bg-on-primary/10"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden /> {t.account.backToTrees}
-          </Link>
-          <h1 className="flex-1 truncate font-display text-[1.35rem] text-on-primary-accent">{t.admin.title}</h1>
-          <LanguagePicker tone="cover" className="hidden sm:inline-flex" />
-        </header>
+        <PageHeader title={t.admin.title} nav={nav} current="admin" />
 
         <main className="mx-auto flex max-w-4xl flex-col gap-5 p-3 sm:p-5">
           {error && <FormMessage>{error}</FormMessage>}
@@ -457,7 +449,10 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                 {self && <Badge>{t.admin.you}</Badge>}
               </div>
 
-              <ul className="mt-2 flex flex-col gap-1.5">
+              <p className="mt-2 text-[13px] font-medium text-ink-muted">
+                {u.trees.length ? t.admin.memberOf : t.admin.inNoTree}
+              </p>
+              <ul className="mt-1 flex flex-col gap-1.5">
                 {u.trees.map((m) => (
                   <li key={m.id} className="flex items-center gap-2 text-[15px]">
                     <span className="min-w-0 flex-1 truncate text-ink">{m.name}</span>
@@ -538,22 +533,35 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
   )
 }
 
+/** Folded away by default, so it never reads like a membership */
 function AddToTree({ trees, onAdd }: { trees: Tree[]; onAdd: (treeId: string, role: Role) => void }) {
   const { t } = useI18n()
-  // Only what was picked is remembered, and only while it is still offered: the
-  // list shrinks as soon as the person joins a tree, and the shown and the sent
-  // tree must never differ
-  const [picked, setPicked] = useState<string | null>(null)
-  const treeId = trees.some((tr) => tr.id === picked) ? picked! : trees[0].id
+  const [open, setOpen] = useState(false)
+  // Nothing preselected: the tree is always a deliberate choice, and only while it is still offered
+  const [picked, setPicked] = useState('')
+  const treeId = trees.some((tr) => tr.id === picked) ? picked : ''
   const [role, setRole] = useState<Role>('viewer')
+
+  if (!open) {
+    return (
+      <div className="mt-1">
+        <Button size="sm" variant="quiet" icon={<Plus className="h-4 w-4" />} onClick={() => setOpen(true)}>
+          {t.admin.addToOtherTree}
+        </Button>
+      </div>
+    )
+  }
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
+    <div className="mt-2 flex flex-wrap items-center gap-2 rounded-control border border-dashed border-card-rule p-2">
       <select
         className={clsx(select, 'min-w-0 flex-1')}
         value={treeId}
         onChange={(e) => setPicked(e.target.value)}
         aria-label={t.admin.tree}
       >
+        <option value="" disabled>
+          {t.admin.chooseTree}
+        </option>
         {trees.map((tr) => (
           <option key={tr.id} value={tr.id}>
             {tr.name}
@@ -561,8 +569,20 @@ function AddToTree({ trees, onAdd }: { trees: Tree[]; onAdd: (treeId: string, ro
         ))}
       </select>
       <RoleSelect className={clsx(select, 'w-40')} value={role} label={t.admin.role} onChange={setRole} />
-      <Button size="sm" icon={<Plus className="h-4 w-4" />} onClick={() => onAdd(treeId, role)}>
+      <Button
+        size="sm"
+        disabled={!treeId}
+        icon={<Plus className="h-4 w-4" />}
+        onClick={() => {
+          onAdd(treeId, role)
+          setPicked('')
+          setOpen(false)
+        }}
+      >
         {t.admin.addToTree}
+      </Button>
+      <Button size="sm" variant="quiet" onClick={() => setOpen(false)}>
+        {t.form.cancel}
       </Button>
     </div>
   )
