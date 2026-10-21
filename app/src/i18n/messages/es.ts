@@ -527,7 +527,7 @@ export const es: Messages = {
       hideRestHint: 'Sin marcar, la persona ve todo el árbol pero solo edita su parte.',
       viewerHint: 'Quien solo puede ver, ve únicamente esta parte.',
       spouseHint:
-        'El cónyuge de la persona elegida se ve, pero no se puede editar. Las personas añadidas después forman parte mientras queden dentro de estos límites.',
+        'El cónyuge de la persona elegida se ve, pero no se puede editar. Solo se pueden añadir personas nuevas dentro de estos límites; los hijos de los hermanos, por ejemplo, a partir de la línea «Primos».',
       help: 'Práctico para la familia política: añaden su propia familia (padres, hermanos) sin cambiar el resto y, si quieres, sin verlo.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden

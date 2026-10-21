@@ -55,10 +55,13 @@ Per member the moderator chooses:
   their part.
 
 Typical use: someone who married into the family adds their own parents and
-siblings without seeing or changing the rest. People they add belong to their
-part as long as they fall within its limits (adding ancestors works best with
-"all" generations of ancestors, the default). A new child of the start person also
-gets the spouse as second parent.
+siblings without seeing or changing the rest. New people can only be added where
+they stay within the part, so the member can still edit them afterwards: the
+interface offers "add" only there, and the server refuses anything else. For
+example a sibling's child needs side lines "cousins", a grandparent needs two
+generations of ancestors ("all", the default, always works), and side lines come
+without their spouses, as in "Only this line". A new child of the start person
+also gets the spouse as second parent.
 
 The server enforces it (`app/src/family/scope.ts`): it cuts what it sends, and on
 saving it takes over only the people of the part and new people linked to them;

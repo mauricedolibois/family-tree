@@ -526,7 +526,7 @@ export const en: Messages = {
       hideRestHint: 'Unticked, they see the whole tree but edit only their part.',
       viewerHint: 'Members who may only view see just this part.',
       spouseHint:
-        'The chosen person’s spouse is visible but cannot be edited. People added later belong to the part as long as they fall within these limits.',
+        'The chosen person’s spouse is visible but cannot be edited. New people can only be added within these limits – children of siblings, for example, only from the “Cousins” side line on.',
       help: 'Handy for in-laws: they add their own family (parents, siblings) without changing the rest – and, if you like, without seeing it.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
