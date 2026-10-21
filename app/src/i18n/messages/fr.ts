@@ -71,6 +71,7 @@ export const fr: Messages = {
     },
     saveFailed: 'L’enregistrement a échoué.',
     deleteFailed: 'La suppression a échoué.',
+    outsideScope: 'Cette modification concerne des personnes hors de ta partie de l’arbre et n’a pas été enregistrée.',
   },
   family: {
     loading: 'Chargement de l’arbre',
@@ -80,6 +81,15 @@ export const fr: Messages = {
     conflict:
       'L’arbre a été modifié entre-temps sur un autre appareil. Ta dernière modification n’a pas été enregistrée.',
     loadLatest: 'Charger la dernière version',
+    scopeGone: 'Ta partie de l’arbre n’existe plus.',
+    scopeGoneHint:
+      'La personne à partir de laquelle tu avais accès a été supprimée. Un modérateur peut t’attribuer une nouvelle partie.',
+    partOf: (name: string, hidden: boolean) =>
+      hidden ? `Partie à partir de ${name}` : `Modification à partir de ${name}`,
+    partOfHint: (hidden: boolean) =>
+      hidden
+        ? 'Tu vois et modifies seulement cette partie de l’arbre.'
+        : 'Tu vois tout l’arbre, mais tu ne modifies que cette partie.',
   },
   search: {
     label: 'Chercher une personne',
@@ -513,7 +523,34 @@ export const fr: Messages = {
     noMembers: 'Personne n’en fait encore partie, à part les admins.',
     remove: 'Retirer',
     confirmRemove: (name, tree) => `Retirer ${name} de l’arbre « ${tree} » ?`,
+    access: {
+      label: 'Accès',
+      whole: 'Tout l’arbre',
+      part: 'Seulement une partie de l’arbre',
+      from: 'À partir de',
+      choose: '– Choisir une personne –',
+      all: 'toutes',
+      hideRest: 'Masquer le reste de l’arbre',
+      hideRestHint: 'Sans cette case, la personne voit tout l’arbre mais ne modifie que sa partie.',
+      viewerHint: 'Qui peut seulement consulter ne voit que cette partie.',
+      spouseHint:
+        'Le conjoint de la personne choisie est visible mais pas modifiable. Les personnes ajoutées ensuite en font partie tant qu’elles restent dans ces limites.',
+      help: 'Pratique pour la belle-famille : elle ajoute sa propre famille (parents, frères et sœurs) sans modifier le reste – et, si tu veux, sans le voir.',
+      summary: (name: string, hidden: boolean, editor: boolean) =>
+        hidden
+          ? `Ne voit que la partie à partir de ${name}`
+          : editor
+          ? `Voit tout, ne modifie que la partie à partir de ${name}`
+          : `Voit tout (la partie à partir de ${name} vaut pour les modifications)`,
+      gone: 'La personne de départ n’est plus dans l’arbre',
+      edit: 'Modifier l’accès',
+      save: 'Enregistrer',
+      cancel: 'Annuler',
+      badge: 'Accès partiel',
+    },
     status: {
+      'invalid scope': 'Choisis une personne de l’arbre.',
+      'moderators see the whole tree': 'Les modérateurs ont toujours accès à tout l’arbre.',
       self: 'Tu ne peux pas modifier ton propre rôle ici.',
       'too many attempts': 'Trop d’invitations en peu de temps. Réessaie plus tard.',
       'invalid email': 'Cette adresse e-mail ne semble pas valide.',

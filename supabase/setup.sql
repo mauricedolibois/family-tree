@@ -1,4 +1,4 @@
--- Family tree database, version 6: everything a new installation needs.
+-- Family tree database, version 7: everything a new installation needs.
 --
 -- Run the whole file once in the Supabase SQL editor (or with psql) on a database
 -- without family tree tables. Existing installations do not use this file; they
@@ -80,7 +80,12 @@ create table public.memberships (
   tree_id uuid not null references public.trees (id) on delete cascade,
   role text not null check (role in ('viewer', 'editor', 'moderator')),
   created_at timestamptz not null default now(),
-  primary key (user_id, tree_id)
+  -- Only part of the tree (app/src/family/scope.ts): a start person with ancestors,
+  -- descendants and side lines, and whether the rest is hidden. Null = the whole
+  -- tree. Moderators always have the whole tree: they see history and imports.
+  scope jsonb,
+  primary key (user_id, tree_id),
+  constraint memberships_scope_role check (scope is null or role in ('viewer', 'editor'))
 );
 create index memberships_tree on public.memberships (tree_id);
 
@@ -100,8 +105,11 @@ create table public.invites (
   used_at timestamptz,
   used_by uuid references public.users (id) on delete set null,
   revoked_at timestamptz,
+  -- Part of the tree the membership will get, as in memberships.scope
+  scope jsonb,
   constraint invites_role_with_tree check ((tree_id is null) = (role is null)),
-  constraint invites_grants_something check (make_admin or tree_id is not null)
+  constraint invites_grants_something check (make_admin or tree_id is not null),
+  constraint invites_scope_role check (scope is null or role in ('viewer', 'editor'))
 );
 
 -- One-time tokens for email verification and password reset (hashed like invites)
@@ -130,7 +138,7 @@ create table public.app_meta (
   key text primary key,
   value text not null
 );
-insert into public.app_meta (key, value) values ('schema_version', '6');
+insert into public.app_meta (key, value) values ('schema_version', '7');
 
 -- ── Access ───────────────────────────────────────────────────────────────────
 
@@ -270,4 +278,4 @@ notify pgrst, 'reload schema';
 
 commit;
 
-select 'Database is set up (version 6).' as result;
+select 'Database is set up (version 7).' as result;

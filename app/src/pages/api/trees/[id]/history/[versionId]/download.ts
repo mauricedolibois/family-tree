@@ -1,7 +1,7 @@
 // One version of the tree as a ZIP file with its photos, like the download of the
 // current tree. For the tree's moderators and admins.
 
-import { managedTree, treeAccess, withUser } from '@/lib/auth'
+import { managedTree, mayReadAllMedia, withUser } from '@/lib/auth'
 import { loadVersion } from '@/lib/db'
 import { downloadName, writeExport } from '@/lib/treeArchive'
 
@@ -26,6 +26,6 @@ export default withUser('api/trees/[id]/history/[versionId]/download', async (re
   await writeExport(res, {
     name: tree.name,
     tree: version.tree,
-    mayRead: async (id) => id === tree.id || !!(await treeAccess(user, id)),
+    mayRead: async (id) => id === tree.id || (await mayReadAllMedia(user, id)),
   })
 })

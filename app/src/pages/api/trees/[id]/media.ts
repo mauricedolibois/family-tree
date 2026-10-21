@@ -5,7 +5,8 @@ import { IncomingForm, type File } from 'formidable'
 import fs from 'fs'
 import { canEdit, currentUser, treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
-import { ALLOWED_TYPES, storeMedia } from '@/lib/media'
+import { ALLOWED_TYPES, parseMediaUrl, storeMedia } from '@/lib/media'
+import { rememberUpload } from '@/lib/treeScope'
 import { logError } from '@/lib/log'
 
 export const config = { api: { bodyParser: false } }
@@ -37,9 +38,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Checked before reading the body, so nobody without rights can push 20 MB at the server
   let treeId: string | null
+  let userId: string
   try {
     const user = await currentUser(req)
     if (!user) return res.status(401).json({ error: 'unauthorized' })
+    userId = user.id
     treeId = treeIdParam(req.query.id)
     const access = treeId ? await treeAccess(user, treeId) : null
     if (!treeId || !access) return res.status(404).json({ error: 'not found' })
@@ -62,7 +65,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const f of files) {
       const buffer = await fs.promises.readFile(f.filepath)
       // The bucket is private; /api/media serves the file to people who may see the tree
-      urls.push(await storeMedia(treeId!, f.originalFilename ?? 'datei', buffer, f.mimetype!))
+      const url = await storeMedia(treeId!, f.originalFilename ?? 'datei', buffer, f.mimetype!)
+      // Members limited to a part may open it before it is saved with a person
+      const ref = parseMediaUrl(url)
+      if (ref) rememberUpload(userId, ref.treeId, ref.file)
+      urls.push(url)
     }
     return res.status(200).json({ urls })
   } catch (err) {

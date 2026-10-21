@@ -3,6 +3,7 @@
 import { createInvite, looksLikeEmail, type Role, type UserRow } from './accounts'
 import { mailInvite } from './accountMail'
 import { hashToken, newToken } from './tokens'
+import type { TreeScope } from '@/family/scope'
 
 const MAX_DAYS = 30
 const DEFAULT_DAYS = 7
@@ -26,6 +27,8 @@ export async function issueInvite(input: {
   email: string | null
   tree: { id: string; name: string } | null
   role: Role | null
+  /** The part of the tree the new member gets; left out or null for the whole tree */
+  scope?: TreeScope | null
   makeAdmin: boolean
   days: number
 }): Promise<{ id: string; path: string; mailed: boolean }> {
@@ -35,6 +38,7 @@ export async function issueInvite(input: {
     email: input.email,
     treeId: input.tree?.id ?? null,
     role: input.tree ? input.role : null,
+    scope: input.tree ? input.scope : null,
     makeAdmin: input.makeAdmin,
     createdBy: input.inviter.id,
     expiresAt: new Date(Date.now() + input.days * 24 * 60 * 60 * 1000),

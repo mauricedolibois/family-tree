@@ -70,6 +70,7 @@ export const es: Messages = {
     },
     saveFailed: 'Error al guardar.',
     deleteFailed: 'Error al eliminar.',
+    outsideScope: 'Este cambio afecta a personas fuera de tu parte del árbol y no se ha guardado.',
   },
   family: {
     loading: 'Cargando el árbol',
@@ -78,6 +79,12 @@ export const es: Messages = {
     reload: 'Volver a cargar',
     conflict: 'El árbol se ha modificado mientras tanto en otro dispositivo. Tu último cambio no se ha guardado.',
     loadLatest: 'Cargar la versión actual',
+    scopeGone: 'Tu parte del árbol ya no existe.',
+    scopeGoneHint:
+      'Se eliminó la persona a partir de la cual tenías acceso. Un moderador puede asignarte una parte nueva.',
+    partOf: (name: string, hidden: boolean) => (hidden ? `Parte a partir de ${name}` : `Editas a partir de ${name}`),
+    partOfHint: (hidden: boolean) =>
+      hidden ? 'Solo ves y editas esta parte del árbol.' : 'Ves todo el árbol, pero solo editas esta parte.',
   },
   search: {
     label: 'Buscar persona',
@@ -509,7 +516,34 @@ export const es: Messages = {
     noMembers: 'Aparte de los administradores, todavía no forma parte nadie.',
     remove: 'Quitar',
     confirmRemove: (name, tree) => `¿Quitar a ${name} del árbol «${tree}»?`,
+    access: {
+      label: 'Acceso',
+      whole: 'Todo el árbol',
+      part: 'Solo una parte del árbol',
+      from: 'A partir de',
+      choose: '– Elegir una persona –',
+      all: 'todas',
+      hideRest: 'Ocultar el resto del árbol',
+      hideRestHint: 'Sin marcar, la persona ve todo el árbol pero solo edita su parte.',
+      viewerHint: 'Quien solo puede ver, ve únicamente esta parte.',
+      spouseHint:
+        'El cónyuge de la persona elegida se ve, pero no se puede editar. Las personas añadidas después forman parte mientras queden dentro de estos límites.',
+      help: 'Práctico para la familia política: añaden su propia familia (padres, hermanos) sin cambiar el resto y, si quieres, sin verlo.',
+      summary: (name: string, hidden: boolean, editor: boolean) =>
+        hidden
+          ? `Solo ve la parte a partir de ${name}`
+          : editor
+          ? `Ve todo, solo edita la parte a partir de ${name}`
+          : `Ve todo (la parte a partir de ${name} cuenta para editar)`,
+      gone: 'La persona de inicio ya no está en el árbol',
+      edit: 'Cambiar acceso',
+      save: 'Guardar',
+      cancel: 'Cancelar',
+      badge: 'Acceso parcial',
+    },
     status: {
+      'invalid scope': 'Elige una persona del árbol.',
+      'moderators see the whole tree': 'Los moderadores siempre tienen acceso a todo el árbol.',
       self: 'Aquí no puedes cambiar tu propio rol.',
       'too many attempts': 'Demasiadas invitaciones en poco tiempo. Vuelve a intentarlo más tarde.',
       'invalid email': 'Esta dirección de correo no parece válida.',

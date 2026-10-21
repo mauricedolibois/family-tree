@@ -4,6 +4,7 @@
 
 import { getSupaAdmin } from './supabaseServer'
 import type { StoredTree } from '@/storage/schema'
+import { parseScope, type TreeScope } from '@/family/scope'
 
 export type Role = 'viewer' | 'editor' | 'moderator'
 
@@ -131,19 +132,25 @@ export async function countActiveAdmins(): Promise<number> {
 export type AdminUserView = PublicUser & {
   disabled: boolean
   created_at: string
-  trees: Array<{ id: string; name: string; role: Role }>
+  /** limited: the member sees or edits only a part of the tree */
+  trees: Array<{ id: string; name: string; role: Role; limited: boolean }>
 }
 
 export async function listUsers(): Promise<AdminUserView[]> {
   const { data, error } = await db()
     .from('users')
-    .select(`${USER_COLUMNS},memberships(role,tree_id,trees(name,deleted_at))`)
+    .select(`${USER_COLUMNS},memberships(role,scope,tree_id,trees(name,deleted_at))`)
     .order('name')
   if (error) throw error
   return (data ?? []).map((u) => {
     // Without generated types supabase-js types embedded rows as arrays; many-to-one embeds are objects
     const row = u as unknown as UserRow & {
-      memberships: Array<{ role: Role; tree_id: string; trees: { name: string; deleted_at: string | null } | null }>
+      memberships: Array<{
+        role: Role
+        scope: unknown
+        tree_id: string
+        trees: { name: string; deleted_at: string | null } | null
+      }>
     }
     return {
       ...toPublicUser(row),
@@ -151,7 +158,7 @@ export async function listUsers(): Promise<AdminUserView[]> {
       created_at: row.created_at,
       trees: row.memberships
         .filter((m) => m.trees && !m.trees.deleted_at)
-        .map((m) => ({ id: m.tree_id, name: m.trees?.name ?? '', role: m.role }))
+        .map((m) => ({ id: m.tree_id, name: m.trees?.name ?? '', role: m.role, limited: !!parseScope(m.scope) }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     }
   })
@@ -284,21 +291,42 @@ async function membershipRows(userId: string) {
   return (data ?? []) as unknown as Array<{ tree_id: string; role: Role; trees: { name: string } | null }>
 }
 
-export async function roleIn(userId: string, treeId: string): Promise<Role | null> {
+export type Membership = { role: Role; scope: TreeScope | null }
+
+/** The user's role in the tree and the part of it they are limited to, if any */
+export async function membershipIn(userId: string, treeId: string): Promise<Membership | null> {
   const { data, error } = await db()
     .from('memberships')
-    .select('role')
+    .select('role,scope')
     .eq('user_id', userId)
     .eq('tree_id', treeId)
     .maybeSingle()
   if (error) throw error
-  return (data?.role as Role | undefined) ?? null
+  if (!data) return null
+  const role = data.role as Role
+  // Moderators always have the whole tree; the database enforces it too
+  return { role, scope: role === 'moderator' ? null : parseScope(data.scope) }
 }
 
-export async function setMembership(userId: string, treeId: string, role: Role): Promise<void> {
-  const { error } = await db()
-    .from('memberships')
-    .upsert({ user_id: userId, tree_id: treeId, role }, { onConflict: 'user_id,tree_id' })
+export async function roleIn(userId: string, treeId: string): Promise<Role | null> {
+  return (await membershipIn(userId, treeId))?.role ?? null
+}
+
+/**
+ * Adds or changes a membership. scope: the part of the tree the member is limited
+ * to, null for the whole tree, left out to keep what they have. Moderators always
+ * get the whole tree.
+ */
+export async function setMembership(
+  userId: string,
+  treeId: string,
+  role: Role,
+  scope?: TreeScope | null,
+): Promise<void> {
+  const row: Record<string, unknown> = { user_id: userId, tree_id: treeId, role }
+  if (role === 'moderator') row.scope = null
+  else if (scope !== undefined) row.scope = scope
+  const { error } = await db().from('memberships').upsert(row, { onConflict: 'user_id,tree_id' })
   if (error) throw error
 }
 
@@ -312,6 +340,8 @@ export type TreeMember = {
   name: string
   email: string
   role: Role
+  /** The part of the tree they are limited to; null for the whole tree */
+  scope: TreeScope | null
   /** Also runs the server; shown so everyone sees who that is */
   isAdmin: boolean
   verified: boolean
@@ -322,20 +352,22 @@ export type TreeMember = {
 export async function listTreeMembers(treeId: string): Promise<TreeMember[]> {
   const { data, error } = await db()
     .from('memberships')
-    .select('role,users(id,name,email,is_admin,email_verified_at,disabled_at)')
+    .select('role,scope,users(id,name,email,is_admin,email_verified_at,disabled_at)')
     .eq('tree_id', treeId)
   if (error) throw error
   const rows = (data ?? []) as unknown as Array<{
     role: Role
+    scope: unknown
     users: Pick<UserRow, 'id' | 'name' | 'email' | 'is_admin' | 'email_verified_at' | 'disabled_at'> | null
   }>
   return rows
     .filter((r) => r.users)
-    .map(({ role, users: u }) => ({
+    .map(({ role, scope, users: u }) => ({
       id: u!.id,
       name: u!.name,
       email: u!.email,
       role,
+      scope: role === 'moderator' ? null : parseScope(scope),
       isAdmin: u!.is_admin,
       verified: !!u!.email_verified_at,
       disabled: !!u!.disabled_at,
@@ -350,6 +382,8 @@ export type InviteRow = {
   email: string | null
   tree_id: string | null
   role: Role | null
+  /** The part of the tree the new member gets; null for the whole tree */
+  scope: TreeScope | null
   make_admin: boolean
   created_by: string | null
   created_at: string
@@ -358,13 +392,14 @@ export type InviteRow = {
   revoked_at: string | null
 }
 
-const INVITE_COLUMNS = 'id,email,tree_id,role,make_admin,created_by,created_at,expires_at,used_at,revoked_at'
+const INVITE_COLUMNS = 'id,email,tree_id,role,scope,make_admin,created_by,created_at,expires_at,used_at,revoked_at'
 
 export async function createInvite(input: {
   tokenHash: string
   email: string | null
   treeId: string | null
   role: Role | null
+  scope?: TreeScope | null
   makeAdmin: boolean
   /** null for the first-admin link written at start */
   createdBy: string | null
@@ -377,6 +412,7 @@ export async function createInvite(input: {
       email: input.email ? normalizeEmail(input.email) : null,
       tree_id: input.treeId,
       role: input.role,
+      scope: input.role && input.role !== 'moderator' ? input.scope ?? null : null,
       make_admin: input.makeAdmin,
       created_by: input.createdBy,
       expires_at: input.expiresAt.toISOString(),
@@ -384,7 +420,7 @@ export async function createInvite(input: {
     .select(INVITE_COLUMNS)
     .single()
   if (error) throw error
-  return data
+  return { ...data, scope: parseScope(data.scope) }
 }
 
 export type InviteDetails = InviteRow & {
@@ -403,6 +439,7 @@ function inviteDetails(row: InviteJoin): InviteDetails {
   const { trees, users, ...invite } = row
   return {
     ...invite,
+    scope: parseScope(invite.scope),
     tree_name: trees?.name ?? null,
     inviter_name: users?.name ?? null,
     tree_deleted: !!trees?.deleted_at,

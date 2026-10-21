@@ -3,10 +3,14 @@
 // Loads the tree, keeps it in memory and saves changes.
 // Saves always carry the loaded version: if the tree was changed elsewhere in
 // the meantime, the user gets a notice instead of a silent overwrite.
+// Members limited to a part of the tree get their part from the server (header
+// x-tree-scope); canEditPerson tells which people they may change.
 
+import Link from 'next/link'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { buildIndex, type Tree, type TreeIndex } from '@/family/model'
 import { TREE_VERSION_HEADER } from '@/storage/version'
+import { decodeScope, OutsideScopeError, scopeSets, TREE_SCOPE_HEADER, type TreeScope } from '@/family/scope'
 import { useI18n } from '@/i18n/I18nProvider'
 
 export class TreeConflictError extends Error {
@@ -15,7 +19,7 @@ export class TreeConflictError extends Error {
   }
 }
 
-type Status = 'loading' | 'ready' | 'error'
+type Status = 'loading' | 'ready' | 'error' | 'scope gone'
 
 export type Undo = () => Promise<void>
 
@@ -24,8 +28,12 @@ type FamilyCtx = {
   index: TreeIndex
   familyName: string
   treeId: string
-  /** Editors and admins may change the tree; viewers only read it */
+  /** Editors may change the tree (or their part of it); viewers only read it */
   canEdit: boolean
+  /** May change this person: always for editors of the whole tree, within their part otherwise */
+  canEditPerson: (id: string) => boolean
+  /** The part of the tree the member is limited to; null for the whole tree */
+  scope: TreeScope | null
   /**
    * Saves exactly this version and then displays it. Returns a function that
    * saves the version from before again, for an "Undo" right after the change.
@@ -58,6 +66,7 @@ export function FamilyProvider({
   const [status, setStatus] = useState<Status>('loading')
   const [conflict, setConflict] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [scope, setScope] = useState<TreeScope | null>(null)
   const version = useRef<string | null>(null)
 
   const load = useCallback(async () => {
@@ -73,8 +82,14 @@ export function FamilyProvider({
         window.location.href = '/?gone=1'
         return
       }
+      // The start person of the member's part was removed
+      if (res.status === 403) {
+        setStatus('scope gone')
+        return
+      }
       if (!res.ok) throw new Error(`GET ${url} ${res.status}`)
       version.current = res.headers.get(TREE_VERSION_HEADER)
+      setScope(decodeScope(res.headers.get(TREE_SCOPE_HEADER)))
       setTree((await res.json()) as Tree)
       setConflict(false)
       setStatus('ready')
@@ -119,8 +134,10 @@ export function FamilyProvider({
           window.location.href = '/?gone=1'
           throw new Error('tree gone')
         }
-        // Editing rights taken away meanwhile: reload, the page then shows the tree read-only
         if (res.status === 403) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string; detail?: string }
+          if (body.error === 'outside scope') throw new OutsideScopeError(body.detail)
+          // Editing rights taken away meanwhile: reload, the page then shows the tree read-only
           window.location.reload()
           throw new Error('read only')
         }
@@ -143,11 +160,16 @@ export function FamilyProvider({
   commitRef.current = commit
 
   const index = useMemo(() => (tree ? buildIndex(tree) : null), [tree])
+  // Computed like the server does on saving (family/scope.ts), so buttons only
+  // appear where a change will be accepted
+  const editable = useMemo(() => (tree && scope ? scopeSets(tree, scope).editable : null), [tree, scope])
+  const canEditPerson = useCallback((id: string) => canEdit && (!editable || editable.has(id)), [canEdit, editable])
   const value = useMemo(
-    () => (tree && index ? { tree, index, familyName, treeId, canEdit, commit, saving } : null),
-    [tree, index, familyName, treeId, canEdit, commit, saving],
+    () => (tree && index ? { tree, index, familyName, treeId, canEdit, canEditPerson, scope, commit, saving } : null),
+    [tree, index, familyName, treeId, canEdit, canEditPerson, scope, commit, saving],
   )
 
+  if (status === 'scope gone') return <ScopeGone />
   if (status === 'loading' && !value) return <LoadingScreen />
   if (status === 'error' || !value) return <LoadError onRetry={load} />
 
@@ -185,6 +207,24 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
         >
           {t.family.reload}
         </button>
+      </div>
+    </div>
+  )
+}
+
+function ScopeGone() {
+  const { t } = useI18n()
+  return (
+    <div className="page-backdrop grid h-dvh place-items-center p-6">
+      <div className="surface max-w-sm rounded-panel border border-frame/50 p-8 text-center shadow-lifted" role="alert">
+        <p className="font-text text-xl text-ink">{t.family.scopeGone}</p>
+        <p className="mt-2 text-ink-muted">{t.family.scopeGoneHint}</p>
+        <Link
+          href="/?pick=1"
+          className="mt-6 inline-block rounded-control bg-primary px-5 py-2.5 font-medium text-on-primary hover:bg-primary-hover"
+        >
+          {t.nav.myTrees}
+        </Link>
       </div>
     </div>
   )

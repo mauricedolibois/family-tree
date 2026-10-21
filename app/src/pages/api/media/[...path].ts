@@ -1,14 +1,16 @@
-// Photos and documents of a tree, only for people who may see the tree. The
+// Photos and documents of a tree, only for people who may see the tree; members
+// whose part hides the rest only those of their part (lib/treeScope.ts). The
 // storage bucket is private: the server fetches files with the service key and
 // passes them through, byte ranges included (Safari plays videos only with them).
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Readable } from 'stream'
 import type { ReadableStream as NodeWebStream } from 'stream/web'
-import { currentUser, treeAccess } from '@/lib/auth'
+import { currentUser, treeMembership } from '@/lib/auth'
 import { isUuid } from '@/lib/ids'
 import { ALLOWED_TYPES, openMedia } from '@/lib/media'
 import { logError } from '@/lib/log'
+import { mayOpenInPart } from '@/lib/treeScope'
 
 export const config = { api: { responseLimit: false } }
 
@@ -32,7 +34,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // Same answer without access as for files that do not exist
     const user = await currentUser(req)
-    if (!user || !(await treeAccess(user, treeId))) return res.status(404).end()
+    const membership = user ? await treeMembership(user, treeId) : null
+    if (!user || !membership) return res.status(404).end()
+    const scope = membership.scope
+    if (scope?.hideRest && !(await mayOpenInPart(user.id, treeId, scope, file))) return res.status(404).end()
 
     const headers: Record<string, string> = {
       // Content-Length must stay the length of what the browser receives

@@ -1,4 +1,5 @@
-// A user's role in a tree: PUT {role} sets it, DELETE removes the membership
+// A user's role in a tree: PUT {role} sets it (a part of the tree set on the members
+// page stays; moderators always get the whole tree), DELETE removes the membership
 
 import { getTree, getUser, parseRole, removeMembership, setMembership } from '@/lib/accounts'
 import { withAdmin } from '@/lib/auth'

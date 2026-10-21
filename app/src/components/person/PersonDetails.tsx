@@ -22,7 +22,8 @@ import { useI18n } from '@/i18n/I18nProvider'
 type Props = { person: Person; onEdit: () => void; onAdd: (r: Relation) => void }
 
 export function PersonDetails({ person, onEdit, onAdd }: Props) {
-  const { tree, index, commit, canEdit } = useFamily()
+  const { tree, index, commit, canEditPerson, scope } = useFamily()
+  const canEdit = canEditPerson(person.id)
   const { meId, setMe, focusOn, showLine, lineId, select, showRelation, relation } = useView()
   const { notify } = useToast()
   const [deleting, setDeleting] = useState(false)
@@ -210,7 +211,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         {siblings.length > 0 && <Relatives title={t.person.siblings} ids={siblings} onOpen={focusOn} />}
       </section>
 
-      {canEdit && canDelete(tree, person.id) && (
+      {canEdit && person.id !== scope?.person && canDelete(tree, person.id) && (
         <div className="border-t border-card-rule pt-4">
           <Button variant="danger" size="sm" icon={<Trash2 className="h-4 w-4" />} onClick={remove} disabled={deleting}>
             {t.person.remove}

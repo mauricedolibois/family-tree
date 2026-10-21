@@ -28,7 +28,7 @@ import { localeFromRequest } from '@/i18n/server'
 
 async function grant(invite: InviteDetails, user: UserRow) {
   if (invite.make_admin && !user.is_admin) await updateUser(user.id, { is_admin: true })
-  if (invite.tree_id && invite.role) await setMembership(user.id, invite.tree_id, invite.role)
+  if (invite.tree_id && invite.role) await setMembership(user.id, invite.tree_id, invite.role, invite.scope)
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

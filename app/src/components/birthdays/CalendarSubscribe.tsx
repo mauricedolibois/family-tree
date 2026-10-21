@@ -33,7 +33,7 @@ export function CalendarSubscribe({
   /** Offer "create new link" */
   allowRenew?: boolean
 }) {
-  const { tree, index, treeId, canEdit } = useFamily()
+  const { tree, index, treeId, canEdit, scope } = useFamily()
   const { lineScope } = useView()
   const { notify } = useToast()
   const { t, locale } = useI18n()
@@ -140,7 +140,7 @@ export function CalendarSubscribe({
 
       <p className="text-[13px] leading-snug text-ink-faint">
         {t.subscribe.privacy}
-        {allowRenew && canEdit && path && (
+        {allowRenew && canEdit && !scope && path && (
           <>
             {' '}
             <button

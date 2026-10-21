@@ -455,7 +455,11 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
               <ul className="mt-1 flex flex-col gap-1.5">
                 {u.trees.map((m) => (
                   <li key={m.id} className="flex items-center gap-2 text-[15px]">
-                    <span className="min-w-0 flex-1 truncate text-ink">{m.name}</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-ink">
+                      <span className="truncate">{m.name}</span>
+                      {/* Set on the tree's members page, where the tree can be seen */}
+                      {m.limited && <Badge>{t.members.access.badge}</Badge>}
+                    </span>
                     <RoleSelect
                       className={clsx(select, 'w-40')}
                       value={m.role}
