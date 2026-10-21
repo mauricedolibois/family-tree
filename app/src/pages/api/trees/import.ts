@@ -2,7 +2,7 @@
 // the admin becomes its moderator.
 
 import { createTree, removeTree, setMembership } from '@/lib/accounts'
-import { treeAccess, withAdmin } from '@/lib/auth'
+import { mayReadAllMedia, withAdmin } from '@/lib/auth'
 import { saveTree } from '@/lib/db'
 import { cleanName } from '@/lib/passwords'
 import { ImportError, prepareImport, readImportRequest, unpackImport } from '@/lib/treeArchive'
@@ -21,7 +21,7 @@ export default withAdmin('api/trees/import', async (req, res, admin) => {
     if (!name) return res.status(400).json({ error: 'invalid name' })
     const unpacked = unpackImport(data)
     created = await createTree(name, null)
-    const mayRead = async (id: string) => !!(await treeAccess(admin, id))
+    const mayRead = (id: string) => mayReadAllMedia(admin, id)
     // Files land in the new tree's folder; removeTree below takes them all on failure
     const imported = await prepareImport(unpacked, created.id, mayRead, [])
     const saved = await saveTree(created.id, imported, null)

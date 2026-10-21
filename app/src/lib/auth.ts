@@ -3,7 +3,7 @@
 
 import type { IncomingMessage } from 'http'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getTree, getUser, roleIn, type Role, type UserRow } from './accounts'
+import { getTree, getUser, membershipIn, type Membership, type Role, type UserRow } from './accounts'
 import { treeIdParam } from './ids'
 import { sessionFromReq } from './session'
 import { logError } from './log'
@@ -28,9 +28,25 @@ export type Access = Role
  * everyone at once.
  */
 export async function treeAccess(user: Pick<UserRow, 'id'>, treeId: string): Promise<Access | null> {
-  if (!(await getTree(treeId))) return null
-  return roleIn(user.id, treeId)
+  return (await treeMembership(user, treeId))?.role ?? null
 }
+
+/**
+ * Role and part of the tree (family/scope.ts), under the same rules as treeAccess.
+ * Routes that hand out tree contents use this one: a member whose part hides the
+ * rest gets only their part, everywhere.
+ */
+export async function treeMembership(user: Pick<UserRow, 'id'>, treeId: string): Promise<Membership | null> {
+  if (!(await getTree(treeId))) return null
+  return membershipIn(user.id, treeId)
+}
+
+/** Sees the whole tree: every person, photo and the birthday calendar */
+export const seesWholeTree = (m: Membership | null) => !!m && !m.scope?.hideRest
+
+/** For exports and imports that copy files of other trees: only from trees one sees completely */
+export const mayReadAllMedia = async (user: Pick<UserRow, 'id'>, treeId: string) =>
+  seesWholeTree(await treeMembership(user, treeId))
 
 export const canEdit = (access: Access | null) => access === 'moderator' || access === 'editor'
 

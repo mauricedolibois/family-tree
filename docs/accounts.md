@@ -10,6 +10,8 @@ to several family trees; what they may do is set per tree.
 | **Editor** (per tree) | Read and change the tree, upload photos, renew the calendar link. |
 | **Viewer** (per tree) | Read the tree, use views, birthdays, PDF export and the calendar subscription. |
 
+Viewers and editors can also be limited to **a part of the tree** (see below).
+
 The server checks every request; the interface only hides what a role cannot use.
 Trees someone has no access to answer with "not found", exactly like trees that do
 not exist.
@@ -35,6 +37,37 @@ invitation can send mail to any address.
 
 **Public registration** is off. With `ALLOW_REGISTRATION=true` anyone can sign up
 at `/register` and gets a new tree of their own as its moderator.
+
+## Part of a tree
+
+Moderators can limit a viewer or editor to a part of the tree, on the members page
+(slider button next to the member) or right in the invitation. A part is chosen
+like "Only this line": a start person, how many generations of ancestors and
+descendants, and which side lines (none, siblings, cousins, all). The start
+person's spouse belongs to what the member sees, but not to what they may edit.
+
+Per member the moderator chooses:
+
+- **rest hidden** (always for viewers): the member gets only their part, in the
+  tree, in the download and for photos; the birthday calendar is not offered,
+  because its feed holds every birthday of the tree;
+- **rest visible** (editors only): the member sees everything but changes only
+  their part.
+
+Typical use: someone who married into the family adds their own parents and
+siblings without seeing or changing the rest. People they add belong to their
+part as long as they fall within its limits (adding ancestors works best with
+"all" generations of ancestors, the default). A new child of the start person also
+gets the spouse as second parent.
+
+The server enforces it (`app/src/family/scope.ts`): it cuts what it sends, and on
+saving it takes over only the people of the part and new people linked to them;
+everything else comes from the stored tree, so links to the hidden rest stay
+intact. Changes outside the part are refused with a message. Moderators always
+have the whole tree; making someone a moderator removes their part. If the start
+person is deleted, a member with the rest hidden sees nothing until a moderator
+sets a new part. Limiting someone does not invalidate a calendar link they
+already have: renew the link (birthday list → calendar) if that matters.
 
 ## Mail
 

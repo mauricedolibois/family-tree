@@ -70,6 +70,7 @@ export const en: Messages = {
     },
     saveFailed: 'Saving failed.',
     deleteFailed: 'Deleting failed.',
+    outsideScope: 'This change affects people outside your part of the family tree and was not saved.',
   },
   family: {
     loading: 'Loading family tree',
@@ -78,6 +79,13 @@ export const en: Messages = {
     reload: 'Reload',
     conflict: 'The family tree was changed on another device in the meantime. Your last change was not saved.',
     loadLatest: 'Load latest version',
+    scopeGone: 'Your part of the family tree is gone.',
+    scopeGoneHint: 'The person your access started from was removed. A moderator can give you a new part.',
+    partOf: (name: string, hidden: boolean) => (hidden ? `Part from ${name}` : `Editing from ${name}`),
+    partOfHint: (hidden: boolean) =>
+      hidden
+        ? 'You see and edit only this part of the family tree.'
+        : 'You see the whole family tree but edit only this part.',
   },
   search: {
     label: 'Search person',
@@ -507,7 +515,34 @@ export const en: Messages = {
     noMembers: 'Nobody belongs to it yet apart from the admins.',
     remove: 'Remove',
     confirmRemove: (name, tree) => `Remove ${name} from the ${tree} family tree?`,
+    access: {
+      label: 'Access',
+      whole: 'Whole family tree',
+      part: 'Only part of the family tree',
+      from: 'From person',
+      choose: '– Choose a person –',
+      all: 'all',
+      hideRest: 'Hide the rest of the tree',
+      hideRestHint: 'Unticked, they see the whole tree but edit only their part.',
+      viewerHint: 'Members who may only view see just this part.',
+      spouseHint:
+        'The chosen person’s spouse is visible but cannot be edited. People added later belong to the part as long as they fall within these limits.',
+      help: 'Handy for in-laws: they add their own family (parents, siblings) without changing the rest – and, if you like, without seeing it.',
+      summary: (name: string, hidden: boolean, editor: boolean) =>
+        hidden
+          ? `Sees only the part from ${name}`
+          : editor
+          ? `Sees everything, edits only the part from ${name}`
+          : `Sees everything (the part from ${name} applies to editing)`,
+      gone: 'The start person is no longer in the tree',
+      edit: 'Change access',
+      save: 'Save',
+      cancel: 'Cancel',
+      badge: 'Partial access',
+    },
     status: {
+      'invalid scope': 'Please choose a person from the tree.',
+      'moderators see the whole tree': 'Moderators always have access to the whole tree.',
       self: 'You cannot change your own role here.',
       'too many attempts': 'Too many invitations in a short time. Please try again later.',
       'invalid email': 'This email address does not look valid.',

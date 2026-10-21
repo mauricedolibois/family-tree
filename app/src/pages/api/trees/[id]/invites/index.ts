@@ -1,10 +1,12 @@
 // Invite someone to this tree (moderators and admins). Moderators can grant every
-// tree role, but never admin rights.
+// tree role, but never admin rights. Viewers and editors can be limited to a part of
+// the tree (scope, family/scope.ts).
 
 import { parseRole } from '@/lib/accounts'
 import { managedTree, withUser } from '@/lib/auth'
 import { inviteDays, inviteEmail, issueInvite } from '@/lib/invites'
 import { isLimited, recordAttempt } from '@/lib/rateLimit'
+import { scopeInput } from '@/lib/treeScope'
 
 // Invitations can send mail to any address, so moderators get a limit; admins do not
 const INVITES_PER_HOUR = 20
@@ -16,11 +18,14 @@ export default withUser('api/trees/[id]/invites', async (req, res, user) => {
   }
   const tree = await managedTree(req, res, user)
   if (!tree) return
-  const body = (req.body || {}) as { email?: unknown; role?: unknown; days?: unknown }
+  const body = (req.body || {}) as { email?: unknown; role?: unknown; scope?: unknown; days?: unknown }
   const email = inviteEmail(body.email)
   if (email === undefined) return res.status(400).json({ error: 'invalid email' })
   const role = parseRole(body.role)
   if (!role) return res.status(400).json({ error: 'invalid role' })
+  const scope = await scopeInput(body.scope, tree.id)
+  if (scope === 'invalid') return res.status(400).json({ error: 'invalid scope' })
+  if (scope && role === 'moderator') return res.status(400).json({ error: 'moderators see the whole tree' })
 
   const key = [`create:${user.id}`]
   if (!user.is_admin) {
@@ -34,6 +39,7 @@ export default withUser('api/trees/[id]/invites', async (req, res, user) => {
     email,
     tree,
     role,
+    scope: scope ?? null,
     makeAdmin: false,
     days: inviteDays(body.days),
   })

@@ -52,7 +52,7 @@ function markSeen() {
 }
 
 function TourRunner() {
-  const { index, canEdit } = useFamily()
+  const { index, canEditPerson, scope } = useFamily()
   const view = useView()
   const { meId, setMe, setTourOpen, focusOn, select, showLine, showRelation } = view
   const { t } = useI18n()
@@ -65,10 +65,14 @@ function TourRunner() {
   )
   const steps = useMemo<Step[]>(() => {
     if (me === undefined) return []
-    if (me === null) return guestSteps(actions, t.tour)
+    // The birthday calendar covers the whole tree: not for members who see only their part
+    const withCalendar = (all: Step[]) => (scope?.hideRest ? all.filter((s) => s.id !== 'calendar') : all)
+    if (me === null) return withCalendar(guestSteps(actions, t.tour))
     const p = index.byId.get(me)
-    return personalSteps(me, p ? splitName(p.name).given || p.name : '', actions, t.tour, canEdit)
-  }, [me, index, actions, t, canEdit])
+    return withCalendar(
+      personalSteps(me, p ? splitName(p.name).given || p.name : '', actions, t.tour, canEditPerson(me)),
+    )
+  }, [me, index, actions, t, canEditPerson, scope])
 
   const step = steps.find((s) => s.id === stepId) ?? null
   const position = step ? steps.indexOf(step) : -1

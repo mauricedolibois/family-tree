@@ -73,6 +73,7 @@ export const de = {
     },
     saveFailed: 'Speichern fehlgeschlagen.',
     deleteFailed: 'Löschen fehlgeschlagen.',
+    outsideScope: 'Diese Änderung betrifft Personen außerhalb deines Teils des Stammbaums und wurde nicht gespeichert.',
   },
   family: {
     loading: 'Stammbaum wird geladen',
@@ -82,6 +83,14 @@ export const de = {
     conflict:
       'Der Stammbaum wurde inzwischen auf einem anderen Gerät geändert. Deine letzte Änderung wurde nicht gespeichert.',
     loadLatest: 'Aktuellen Stand laden',
+    scopeGone: 'Dein Teil des Stammbaums ist nicht mehr da.',
+    scopeGoneHint:
+      'Die Person, ab der du Zugriff hattest, wurde entfernt. Ein Moderator kann dir einen neuen Teil zuweisen.',
+    partOf: (name: string, hidden: boolean) => (hidden ? `Teil ab ${name}` : `Bearbeiten ab ${name}`),
+    partOfHint: (hidden: boolean): string =>
+      hidden
+        ? 'Du siehst und bearbeitest nur diesen Teil des Stammbaums.'
+        : 'Du siehst den ganzen Stammbaum, bearbeitest aber nur diesen Teil.',
   },
   search: {
     label: 'Person suchen',
@@ -515,7 +524,34 @@ export const de = {
     noMembers: 'Außer den Admins gehört noch niemand dazu.',
     remove: 'Entfernen',
     confirmRemove: (name: string, tree: string) => `${name} aus „${tree}“ entfernen?`,
+    access: {
+      label: 'Zugriff',
+      whole: 'Ganzer Stammbaum',
+      part: 'Nur ein Teil des Stammbaums',
+      from: 'Ab Person',
+      choose: '– Person wählen –',
+      all: 'alle',
+      hideRest: 'Übrigen Stammbaum ausblenden',
+      hideRestHint: 'Ohne Haken sieht die Person den ganzen Stammbaum, bearbeitet aber nur ihren Teil.',
+      viewerHint: 'Wer nur ansehen darf, sieht nur diesen Teil.',
+      spouseHint:
+        'Ehepartner der gewählten Person sind zu sehen, aber nicht bearbeitbar. Später hinzugefügte Personen gehören dazu, solange sie in diesen Rahmen fallen.',
+      help: 'Praktisch für Angeheiratete: Sie ergänzen ihre eigene Familie (Eltern, Geschwister), ohne den Rest zu ändern – und auf Wunsch ohne ihn zu sehen.',
+      summary: (name: string, hidden: boolean, editor: boolean) =>
+        hidden
+          ? `Sieht nur den Teil ab ${name}`
+          : editor
+          ? `Sieht alles, bearbeitet nur den Teil ab ${name}`
+          : `Sieht alles (der Teil ab ${name} gilt fürs Bearbeiten)`,
+      gone: 'Die Startperson ist nicht mehr im Stammbaum',
+      edit: 'Zugriff ändern',
+      save: 'Speichern',
+      cancel: 'Abbrechen',
+      badge: 'Teilzugriff',
+    },
     status: {
+      'invalid scope': 'Bitte eine Person aus dem Stammbaum wählen.',
+      'moderators see the whole tree': 'Moderatoren haben immer Zugriff auf den ganzen Stammbaum.',
       self: 'Deine eigene Rolle kannst du hier nicht ändern.',
       'too many attempts': 'Zu viele Einladungen in kurzer Zeit. Bitte versuche es später noch einmal.',
       'invalid email': 'Diese E-Mail-Adresse sieht nicht gültig aus.',

@@ -17,7 +17,7 @@ import { useI18n } from '@/i18n/I18nProvider'
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 export function BirthdaysCard() {
-  const { tree, index } = useFamily()
+  const { tree, index, scope } = useFamily()
   const { meId, showLine, focusOn } = useView()
   const [subscribe, setSubscribe] = useState(false)
   const { t, locale } = useI18n()
@@ -73,7 +73,8 @@ export function BirthdaysCard() {
           <h2 className="font-display text-[1.35rem] leading-tight text-ink">{t.birthdays.title}</h2>
         )}
         <span className="-mr-1 flex shrink-0 items-center">
-          {!subscribe && (
+          {/* The calendar holds every birthday of the tree: not for members who see only their part */}
+          {!subscribe && !scope?.hideRest && (
             <button
               type="button"
               onClick={() => setSubscribe(true)}

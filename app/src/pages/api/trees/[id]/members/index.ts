@@ -24,6 +24,7 @@ export default withUser('api/trees/[id]/members', async (req, res, user) => {
         id: i.id,
         email: i.email,
         role: i.role,
+        scope: i.scope,
         inviter: i.inviter_name,
         expiresAt: i.expires_at,
       })),
