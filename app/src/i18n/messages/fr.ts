@@ -534,7 +534,7 @@ export const fr: Messages = {
       hideRestHint: 'Sans cette case, la personne voit tout l’arbre mais ne modifie que sa partie.',
       viewerHint: 'Qui peut seulement consulter ne voit que cette partie.',
       spouseHint:
-        'Le conjoint de la personne choisie est visible mais pas modifiable. Les personnes ajoutées ensuite en font partie tant qu’elles restent dans ces limites.',
+        'Le conjoint de la personne choisie est visible mais pas modifiable. On ne peut ajouter de nouvelles personnes que dans ces limites – les enfants des frères et sœurs, par exemple, seulement à partir de la ligne « Cousins ».',
       help: 'Pratique pour la belle-famille : elle ajoute sa propre famille (parents, frères et sœurs) sans modifier le reste – et, si tu veux, sans le voir.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden

@@ -1,4 +1,4 @@
-import { mergeScopedSave, parseScope, scopeSets, viewFor, type TreeScope } from '@/family/scope'
+import { canAddInPart, mergeScopedSave, parseScope, scopeSets, viewFor, type TreeScope } from '@/family/scope'
 import type { Person, Tree } from '@/family/model'
 
 // Main family: G + H -> Y. Y married X (married in); their child K.
@@ -61,10 +61,11 @@ describe('saving with a scope', () => {
   const sentView = () => copy(viewFor(base, scope))
 
   it('adds a grandparent and keeps everything outside the part as stored', () => {
-    const sent = sentView()
+    const allUp: TreeScope = { ...scope, up: null }
+    const sent = copy(viewFor(base, allUp))
     sent.members.GP = person('GP', { childrenIds: ['P1'] })
     sent.members.P1.parentIds = ['GP']
-    const r = mergeScopedSave(base, sent, scope)
+    const r = mergeScopedSave(base, sent, allUp)
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.tree.members.GP.childrenIds).toEqual(['P1'])
@@ -162,6 +163,29 @@ describe('saving with a scope', () => {
     onlySpouse.members.M = person('M', { parentIds: ['Y'] })
     onlySpouse.members.Y.childrenIds = [...onlySpouse.members.Y.childrenIds, 'M']
     expect(mergeScopedSave(base, onlySpouse, wide).ok).toBe(false)
+  })
+
+  it('refuses new people who would fall outside the part', () => {
+    // one generation of ancestors: a grandparent would be out of reach
+    const grandparent = sentView()
+    grandparent.members.GP = person('GP', { childrenIds: ['P1'] })
+    expect(mergeScopedSave(base, grandparent, scope)).toMatchObject({ ok: false })
+    // siblings only: a sibling's child would be out of reach
+    const nephew = sentView()
+    nephew.members.N = person('N', { parentIds: ['S'] })
+    nephew.members.S.childrenIds = ['N']
+    expect(mergeScopedSave(base, nephew, scope)).toMatchObject({ ok: false })
+  })
+
+  it('tells beforehand which relatives can be added', () => {
+    const view = viewFor(base, scope)
+    expect(canAddInPart(view, scope, 'S', 'CHILD')).toBe(false)
+    // like "only this line": side lines without their spouses
+    expect(canAddInPart(view, scope, 'S', 'SPOUSE')).toBe(false)
+    expect(canAddInPart(view, { ...scope, down: null }, 'X', 'CHILD')).toBe(true)
+    expect(canAddInPart(view, scope, 'P1', 'PARENT')).toBe(false)
+    expect(canAddInPart(view, { ...scope, up: null }, 'P1', 'PARENT')).toBe(true)
+    expect(canAddInPart(view, scope, 'Y', 'CHILD')).toBe(false) // outside the part
   })
 
   it('with the rest visible, refuses edits outside the part', () => {

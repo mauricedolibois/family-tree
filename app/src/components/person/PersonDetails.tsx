@@ -22,7 +22,7 @@ import { useI18n } from '@/i18n/I18nProvider'
 type Props = { person: Person; onEdit: () => void; onAdd: (r: Relation) => void }
 
 export function PersonDetails({ person, onEdit, onAdd }: Props) {
-  const { tree, index, commit, canEditPerson, scope } = useFamily()
+  const { tree, index, commit, canEditPerson, canAddRelative, scope } = useFamily()
   const canEdit = canEditPerson(person.id)
   const { meId, setMe, focusOn, showLine, lineId, select, showRelation, relation } = useView()
   const { notify } = useToast()
@@ -193,20 +193,32 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
           title={t.person.parents}
           ids={parents}
           onOpen={focusOn}
-          add={canEdit && parents.length < 2 ? { label: t.person.addParent, run: () => onAdd('PARENT') } : undefined}
+          add={
+            parents.length < 2 && canAddRelative(person.id, 'PARENT')
+              ? { label: t.person.addParent, run: () => onAdd('PARENT') }
+              : undefined
+          }
         />
         <Relatives
           title={t.person.spouse}
           ids={spouse ? [spouse] : []}
           onOpen={focusOn}
-          add={canEdit && !spouse ? { label: t.person.addSpouse, run: () => onAdd('SPOUSE') } : undefined}
+          add={
+            !spouse && canAddRelative(person.id, 'SPOUSE')
+              ? { label: t.person.addSpouse, run: () => onAdd('SPOUSE') }
+              : undefined
+          }
         />
         <Relatives
           title={t.person.children}
           ids={kids}
           onOpen={focusOn}
           tag={(id) => (isAdopted(id) ? t.person.adopted(index.byId.get(id)?.gender === 'FEMALE') : null)}
-          add={canEdit ? { label: t.person.addChild, run: () => onAdd('CHILD'), tour: 'add-child' } : undefined}
+          add={
+            canAddRelative(person.id, 'CHILD')
+              ? { label: t.person.addChild, run: () => onAdd('CHILD'), tour: 'add-child' }
+              : undefined
+          }
         />
         {siblings.length > 0 && <Relatives title={t.person.siblings} ids={siblings} onOpen={focusOn} />}
       </section>

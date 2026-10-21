@@ -9,8 +9,16 @@
 import Link from 'next/link'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { buildIndex, type Tree, type TreeIndex } from '@/family/model'
+import type { Relation } from '@/family/edit'
 import { TREE_VERSION_HEADER } from '@/storage/version'
-import { decodeScope, OutsideScopeError, scopeSets, TREE_SCOPE_HEADER, type TreeScope } from '@/family/scope'
+import {
+  canAddInPart,
+  decodeScope,
+  OutsideScopeError,
+  scopeSets,
+  TREE_SCOPE_HEADER,
+  type TreeScope,
+} from '@/family/scope'
 import { useI18n } from '@/i18n/I18nProvider'
 
 export class TreeConflictError extends Error {
@@ -32,6 +40,8 @@ type FamilyCtx = {
   canEdit: boolean
   /** May change this person: always for editors of the whole tree, within their part otherwise */
   canEditPerson: (id: string) => boolean
+  /** May add a relative of this person: within a part only if the new person stays in it */
+  canAddRelative: (id: string, relation: Relation) => boolean
   /** The part of the tree the member is limited to; null for the whole tree */
   scope: TreeScope | null
   /**
@@ -164,9 +174,18 @@ export function FamilyProvider({
   // appear where a change will be accepted
   const editable = useMemo(() => (tree && scope ? scopeSets(tree, scope).editable : null), [tree, scope])
   const canEditPerson = useCallback((id: string) => canEdit && (!editable || editable.has(id)), [canEdit, editable])
+  // Someone added outside the part could not be edited afterwards: no button for that
+  const canAddRelative = useCallback(
+    (id: string, relation: Relation) =>
+      canEditPerson(id) && (!scope || !tree || canAddInPart(tree, scope, id, relation)),
+    [canEditPerson, scope, tree],
+  )
   const value = useMemo(
-    () => (tree && index ? { tree, index, familyName, treeId, canEdit, canEditPerson, scope, commit, saving } : null),
-    [tree, index, familyName, treeId, canEdit, canEditPerson, scope, commit, saving],
+    () =>
+      tree && index
+        ? { tree, index, familyName, treeId, canEdit, canEditPerson, canAddRelative, scope, commit, saving }
+        : null,
+    [tree, index, familyName, treeId, canEdit, canEditPerson, canAddRelative, scope, commit, saving],
   )
 
   if (status === 'scope gone') return <ScopeGone />

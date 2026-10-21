@@ -535,7 +535,7 @@ export const de = {
       hideRestHint: 'Ohne Haken sieht die Person den ganzen Stammbaum, bearbeitet aber nur ihren Teil.',
       viewerHint: 'Wer nur ansehen darf, sieht nur diesen Teil.',
       spouseHint:
-        'Ehepartner der gewählten Person sind zu sehen, aber nicht bearbeitbar. Später hinzugefügte Personen gehören dazu, solange sie in diesen Rahmen fallen.',
+        'Ehepartner der gewählten Person sind zu sehen, aber nicht bearbeitbar. Neue Personen lassen sich nur innerhalb dieses Rahmens anlegen – Kinder von Geschwistern zum Beispiel erst ab der Seitenlinie „Cousins“.',
       help: 'Praktisch für Angeheiratete: Sie ergänzen ihre eigene Familie (Eltern, Geschwister), ohne den Rest zu ändern – und auf Wunsch ohne ihn zu sehen.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden

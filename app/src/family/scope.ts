@@ -5,6 +5,7 @@
 // checks every save with mergeScopedSave; the client uses scopeSets to show edit
 // buttons only where saving would be accepted.
 
+import { addRelative, type Relation } from './edit'
 import { buildIndex, lineageView, spouseOf, subTree, type LineScope, type Person, type Tree } from './model'
 
 export type TreeScope = LineScope & {
@@ -63,6 +64,21 @@ export function scopeSets(tree: Tree, scope: TreeScope): { visible: Set<string>;
   const spouse = spouseOf(ix, scope.person)
   if (spouse) editable.delete(spouse)
   return { visible, editable }
+}
+
+/**
+ * Whether a person added as `relation` of `refId` would belong to the part, so the
+ * member could still edit them afterwards (a sibling's child is outside a part with
+ * siblings only). Tried on a copy, exactly as the form would add them.
+ */
+export function canAddInPart(tree: Tree, scope: TreeScope, refId: string, relation: Relation): boolean {
+  if (!scopeSets(tree, scope).editable.has(refId)) return false
+  try {
+    const added = addRelative(tree, refId, { relation, name: '?', gender: 'FEMALE' })
+    return scopeSets(added.tree, scope).editable.has(added.id)
+  } catch {
+    return false
+  }
 }
 
 /** The tree as this member gets it: the part only when the rest is hidden */
@@ -184,6 +200,11 @@ export function mergeScopedSave(stored: Tree, sent: Tree, scope: TreeScope): Sco
     const p = members[id]
     const linked = !!p.spouseId || (p.childrenIds ?? []).length > 0 || (p.parentIds ?? []).length > 0
     if (!linked) return refuse(`${id}: a new person must be linked to the part`)
+  }
+  // and stay in it: someone the member could not edit afterwards is refused
+  const after = scopeSets({ ...stored, members }, scope).editable
+  for (const id of Object.keys(members)) {
+    if (isNew(id) && !after.has(id)) return refuse(`${id}: a new person would be outside the part`)
   }
   return { ok: true, tree: { ...stored, members } }
 }
