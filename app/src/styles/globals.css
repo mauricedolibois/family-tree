@@ -30,8 +30,7 @@
 @layer components {
   /* ---------- Input fields ---------- */
   .field {
-    @apply w-full rounded-control border border-card-rule bg-canvas-raised/70 px-3 py-2.5 text-base text-ink
-      placeholder:text-ink-faint focus:border-accent focus:bg-card focus:outline-none focus:ring-2 focus:ring-accent/25;
+    @apply w-full rounded-control border border-card-rule bg-canvas-raised/70 px-3 py-2.5 text-base text-ink placeholder:text-ink-faint focus:border-accent focus:bg-card focus:outline-none focus:ring-2 focus:ring-accent/25;
   }
   .field-label {
     @apply mb-1.5 block text-sm font-medium text-ink-muted;

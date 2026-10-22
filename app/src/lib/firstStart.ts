@@ -12,10 +12,7 @@ import { logError } from './log'
 const LINK_DAYS = 7
 
 export type SetupNotice =
-  | { kind: 'missing' }
-  | { kind: 'outdated'; have: number; need: number }
-  | { kind: 'noAccount' }
-  | null
+  { kind: 'missing' } | { kind: 'outdated'; have: number; need: number } | { kind: 'noAccount' } | null
 
 // Once someone has an account this stays true; no need to count on every page view
 let accountsExist = false

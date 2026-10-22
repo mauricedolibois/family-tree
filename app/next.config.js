@@ -2,7 +2,8 @@
 const isDev = process.env.NODE_ENV !== 'production'
 
 // What pages may load. Scripts only from this origin, no inline scripts at all (the
-// theme is rendered by the server). Uploaded photos come from this origin as well;
+// theme is rendered by the server). This is also why the app is built with webpack
+// (package.json): Turbopack, the default of Next 16, puts its loader inline. Uploaded photos come from this origin as well;
 // https: stays for web addresses older trees may still link to.
 const contentSecurityPolicy = [
   "default-src 'self'",

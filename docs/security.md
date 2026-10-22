@@ -83,7 +83,7 @@ Further limits:
   everywhere" or when an account is disabled. Users are loaded on every request,
   so lost admin rights or removed memberships apply at once.
 - Changes through the API are only accepted from the app's own pages
-  (`Sec-Fetch-Site: same-origin`, `app/src/middleware.ts`); `SameSite=Lax` alone
+  (`Sec-Fetch-Site: same-origin`, `app/src/proxy.ts`); `SameSite=Lax` alone
   would still let other subdomains of the same domain send them.
 - Content Security Policy, HSTS, `X-Frame-Options: DENY`, `nosniff` on every
   response; passwords with bcrypt (cost 12); tokens stored only as SHA-256 hashes.

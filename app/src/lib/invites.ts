@@ -41,7 +41,7 @@ export async function issueInvite(input: {
     treeId: input.tree?.id ?? null,
     role: input.tree ? input.role : null,
     scope: input.tree ? input.scope : null,
-    personId: input.tree ? input.personId ?? null : null,
+    personId: input.tree ? (input.personId ?? null) : null,
     makeAdmin: input.makeAdmin,
     createdBy: input.inviter.id,
     expiresAt: new Date(Date.now() + input.days * 24 * 60 * 60 * 1000),

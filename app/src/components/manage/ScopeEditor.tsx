@@ -110,7 +110,7 @@ export function ScopeEditor({
           aria-label={a.label}
           className={selectClass}
           value={value ? 'part' : 'whole'}
-          onChange={(e) => onChange(e.target.value === 'part' ? before ?? newScope() : null)}
+          onChange={(e) => onChange(e.target.value === 'part' ? (before ?? newScope()) : null)}
         >
           <option value="whole">{a.whole}</option>
           <option value="part">{a.part}</option>

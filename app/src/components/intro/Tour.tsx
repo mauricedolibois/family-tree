@@ -487,8 +487,8 @@ function Progress({ position, total }: { position: number; total: number }) {
             i === position
               ? 'h-2 w-2 rotate-45 bg-accent'
               : i < position
-              ? 'h-1.5 w-1.5 rounded-full bg-accent/70'
-              : 'h-1.5 w-1.5 rounded-full bg-card-rule',
+                ? 'h-1.5 w-1.5 rounded-full bg-accent/70'
+                : 'h-1.5 w-1.5 rounded-full bg-card-rule',
           )}
         />
       ))}

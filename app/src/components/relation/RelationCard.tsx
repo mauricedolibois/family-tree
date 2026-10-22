@@ -22,8 +22,8 @@ export function RelationCard({ connection, compact }: { connection: Connection |
   const [editing, setEditing] = useState<Slot | null>(null)
   const { t, locale } = useI18n()
   const pick = relation ?? { from: null, to: null }
-  const from = pick.from ? index.byId.get(pick.from) ?? null : null
-  const to = pick.to ? index.byId.get(pick.to) ?? null : null
+  const from = pick.from ? (index.byId.get(pick.from) ?? null) : null
+  const to = pick.to ? (index.byId.get(pick.to) ?? null) : null
   const exclude = useMemo(
     () => [editing === 'from' ? pick.to : pick.from].filter((x): x is string => !!x),
     [editing, pick.from, pick.to],

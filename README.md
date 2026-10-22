@@ -100,7 +100,7 @@ Code comments, test names and documentation are in English. User-facing texts li
 Through GitLab CI (`.gitlab-ci.yml`):
 
 1. Merge request or push to `main` → job `test` (typecheck, lint, formatting, tests) and job `audit` (`npm audit`, warning only).
-2. Push to `main` once `test` passes → Kaniko builds `app/Dockerfile` and pushes the image to `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
+2. Push to `main` once `test` passes → BuildKit (rootless) builds `app/Dockerfile` and pushes the image to `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
 3. The `deploy` job then copies `docker-compose.yml` and `deploy_tools/deploy_prod.sh` to the server and restarts the container (`prod.env` lives in `~/family-tree/` there).
 
 The image contains only the standalone Next server (`output: 'standalone'`), runs as user `node` and reports its state to Docker through `/api/health` (`docker ps` shows `healthy`).
