@@ -48,6 +48,7 @@ export const es: Messages = {
     birthdays: 'Próximos cumpleaños',
     exportPdf: 'Exportar como PDF',
     startTour: 'Iniciar la visita guiada',
+    download: 'Descargar',
     logout: 'Cerrar sesión',
     switchTree: 'Cambiar de árbol',
   },
@@ -549,7 +550,7 @@ export const es: Messages = {
       hideRestHint: 'Sin marcar, la persona ve todo el árbol pero solo edita su parte.',
       viewerHint: 'Quien solo puede ver, ve únicamente esta parte.',
       spouseHint:
-        'Los cónyuges de las personas de las líneas se ven, pero no se pueden editar. Solo se pueden añadir personas dentro de las líneas: hijos y padres sí, hermanos solo con su propia línea de sangre.',
+        'Los cónyuges de las personas de las líneas se ven, pero no se pueden editar. Solo se pueden añadir personas dentro de las líneas: hijos y padres sí, hermanos solo con la línea colateral «Hermanos».',
       help: 'Práctico para la familia política: añaden su propia familia (padres, hermanos) sin cambiar el resto y, si quieres, sin verlo.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
@@ -563,14 +564,13 @@ export const es: Messages = {
       cancel: 'Cancelar',
       lines: 'Líneas de sangre compartidas',
       linesHint:
-        'Una línea de sangre es una persona con sus antepasados y descendientes, sin hermanos ni primos. Donde cuelgan otras ramas de la familia, la persona queda bloqueada; otra línea amplía el acceso ahí.',
+        'Una línea de sangre es una persona con sus antepasados y descendientes y, si quieres, sus líneas colaterales (hermanos, primos). Donde cuelgan otras ramas de la familia, la persona queda bloqueada; otra línea amplía el acceso ahí.',
       firstLine: '¿Con qué línea de sangre empieza el acceso?',
       addLine: 'Añadir otra línea de sangre',
       lineOf: (name) => `Línea de sangre de ${name}`,
       removeLine: (name) => `Quitar la línea de sangre de ${name}`,
       search: 'Escribe un nombre …',
       noMatch: 'No se encontró a nadie.',
-      legacySide: 'Líneas colaterales (del acceso anterior)',
       stops: 'Limitado hasta',
       unstop: (name) => `Quitar el límite en ${name}`,
       badge: 'Acceso parcial',
@@ -650,6 +650,9 @@ export const es: Messages = {
     noMail: 'Este sitio no envía correos: transmite tú las invitaciones y los enlaces para restablecer contraseñas.',
     copy: 'Copiar',
     inviteTitle: 'Invitar',
+    inviteAdminTitle: 'Invitar a un admin',
+    inviteAdminHint:
+      'Solo derechos de admin, sin árbol: para alguien que te ayuda a gestionar el servidor. A un árbol se invita desde su página de miembros, siempre como una persona del árbol.',
     inviteEmail: 'Correo electrónico',
     optional: 'opcional',
     inviteEmailHint: 'Con una dirección, solo esa persona puede usar el enlace.',

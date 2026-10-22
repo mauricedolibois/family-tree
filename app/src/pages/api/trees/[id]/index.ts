@@ -5,7 +5,8 @@
 // People linked to an account are protected: only moderators delete them, which
 // also drops the link.
 
-import { linkedPeople, membershipIn, unlinkMissingPeople } from '@/lib/accounts'
+import { linkedPeople, membershipIn } from '@/lib/accounts'
+import { forgetMissingPeople } from '@/lib/requests'
 import { canEdit, canManage, treeMembership, withUser } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
 import { loadTree, saveTree, snapshotBeforeSave } from '@/lib/db'
@@ -107,7 +108,7 @@ export default withUser('api/trees/[id]', async (req, res, user) => {
     await snapshotBeforeSave(treeId, current.tree, next, user.id)
     const saved = await saveTree(treeId, next, baseVersion)
     if (saved.status === 'conflict') return res.status(409).json({ error: 'conflict' })
-    if (removedLinked) await unlinkMissingPeople(treeId, (id) => !!next.members[id])
+    if (Object.keys(current.tree.members).some((id) => !next.members[id])) await forgetMissingPeople(treeId, next)
 
     res.setHeader(VERSION_HEADER, saved.version)
     return res.status(200).json({ ok: true })

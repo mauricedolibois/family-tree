@@ -363,6 +363,24 @@ describe('blood lines', () => {
     expect(d.get('maria')?.status).toBe('editable')
   })
 
+  it('with siblings let someone who married in add a sibling and keep their parents', () => {
+    // X married into the main family; her parents also have S
+    const line = (side?: 1): TreeScope => ({
+      lines: [{ person: 'X', up: null, down: null, ...(side ? { side } : {}) }],
+      stops: [],
+      unlock: [],
+      lock: [],
+      hideRest: true,
+    })
+    expect(S.scopeSets(base, line()).locked.has('P1')).toBe(true)
+    expect(S.canAddInPart(base, line(), 'P1', 'CHILD')).toBe(false)
+    const withSiblings = S.scopeSets(base, line(1))
+    expect(sorted(withSiblings.editable)).toEqual(['K', 'P1', 'P2', 'S', 'X'])
+    expect(sorted(withSiblings.locked)).toEqual(['Y']) // her husband, with the main family beyond
+    expect(S.canAddInPart(base, line(1), 'P1', 'CHILD')).toBe(true)
+    expect(parseScope(line(1))).toEqual(line(1))
+  })
+
   it('show the rest read-only when it is not hidden', () => {
     expect(describeScope(family, { ...lineOf('lisa'), hideRest: false }).get('hans')?.status).toBe('readonly')
   })

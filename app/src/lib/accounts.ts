@@ -347,13 +347,6 @@ export async function linkedPeople(treeId: string): Promise<Map<string, string>>
   return new Map((data ?? []).map((r) => [r.person_id as string, r.user_id as string]))
 }
 
-/** Drops the links to people no longer in the tree (after a moderator deleted them) */
-export async function unlinkMissingPeople(treeId: string, exists: (personId: string) => boolean): Promise<void> {
-  for (const [personId, userId] of await linkedPeople(treeId)) {
-    if (!exists(personId)) await linkPerson(userId, treeId, null, 'moderator')
-  }
-}
-
 export async function roleIn(userId: string, treeId: string): Promise<Role | null> {
   return (await membershipIn(userId, treeId))?.role ?? null
 }

@@ -5,7 +5,7 @@ to several family trees; what they may do is set per tree.
 
 | Role | May do |
 | --- | --- |
-| **Admin** (global) | Runs the server: accounts, admin rights, trees (create, rename, delete, import), invitations and memberships for every tree on `/admin`. Sees and edits a tree's contents only as a member of it, like everyone else; whoever creates or imports a tree becomes its moderator. |
+| **Admin** (global) | Runs the server: accounts, admin rights, trees (create, rename, delete, import), memberships and open invitations of every tree on `/admin`, and invitations for admin rights alone. People are invited into a tree on its members tab, so an admin who is no member adds themselves first. Sees and edits a tree's contents only as a member of it, like everyone else; whoever creates or imports a tree becomes its moderator. |
 | **Moderator** (per tree) | Like an editor, and also invite people to the tree, change the roles of its members and remove them (`/tree/<id>/members`). |
 | **Editor** (per tree) | Read and change the tree, upload photos, renew the calendar link. |
 | **Viewer** (per tree) | Read the tree, use views, birthdays, PDF export and the calendar subscription. |
@@ -18,12 +18,13 @@ not exist.
 
 ## Joining
 
-People join through **invitation links**, created by admins on `/admin` or by a
-tree's moderators on its members page (menu → Members, or "Access …" in a
-person's info sheet):
+People join through **invitation links**, created by a tree's moderators on its
+members tab (menu → Administration → Members, or "Access …" in a person's info
+sheet), or by admins on `/admin` for admin rights alone:
 
-- for one tree with a role, for admin rights, or both (admin rights only from admins);
-- on the members page always **for a person in the tree** ("Who is this person in
+- for one tree with a role, optionally also with admin rights (only admins grant
+  them), or for admin rights without a tree (`/admin`);
+- into a tree always **for a person in the tree** ("Who is this person in
   the family tree?"): accepting links the new account to that person without
   asking, the part of the tree starts with their blood line, and the introduction
   starts with "That's you" instead of asking who they are;
@@ -63,10 +64,12 @@ them, which drops the link.
 Moderators can limit a viewer or editor to a part of the tree: in the invitation,
 on the members page (slider button next to the member) or from a person's info
 sheet ("Access …"). A part is made of **blood lines**: a person with their
-ancestors and descendants, without siblings and cousins, each with its own number
-of generations up and down. A part starts with one line and grows only by adding
-the line of another person. Parts set before lines existed (a start person with
-side lines) keep exactly the people they had; side lines are offered only for them.
+ancestors and descendants, each with its own number of generations up and down
+and, if chosen, side lines (siblings, cousins, all blood relatives with their
+families). Someone who married in gets their line with siblings, so they can add
+their own brothers and sisters and their parents stay editable. A part starts with
+one line and grows by adding the line of another person. Parts set before lines
+existed (a start person with side lines) are read as one such line.
 
 Per member the moderator chooses:
 
@@ -105,7 +108,7 @@ Further tools in the editor:
 
 New people can only be added where they stay within the part, so the member can
 still edit them afterwards: the interface offers "add" only there, and the server
-refuses anything else. A sibling, for example, needs their own blood line.
+refuses anything else. A new sibling, for example, needs the side line "siblings".
 
 The server enforces it (`app/src/family/scope.ts`): it cuts what it sends, telling
 which people are locked (only visible in the whole tree), and on saving it takes
@@ -204,7 +207,8 @@ accounts can sign in.
    ```
 
    It returns a path like `/invite/3f9c…`; open `https://<your domain>/invite/3f9c…`.
-4. On `/admin`, **invite the family** to the existing tree, as editors or viewers.
+4. On `/admin`, add yourself to the existing tree as moderator, then **invite the
+   family** on its members tab, as editors or viewers.
 
 **HTTP basic auth in front of the app:** invited people would need its credentials
 as well, before they even reach the invitation page. With personal accounts it is

@@ -3,7 +3,9 @@
 // (access_requests). Each member has at most one open request of each kind per tree.
 
 import { getSupaAdmin } from './supabaseServer'
+import { linkedPeople, linkPerson } from './accounts'
 import type { BloodLine } from '@/family/scope'
+import type { Tree } from '@/family/model'
 
 const db = () => getSupaAdmin()
 
@@ -80,6 +82,32 @@ export async function createAccessRequest(treeId: string, userId: string, line: 
 }
 
 /**
+ * After people left the tree (deleted, or gone with a restored version or an
+ * import): accounts linked to them are unlinked and open requests about them are
+ * closed, so nobody later confirms or grants someone who no longer exists.
+ */
+export async function forgetMissingPeople(treeId: string, tree: Tree): Promise<void> {
+  const exists = (id: string) => !!tree.members[id]
+  for (const [personId, userId] of await linkedPeople(treeId)) {
+    if (!exists(personId)) await linkPerson(userId, treeId, null, 'moderator')
+  }
+  const [claims, access] = await Promise.all([openClaims(treeId), openAccessRequests(treeId)])
+  await Promise.all([
+    ...claims.filter((c) => !exists(c.personId)).map((c) => decide('person_claims', c.id, treeId, null, false)),
+    ...access.filter((a) => !exists(a.line.person)).map((a) => decide('access_requests', a.id, treeId, null, false)),
+  ])
+}
+
+/** Closes a member's open requests when they leave the tree */
+export async function closeRequestsOf(userId: string, treeId: string): Promise<void> {
+  const [claims, access] = await Promise.all([openClaims(treeId, userId), openAccessRequests(treeId, userId)])
+  await Promise.all([
+    ...claims.map((c) => decide('person_claims', c.id, treeId, null, false)),
+    ...access.map((a) => decide('access_requests', a.id, treeId, null, false)),
+  ])
+}
+
+/**
  * Records the decision on an open claim or request of this tree, once even with
  * concurrent requests; true if this call decided it.
  */
@@ -87,7 +115,7 @@ export async function decide(
   table: 'person_claims' | 'access_requests',
   id: string,
   treeId: string,
-  decidedBy: string,
+  decidedBy: string | null,
   approved: boolean,
 ): Promise<boolean> {
   const { data, error } = await db()

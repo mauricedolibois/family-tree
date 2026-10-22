@@ -23,8 +23,9 @@ import {
 
 /**
  * One blood line of a part: a person with ancestors and descendants (null = all
- * generations). Side lines (siblings, cousins …) only come from parts set before
- * lines could be combined; a part grows by adding the line of another person.
+ * generations), optionally with side lines (1 siblings, 2 cousins, 3 all), so
+ * someone who married in can add their own brothers and sisters. A part grows by
+ * adding the line of another person.
  */
 export type BloodLine = { person: string; up: number | null; down: number | null; side?: 1 | 2 | 3 }
 

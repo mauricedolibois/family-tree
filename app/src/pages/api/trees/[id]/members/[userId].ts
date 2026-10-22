@@ -6,6 +6,7 @@
 // themselves out by accident; admins can change their own membership too.
 
 import { linkPerson, parseRole, removeMembership, roleIn, setMembership } from '@/lib/accounts'
+import { closeRequestsOf } from '@/lib/requests'
 import { managedTree, withUser } from '@/lib/auth'
 import { isUuid } from '@/lib/ids'
 import { personInput, scopeInput } from '@/lib/treeScope'
@@ -41,6 +42,7 @@ export default withUser('api/trees/[id]/members/[userId]', async (req, res, user
     await setMembership(memberId, tree.id, role, scope)
   } else {
     await removeMembership(memberId, tree.id)
+    await closeRequestsOf(memberId, tree.id)
   }
   return res.status(200).json({ ok: true })
 })

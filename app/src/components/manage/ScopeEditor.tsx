@@ -1,7 +1,7 @@
 // src/components/manage/ScopeEditor.tsx
 // Which part of the tree a viewer or editor gets (family/scope.ts): the whole tree,
-// or one or more blood lines (a person with ancestors and descendants), with a
-// preview of who the member sees, edits and finds locked.
+// or one or more blood lines (a person with ancestors, descendants and, if chosen,
+// side lines), with a preview of who the member sees, edits and finds locked.
 
 import { useMemo, useState } from 'react'
 import { Flag, GitBranch, Plus, UserRound, X } from 'lucide-react'
@@ -126,25 +126,24 @@ export function ScopeEditor({
                     {generations(l.up, t.scope.ancestors, (up) => setLine(i, { up }))}
                     {generations(l.down, t.scope.descendants, (down) => setLine(i, { down }))}
                   </div>
-                  {l.side && (
-                    <label className="flex flex-col gap-1">
-                      <span className="field-label">{a.legacySide}</span>
-                      <select
-                        className={selectClass}
-                        value={l.side}
-                        onChange={(e) => {
-                          const side = Number(e.target.value)
-                          setLine(i, { side: side ? (side as 1 | 2 | 3) : undefined })
-                        }}
-                      >
-                        {([0, 1, 2, 3] as const).map((side) => (
-                          <option key={side} value={side}>
-                            {t.scope.side[side]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+                  <label className="flex flex-col gap-1">
+                    <span className="field-label">{t.scope.sideLines}</span>
+                    <select
+                      className={selectClass}
+                      value={l.side ?? 0}
+                      onChange={(e) => {
+                        const side = Number(e.target.value)
+                        setLine(i, { side: side ? (side as 1 | 2 | 3) : undefined })
+                      }}
+                    >
+                      {([0, 1, 2, 3] as const).map((side) => (
+                        <option key={side} value={side}>
+                          {t.scope.side[side]}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-sm text-ink-muted">{t.scope.sideHint[l.side ?? 0]}</span>
+                  </label>
                 </div>
               ))}
             </div>

@@ -4,7 +4,7 @@
 // member who asked. Access requests are for moderators: approving adds the asked
 // line to the member's part.
 
-import { linkPerson, membershipIn, setMembership } from '@/lib/accounts'
+import { linkedPeople, linkPerson, membershipIn, setMembership } from '@/lib/accounts'
 import { canManage, treeMembership, withUser } from '@/lib/auth'
 import { loadTree } from '@/lib/db'
 import { isUuid, treeIdParam } from '@/lib/ids'
@@ -30,11 +30,16 @@ export default withUser('api/trees/[id]/requests/[requestId]', async (req, res, 
     if (!claim) return res.status(404).json({ error: 'not found' })
     const relative = !!membership.personId && isCloseRelative(loaded.tree, membership.personId, claim.personId)
     if (claim.userId === user.id || !(moderator || relative)) return res.status(403).json({ error: 'forbidden' })
-    if (approve && !(await linkPerson(claim.userId, treeId, claim.personId, moderator ? 'moderator' : 'relative'))) {
+    if (approve && (await linkedPeople(treeId)).has(claim.personId)) {
       return res.status(409).json({ error: 'person taken' })
     }
+    // Decided first: of two members deciding at once only one gets through, so a
+    // rejection is never followed by a link. The unique index still guards the person.
     if (!(await decide('person_claims', claim.id, treeId, user.id, approve))) {
       return res.status(409).json({ error: 'decided already' })
+    }
+    if (approve && !(await linkPerson(claim.userId, treeId, claim.personId, moderator ? 'moderator' : 'relative'))) {
+      return res.status(409).json({ error: 'person taken' })
     }
     return res.status(200).json({ ok: true })
   }
@@ -43,6 +48,10 @@ export default withUser('api/trees/[id]/requests/[requestId]', async (req, res, 
     if (!moderator) return res.status(403).json({ error: 'forbidden' })
     const request = (await openAccessRequests(treeId)).find((r) => r.id === requestId)
     if (!request) return res.status(404).json({ error: 'not found' })
+    // Decided first, as for claims: only the member who decided widens the part
+    if (!(await decide('access_requests', request.id, treeId, user.id, approve))) {
+      return res.status(409).json({ error: 'decided already' })
+    }
     if (approve) {
       const member = await membershipIn(request.userId, treeId)
       const line = parseScope({ lines: [request.line] })?.lines[0]
@@ -50,9 +59,6 @@ export default withUser('api/trees/[id]/requests/[requestId]', async (req, res, 
       if (member?.scope && line) {
         await setMembership(request.userId, treeId, member.role, withLine(member.scope, line))
       }
-    }
-    if (!(await decide('access_requests', request.id, treeId, user.id, approve))) {
-      return res.status(409).json({ error: 'decided already' })
     }
     return res.status(200).json({ ok: true })
   }

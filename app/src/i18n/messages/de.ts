@@ -51,6 +51,7 @@ export const de = {
     birthdays: 'Nächste Geburtstage',
     exportPdf: 'Als PDF exportieren',
     startTour: 'Einführung starten',
+    download: 'Herunterladen',
     logout: 'Abmelden',
     switchTree: 'Stammbaum wechseln',
   },
@@ -555,7 +556,7 @@ export const de = {
       hideRestHint: 'Ohne Haken sieht die Person den ganzen Stammbaum, bearbeitet aber nur ihren Teil.',
       viewerHint: 'Wer nur ansehen darf, sieht nur diesen Teil.',
       spouseHint:
-        'Ehepartner der Linien-Personen sind zu sehen, aber nicht bearbeitbar. Neue Personen lassen sich nur innerhalb der Linien anlegen: Kinder und Eltern ja, Geschwister erst mit deren eigener Blutlinie.',
+        'Ehepartner der Linien-Personen sind zu sehen, aber nicht bearbeitbar. Neue Personen lassen sich nur innerhalb der Linien anlegen: Kinder und Eltern ja, Geschwister nur mit der Seitenlinie „Geschwister“.',
       help: 'Praktisch für Angeheiratete: Sie ergänzen ihre eigene Familie (Eltern, Geschwister), ohne den Rest zu ändern – und auf Wunsch ohne ihn zu sehen.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
@@ -569,14 +570,13 @@ export const de = {
       cancel: 'Abbrechen',
       lines: 'Freigegebene Blutlinien',
       linesHint:
-        'Eine Blutlinie ist eine Person mit ihren Vorfahren und Nachkommen, ohne Geschwister und Cousins. Wo weitere Familienzweige dranhängen, ist die Person gesperrt; mit einer weiteren Linie lässt sich die Freigabe dort erweitern.',
+        'Eine Blutlinie ist eine Person mit ihren Vorfahren und Nachkommen, auf Wunsch mit Seitenlinien (Geschwister, Cousins). Wo weitere Familienzweige dranhängen, ist die Person gesperrt; mit einer weiteren Linie lässt sich die Freigabe dort erweitern.',
       firstLine: 'Mit wessen Blutlinie beginnt die Freigabe?',
       addLine: 'Weitere Blutlinie hinzufügen',
       lineOf: (name: string) => `Blutlinie von ${name}`,
       removeLine: (name: string) => `Blutlinie von ${name} entfernen`,
       search: 'Name eingeben …',
       noMatch: 'Niemand gefunden.',
-      legacySide: 'Seitenlinien (aus der bisherigen Freigabe)',
       stops: 'Begrenzt bis',
       unstop: (name: string) => `Begrenzung bei ${name} aufheben`,
       badge: 'Teilzugriff',
@@ -657,6 +657,9 @@ export const de = {
     noMail: 'Diese Seite verschickt keine Mails: Einladungen und Links zum Zurücksetzen gibst du selbst weiter.',
     copy: 'Kopieren',
     inviteTitle: 'Einladen',
+    inviteAdminTitle: 'Admin einladen',
+    inviteAdminHint:
+      'Nur Admin-Rechte, ohne Stammbaum: für jemanden, der den Server mitbetreut. In einen Stammbaum lädst du auf dessen Mitglieder-Seite ein, immer als Person im Baum.',
     inviteEmail: 'E-Mail-Adresse',
     optional: 'optional',
     inviteEmailHint: 'Mit Adresse kann nur diese Person den Link benutzen.',

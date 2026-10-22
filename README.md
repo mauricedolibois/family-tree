@@ -122,7 +122,8 @@ a single transaction, so a failure changes nothing.
   docker logs family-tree-app | grep setup
   ```
 
-  Open the link (valid for 7 days), create your account and invite people on `/admin`.
+  Open the link (valid for 7 days) and create your account; create or import a tree on
+  `/admin` and invite people on its members tab.
 - **Installations from before `setup.sql`** (the original version with one shared
   password per family, and every later state up to personal accounts): back up the
   database, then run [`supabase/migrations/v1_from_legacy.sql`](supabase/migrations/v1_from_legacy.sql)

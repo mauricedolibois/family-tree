@@ -1,7 +1,7 @@
 // Invite someone to this tree (moderators and admins). Moderators can grant every
-// tree role, but never admin rights; admins may add them. Viewers and editors can be limited to a part of
-// the tree (scope, family/scope.ts). Every invitation names the person in the tree
-// the invited account belongs to; accepting links them.
+// tree role, but never admin rights; admins may add them. Viewers and editors can
+// be limited to a part of the tree (scope, family/scope.ts). Every invitation names
+// the person in the tree the invited account belongs to; accepting links them.
 
 import { linkedPeople, parseRole } from '@/lib/accounts'
 import { managedTree, withUser } from '@/lib/auth'

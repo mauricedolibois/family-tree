@@ -57,8 +57,11 @@ Further limits:
 
 - Moderators manage everyone in their tree except themselves, never hand out
   admin rights and do not see invitations that grant them; 20 invitations per hour.
+  `POST /api/admin/invites` hands out admin rights alone; invitations into a tree
+  come from its members tab and always name a person there.
 - People linked to an account are deleted only by moderators (otherwise 403);
-  the link goes with them. One account per person and tree (unique index).
+  the link goes with them, also when a restore or an import removes them, and
+  open requests about them are closed, as are a member's own when they leave. One account per person and tree (unique index).
 - "That's me" is confirmed only by a moderator or by a member whose linked person
   is a parent, child, sibling or spouse of the claimed person, never by the member
   who asked; a member has at most one open request of each kind.
@@ -103,6 +106,6 @@ Further limits:
   the point of being a member, not a gap.
 - A part of a tree limits contents, not facts one can infer: a member sees that
   their start person has a spouse, that a locked person has relatives beyond the
-  part (not who), and kinship labels only cover the people in their part. A calendar link they got before being limited keeps working until
-  it is renewed.
+  part (not who), and kinship labels only cover the people in their part. A
+  calendar link they got before being limited keeps working until it is renewed.
 - The Supabase secrets themselves (`supabase.md`, step 4).

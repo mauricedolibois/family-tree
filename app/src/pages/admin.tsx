@@ -1,7 +1,7 @@
 // Administration: trees and accounts, a tab of the management area. Admins only;
 // for everyone else the page does not exist. People are invited on a tree's
-// members tab, so they always get a person in the tree; ?tree= is the tree the
-// admin came from.
+// members tab, so they always get a person in the tree; only admin rights alone,
+// without a tree, are handed out here. ?tree= is the tree the admin came from.
 
 import { useCallback, useEffect, useState } from 'react'
 import Head from 'next/head'
@@ -113,6 +113,7 @@ export default function AdminPage({ nav, treeId }: Props) {
               <TreesCard trees={data.trees} users={data.users} me={data.me} run={run} />
               <TrashCard trash={data.trash} date={date} run={run} />
               <UsersCard data={data} run={run} />
+              <AdminInviteCard mail={data.mail} onCreated={load} />
               <details className="group rounded-card border border-card-rule bg-card/70">
                 <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
                   <ChevronRight
@@ -130,6 +131,68 @@ export default function AdminPage({ nav, treeId }: Props) {
         </main>
       </div>
     </>
+  )
+}
+
+/** Admin rights without a tree, e.g. for someone who runs the server with you */
+function AdminInviteCard({ mail, onCreated }: { mail: boolean; onCreated: () => void }) {
+  const { t } = useI18n()
+  const [email, setEmail] = useState('')
+  const [days, setDays] = useState(7)
+  const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setResult(null)
+    const { ok, data } = await postJson('/api/admin/invites', { email, admin: true, days })
+    if (!ok) return setError(t.admin.status[String(data.error)] ?? t.common.retry)
+    setResult({ path: String(data.path), mailed: !!data.mailed })
+    setEmail('')
+    onCreated()
+  }
+
+  return (
+    <Card title={t.admin.inviteAdminTitle}>
+      <p className="mb-3 text-sm text-ink-muted">{t.admin.inviteAdminHint}</p>
+      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 sm:col-span-2">
+          <span className="field-label">{t.admin.inviteEmail}</span>
+          <input
+            type="email"
+            className="field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t.admin.optional}
+          />
+          <span className="text-sm text-ink-faint">{mail ? t.admin.inviteEmailHintMail : t.admin.inviteEmailHint}</span>
+        </label>
+        <label className="flex items-center gap-2 text-[15px] text-ink">
+          {t.admin.validFor}
+          <input
+            type="number"
+            min={1}
+            max={30}
+            className="field h-9 w-20 py-0 text-sm"
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+          />
+          {t.admin.days}
+        </label>
+        {error && (
+          <div className="sm:col-span-2">
+            <FormMessage>{error}</FormMessage>
+          </div>
+        )}
+        <div className="sm:col-span-2">
+          <Button type="submit" variant="primary" icon={<Plus className="h-4 w-4" />}>
+            {t.admin.createInvite}
+          </Button>
+        </div>
+      </form>
+      {result && <LinkBox path={result.path} note={result.mailed ? t.admin.inviteMailed : t.admin.inviteCopy} />}
+    </Card>
   )
 }
 

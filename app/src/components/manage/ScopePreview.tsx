@@ -267,13 +267,13 @@ function CardMarks({
           </span>
         )}
         {locked && (
-          <span className={clsx(badge, 'bg-danger text-white')}>
+          <span className={clsx(badge, 'bg-danger text-on-primary')}>
             <Lock className="h-4 w-4" />
             {p.status.locked}
           </span>
         )}
         {detailsOnly && (
-          <span className={clsx(badge, 'bg-accent-deep text-white')}>
+          <span className={clsx(badge, 'bg-accent-deep text-on-primary')}>
             <Pencil className="h-4 w-4" />
             {p.detailsOnly}
           </span>

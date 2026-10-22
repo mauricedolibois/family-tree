@@ -48,6 +48,7 @@ export const fr: Messages = {
     birthdays: 'Prochains anniversaires',
     exportPdf: 'Exporter en PDF',
     startTour: 'Lancer la visite guidée',
+    download: 'Télécharger',
     logout: 'Se déconnecter',
     switchTree: 'Changer d’arbre',
   },
@@ -552,7 +553,7 @@ export const fr: Messages = {
       hideRestHint: 'Sans cette case, la personne voit tout l’arbre mais ne modifie que sa partie.',
       viewerHint: 'Qui peut seulement consulter ne voit que cette partie.',
       spouseHint:
-        'Les conjoints des personnes des lignées sont visibles mais non modifiables. On ne peut ajouter de nouvelles personnes qu’à l’intérieur des lignées : enfants et parents oui, frères et sœurs seulement avec leur propre lignée.',
+        'Les conjoints des personnes des lignées sont visibles mais non modifiables. On ne peut ajouter de nouvelles personnes qu’à l’intérieur des lignées : enfants et parents oui, frères et sœurs seulement avec la ligne collatérale « Fratrie ».',
       help: 'Pratique pour la belle-famille : elle ajoute sa propre famille (parents, frères et sœurs) sans modifier le reste – et, si tu veux, sans le voir.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
@@ -566,14 +567,13 @@ export const fr: Messages = {
       cancel: 'Annuler',
       lines: 'Lignées partagées',
       linesHint:
-        'Une lignée, c’est une personne avec ses ancêtres et ses descendants, sans frères, sœurs ni cousins. Là où d’autres branches de la famille se rattachent, la personne est verrouillée ; une lignée de plus étend l’accès à cet endroit.',
+        'Une lignée, c’est une personne avec ses ancêtres et ses descendants, et si tu veux ses lignes collatérales (frères et sœurs, cousins). Là où d’autres branches de la famille se rattachent, la personne est verrouillée ; une lignée de plus étend l’accès à cet endroit.',
       firstLine: 'Par quelle lignée l’accès commence-t-il ?',
       addLine: 'Ajouter une autre lignée',
       lineOf: (name) => `Lignée de ${name}`,
       removeLine: (name) => `Retirer la lignée de ${name}`,
       search: 'Saisir un nom …',
       noMatch: 'Personne trouvé.',
-      legacySide: 'Lignes collatérales (de l’accès précédent)',
       stops: 'Limité jusqu’à',
       unstop: (name) => `Lever la limite à ${name}`,
       badge: 'Accès partiel',
@@ -654,6 +654,9 @@ export const fr: Messages = {
     noMail: 'Ce site n’envoie pas d’e-mails : transmets toi-même les invitations et les liens de réinitialisation.',
     copy: 'Copier',
     inviteTitle: 'Inviter',
+    inviteAdminTitle: 'Inviter un admin',
+    inviteAdminHint:
+      'Droits d’admin seulement, sans arbre : pour quelqu’un qui t’aide à gérer le serveur. Dans un arbre, tu invites depuis sa page des membres, toujours en tant que personne de l’arbre.',
     inviteEmail: 'Adresse e-mail',
     optional: 'facultatif',
     inviteEmailHint: 'Avec une adresse, seule cette personne peut utiliser le lien.',

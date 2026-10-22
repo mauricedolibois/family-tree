@@ -48,6 +48,7 @@ export const en: Messages = {
     birthdays: 'Upcoming birthdays',
     exportPdf: 'Export as PDF',
     startTour: 'Start guided tour',
+    download: 'Download',
     logout: 'Sign out',
     switchTree: 'Switch family tree',
   },
@@ -546,7 +547,7 @@ export const en: Messages = {
       hideRestHint: 'Unticked, they see the whole tree but edit only their part.',
       viewerHint: 'Members who may only view see just this part.',
       spouseHint:
-        'Spouses of the lines’ people are shown but not editable. New people can only be added within the lines: children and parents yes, siblings only with their own blood line.',
+        'Spouses of the lines’ people are shown but not editable. New people can only be added within the lines: children and parents yes, siblings only with the side line “Siblings”.',
       help: 'Handy for in-laws: they add their own family (parents, siblings) without changing the rest – and, if you like, without seeing it.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
@@ -560,14 +561,13 @@ export const en: Messages = {
       cancel: 'Cancel',
       lines: 'Shared blood lines',
       linesHint:
-        'A blood line is a person with their ancestors and descendants, without siblings and cousins. Where further family branches hang on someone, that person is locked; another line extends the access there.',
+        'A blood line is a person with their ancestors and descendants, with side lines (siblings, cousins) if you like. Where further family branches hang on someone, that person is locked; another line extends the access there.',
       firstLine: 'Whose blood line does the access start with?',
       addLine: 'Add another blood line',
       lineOf: (name) => `Blood line of ${name}`,
       removeLine: (name) => `Remove the blood line of ${name}`,
       search: 'Type a name …',
       noMatch: 'Nobody found.',
-      legacySide: 'Side lines (from the earlier access)',
       stops: 'Limited up to',
       unstop: (name) => `Remove the limit at ${name}`,
       badge: 'Partial access',
@@ -647,6 +647,9 @@ export const en: Messages = {
     noMail: 'This site does not send emails: pass invitations and reset links on yourself.',
     copy: 'Copy',
     inviteTitle: 'Invite',
+    inviteAdminTitle: 'Invite an admin',
+    inviteAdminHint:
+      'Admin rights only, without a family tree: for someone who helps run the server. You invite people into a tree on its members page, always as a person in the tree.',
     inviteEmail: 'Email address',
     optional: 'optional',
     inviteEmailHint: 'With an address, only that person can use the link.',
