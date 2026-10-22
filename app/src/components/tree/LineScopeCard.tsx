@@ -95,8 +95,8 @@ function Stepper({
     max === 0
       ? generations(0, locale)
       : value === null || current >= max
-      ? t.scope.allOf(max)
-      : generations(current, locale)
+        ? t.scope.allOf(max)
+        : generations(current, locale)
   const less = () => onChange(Math.max(0, current - 1))
   const more = () => onChange(current + 1 >= max ? null : current + 1)
   return (

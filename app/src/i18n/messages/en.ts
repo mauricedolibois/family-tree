@@ -554,8 +554,8 @@ export const en: Messages = {
         hidden
           ? `Sees only the blood lines of ${name}`
           : editor
-          ? `Sees everything, edits only the blood lines of ${name}`
-          : `Sees everything (the blood lines of ${name} applies to editing)`,
+            ? `Sees everything, edits only the blood lines of ${name}`
+            : `Sees everything (the blood lines of ${name} applies to editing)`,
       gone: 'The start person is no longer in the tree',
       edit: 'Change access',
       save: 'Save',

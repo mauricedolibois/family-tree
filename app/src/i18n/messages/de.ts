@@ -563,8 +563,8 @@ export const de = {
         hidden
           ? `Sieht nur die Blutlinien von ${name}`
           : editor
-          ? `Sieht alles, bearbeitet nur die Blutlinien von ${name}`
-          : `Sieht alles (die Blutlinien von ${name} gelten fürs Bearbeiten)`,
+            ? `Sieht alles, bearbeitet nur die Blutlinien von ${name}`
+            : `Sieht alles (die Blutlinien von ${name} gelten fürs Bearbeiten)`,
       gone: 'Die Startperson ist nicht mehr im Stammbaum',
       edit: 'Zugriff ändern',
       save: 'Speichern',

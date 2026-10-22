@@ -94,8 +94,8 @@ export default function LoginPage({ canRegister, next, setup }: Props) {
             {setup.kind === 'missing'
               ? t.setup.missing
               : setup.kind === 'outdated'
-              ? t.setup.outdated(setup.have, setup.need)
-              : t.setup.noAccount}
+                ? t.setup.outdated(setup.have, setup.need)
+                : t.setup.noAccount}
           </FormMessage>
         </div>
       )}

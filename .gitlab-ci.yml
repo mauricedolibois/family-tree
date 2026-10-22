@@ -10,7 +10,7 @@ variables:
 # Tests, types, lint and formatting on every merge request and before every deploy of main.
 test:
   stage: test
-  image: node:20-alpine
+  image: node:24-alpine
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
@@ -55,7 +55,7 @@ database:
 # Also runs in scheduled pipelines (Build → Pipeline schedules, e.g. weekly).
 audit:
   stage: test
-  image: node:20-alpine
+  image: node:24-alpine
   allow_failure: true
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -65,24 +65,49 @@ audit:
     - cd app
     - npm audit --omit=dev --audit-level=critical
 
-docker_build:
+# Images are built with rootless BuildKit (Kaniko is no longer maintained). The same
+# build runs on merge requests without pushing, so a broken Dockerfile shows up
+# before the merge rather than in the deploy.
+.buildkit:
   stage: build-docker
   image:
-    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    name: moby/buildkit:v0.34.1-rootless
     entrypoint: [""]
+  variables:
+    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
+
+docker_build:
+  extends: .buildkit
+  before_script:
+    - mkdir -p ~/.docker
+    - printf '{"auths":{"%s":{"auth":"%s"}}}' "$CI_REGISTRY" "$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')" > ~/.docker/config.json
   script:
-    - /kaniko/executor
-      --context "${DOCKER_CONTEXT}"
-      --dockerfile "${DOCKERFILE}"
-      --destination "${CI_REGISTRY_IMAGE}/family-tree:latest"
+    - buildctl-daemonless.sh build
+      --frontend dockerfile.v0
+      --local context="${DOCKER_CONTEXT}"
+      --local dockerfile="$(dirname "${DOCKERFILE}")"
+      --opt filename="$(basename "${DOCKERFILE}")"
+      --output type=image,name="${CI_REGISTRY_IMAGE}/family-tree:latest",push=true
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: never
     - if: '$CI_COMMIT_BRANCH == "main"'
 
+docker_build_check:
+  extends: .buildkit
+  script:
+    - buildctl-daemonless.sh build
+      --frontend dockerfile.v0
+      --local context="${DOCKER_CONTEXT}"
+      --local dockerfile="$(dirname "${DOCKERFILE}")"
+      --opt filename="$(basename "${DOCKERFILE}")"
+      --output type=image,name=family-tree:check,push=false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
 deploy:
   stage: deploy
-  image: ubuntu:22.04
+  image: ubuntu:24.04
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
       when: never

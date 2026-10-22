@@ -36,7 +36,7 @@ export function clientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>, proxi
   const direct = req.socket?.remoteAddress || 'unknown'
   if (proxies === 0) return direct
   const header = req.headers['x-forwarded-for']
-  const hops = (Array.isArray(header) ? header.join(',') : header ?? '')
+  const hops = (Array.isArray(header) ? header.join(',') : (header ?? ''))
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)

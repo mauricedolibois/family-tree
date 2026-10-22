@@ -41,8 +41,8 @@ function term(rel: Rel, g: Gender): Term {
         rel.degree === 1
           ? pick(g, 'cousin', 'cousine')
           : rel.degree === 2
-          ? pick(g, 'cousin issu de germain', 'cousine issue de germain')
-          : `${pick(g, 'cousin', 'cousine')} au ${rel.degree}e degré`
+            ? pick(g, 'cousin issu de germain', 'cousine issue de germain')
+            : `${pick(g, 'cousin', 'cousine')} au ${rel.degree}e degré`
       return word(head, rel.removed ? `à ${generations(rel.removed)} d’écart` : '')
     }
     case 'spouse':

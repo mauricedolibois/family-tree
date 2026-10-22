@@ -49,7 +49,7 @@ export default function AccountPage({ user, nav }: Props) {
     setNotice((n) => ({ ...n, [key]: null }))
     try {
       const { ok, status } = await postJson('/api/account', body, 'PATCH')
-      const text = ok ? success : t.account.status[status] ?? t.common.retry
+      const text = ok ? success : (t.account.status[status] ?? t.common.retry)
       setNotice((n) => ({ ...n, [key]: { tone: ok ? 'info' : 'error', text } }))
       return ok
     } catch {

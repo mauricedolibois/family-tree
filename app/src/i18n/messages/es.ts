@@ -557,8 +557,8 @@ export const es: Messages = {
         hidden
           ? `Solo ve las líneas de sangre de ${name}`
           : editor
-          ? `Ve todo, solo edita las líneas de sangre de ${name}`
-          : `Ve todo (las líneas de sangre de ${name} cuenta para editar)`,
+            ? `Ve todo, solo edita las líneas de sangre de ${name}`
+            : `Ve todo (las líneas de sangre de ${name} cuenta para editar)`,
       gone: 'La persona de inicio ya no está en el árbol',
       edit: 'Cambiar acceso',
       save: 'Guardar',

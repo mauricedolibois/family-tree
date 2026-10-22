@@ -560,8 +560,8 @@ export const fr: Messages = {
         hidden
           ? `Ne voit que les lignées de ${name}`
           : editor
-          ? `Voit tout, ne modifie que les lignées de ${name}`
-          : `Voit tout (les lignées de ${name} valent pour les modifications)`,
+            ? `Voit tout, ne modifie que les lignées de ${name}`
+            : `Voit tout (les lignées de ${name} valent pour les modifications)`,
       gone: 'La personne de départ n’est plus dans l’arbre',
       edit: 'Modifier l’accès',
       save: 'Enregistrer',

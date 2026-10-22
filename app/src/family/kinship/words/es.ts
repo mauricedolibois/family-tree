@@ -58,8 +58,8 @@ function term(rel: Rel, g: Gender): Term {
         rel.degree === 1
           ? base
           : ord
-          ? `${base} ${g === 'FEMALE' ? feminine(ord) : ord}`
-          : `${base} en ${rel.degree}.º grado`
+            ? `${base} ${g === 'FEMALE' ? feminine(ord) : ord}`
+            : `${base} en ${rel.degree}.º grado`
       return word(head, rel.removed ? `con ${generations(rel.removed)} de diferencia` : '')
     }
     case 'spouse':
