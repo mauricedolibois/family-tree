@@ -6,10 +6,10 @@ sign-in page. The choice is stored per device in the cookies `theme` and `mode`,
 the server renders every page in it right away (attributes `data-theme` and
 `data-mode` on `<html>`), so nothing flashes and no inline script is needed.
 
-| Design | Look |
-| --- | --- |
+| Design              | Look                                                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `classic` (default) | Parchment and ink: Garamond and a letterpress face for titles, gold rules, paper grain, ornaments. Dark mode is candlelight: dark desk, cards stay parchment. |
-| `modern` | Clean and calm: Inter throughout, neutral greys, white cards, one blue accent, no ornaments. Dark mode turns cards dark too. |
+| `modern`            | Clean and calm: Inter throughout, neutral greys, white cards, one blue accent, no ornaments. Dark mode turns cards dark too.                                  |
 
 ## How it is built
 
@@ -31,18 +31,20 @@ fills the same roles, the way every language fills the same text keys:
 - **Slots:** class names for the parts whose look is more than a colour. Each theme
   styles them its own way:
 
-  | Slot | Where |
-  | --- | --- |
-  | `surface` | Cards, panels, dialogs |
-  | `page-backdrop` | Page background behind the tree and admin pages |
-  | `header-bar` / `header-rule` | Header bars and the sign-in cover / the rule under the tree's header |
-  | `title-text` | The big title lettering |
-  | `framed` | Framed boxes (sign-in cover, tour) |
-  | `person-card` | Person cards in the tree |
-  | `portrait-frame` | Frame around portraits |
-  | `selected-glow` | The selected person |
-  | `section-heading` | Section titles in the info sheet |
-  | `ornament` | Purely decorative elements; themes may hide them |
+  | Slot                         | Where                                                                      |
+  | ---------------------------- | -------------------------------------------------------------------------- |
+  | `surface`                    | Cards, panels, dialogs                                                     |
+  | `page-backdrop`              | Page background behind the tree and admin pages                            |
+  | `header-bar` / `header-rule` | Header bars and the sign-in cover / the rule under the tree's header       |
+  | `cover`                      | The sign-in cover on top of `header-bar`, where a theme wants it different |
+  | `title-text`                 | The big title lettering                                                    |
+  | `framed`                     | Framed boxes (sign-in cover, tour)                                         |
+  | `sheet-frame`                | Inner frame of the person info sheet; themes may leave it out              |
+  | `person-card`                | Person cards in the tree                                                   |
+  | `portrait-frame`             | Frame around portraits                                                     |
+  | `selected-glow`              | The selected person                                                        |
+  | `section-heading`            | Section titles in the info sheet                                           |
+  | `ornament`                   | Purely decorative elements; themes may hide them                           |
 
 Tailwind exposes the roles (`tailwind.config.js`); `src/styles/themes/<theme>.css`
 holds one theme: its variables for light, for dark and for automatic (in a

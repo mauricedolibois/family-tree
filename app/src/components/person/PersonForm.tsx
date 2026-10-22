@@ -320,8 +320,9 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         </p>
       )}
 
+      {/* Down to the panel's edge: with the scroller's bottom padding the form would show below the bar */}
       <div
-        className="sticky bottom-0 -mx-5 flex gap-2 border-t border-card-rule bg-card/95 px-5 py-3 backdrop-blur"
+        className="sticky -bottom-[max(1.5rem,env(safe-area-inset-bottom))] -mx-5 -mb-[max(1.5rem,env(safe-area-inset-bottom))] flex gap-2 border-t border-card-rule bg-card/95 px-5 pb-[calc(0.75rem+max(1.5rem,env(safe-area-inset-bottom)))] pt-3 backdrop-blur"
         data-tour="form-actions"
       >
         <Button type="submit" variant="primary" disabled={saving || uploading} className="flex-1">
