@@ -150,8 +150,9 @@ export const es: Messages = {
     addSpouse: 'Añadir cónyuge',
     addChild: 'Añadir hijo o hija',
     locked: 'Bloqueado',
-    lockedHint: (name) =>
-      `De ${name} dependen ramas de la familia que no se han compartido contigo, por eso aquí no puedes cambiar ni añadir nada.`,
+    lockedHint: (name) => `Solo puedes ver a ${name}, no cambiarlo.`,
+    detailsOnlyHint: (name) =>
+      `Puedes cambiar los datos y las fotos de ${name}, pero no añadir familiares ni borrar nada; así el resto de la familia queda intacto.`,
     adopted: (female) => (female ? 'adoptada' : 'adoptado'),
     remove: 'Quitar del árbol',
     confirmRemove: (name) => `¿Quitar a ${name} del árbol? La versión anterior se guarda automáticamente.`,
@@ -564,55 +565,105 @@ export const es: Messages = {
       cancel: 'Cancelar',
       lines: 'Líneas de sangre compartidas',
       linesHint:
-        'Una línea de sangre es una persona con sus antepasados y descendientes y, si quieres, sus líneas colaterales (hermanos, primos). Donde cuelgan otras ramas de la familia, la persona queda bloqueada; otra línea amplía el acceso ahí.',
+        'Una línea de sangre es una persona con sus antepasados y descendientes y, si quieres, sus líneas colaterales (hermanos, primos). Donde cuelgan otras ramas de la familia, solo se pueden editar los datos de la persona; otra línea da ahí todos los derechos.',
       firstLine: '¿Con qué línea de sangre empieza el acceso?',
       addLine: 'Añadir otra línea de sangre',
       lineOf: (name) => `Línea de sangre de ${name}`,
       removeLine: (name) => `Quitar la línea de sangre de ${name}`,
       search: 'Escribe un nombre …',
       noMatch: 'No se encontró a nadie.',
+      modesTitle: '¿Todo el árbol o solo una parte?',
+      modes: [
+        {
+          title: 'Todo el árbol',
+          text: 'El miembro ve todo; los editores pueden cambiarlo todo.',
+          example: 'Para la familia más cercana que cuida el árbol contigo.',
+        },
+        {
+          title: 'Solo una parte',
+          text: 'Compartes líneas de sangre: una persona con sus antepasados, descendientes y, si quieres, líneas colaterales. Dentro, cada persona tiene uno de tres niveles («i» junto a las líneas y la vista previa).',
+          example: 'Para la familia política: Anna completa su propia familia sin cambiar la de su marido.',
+        },
+        {
+          title: 'Ocultar el resto del árbol',
+          text: 'Marcado, el miembro solo ve su parte; sin marcar, ve todo pero solo edita su parte. Quien solo puede ver, siempre ve solo su parte.',
+          example: 'Ocúltalo si Anna no debe ver la familia de su marido.',
+        },
+      ],
+      sideTitle: '¿Qué son las líneas colaterales?',
+      sideExample: {
+        0: 'Ejemplo: Anna, sus padres, abuelos e hijos.',
+        1: 'Ejemplo: además el hermano de Anna y los hermanos de sus padres (tíos, tías).',
+        2: 'Ejemplo: además los hijos del hermano de Anna y sus primos.',
+        3: 'Ejemplo: toda la familia de origen de Anna con todas sus ramas.',
+      },
       stops: 'Limitado hasta',
       unstop: (name) => `Quitar el límite en ${name}`,
       badge: 'Acceso parcial',
     },
+    rights: {
+      title: '¿Qué puede hacer el miembro?',
+      intro:
+        'En la parte compartida, cada persona tiene uno de tres niveles. Ejemplo: Anna entró en la familia al casarse y recibe su línea de sangre con sus hermanos.',
+      levels: {
+        edit: {
+          title: 'Editar',
+          text: 'Cambiarlo todo: datos, fotos, añadir familiares, borrar.',
+          example: 'Ejemplo: los padres de Anna y sus hijos.',
+        },
+        details: {
+          title: 'Solo datos',
+          text: 'Cambiar nombre, fechas, textos y fotos, pero sin añadir familiares ni borrar. Se aplica solo en el borde de la parte, donde cuelgan otras ramas de la familia.',
+          example: 'Ejemplo: el hermano casado de Anna; su mujer y sus hijos no están compartidos.',
+        },
+        view: {
+          title: 'Solo ver',
+          text: 'Visible, pero no se puede cambiar.',
+          example:
+            'Ejemplo: el marido de Anna, que pertenece a la familia de sus padres, o a quien el moderador decida.',
+        },
+      },
+      outro:
+        'Toca una persona en la vista previa para cambiar su nivel. Todos los derechos en el borde se consiguen añadiendo la línea de sangre de la persona que está más allá.',
+    },
     preview: {
       title: 'Vista previa',
-      sentence: (sees, edits, locked) =>
-        `Ve ${sees === 1 ? '1 persona' : `${sees} personas`}, puede editar ${edits}${
-          locked ? `, ${locked} ${locked === 1 ? 'está bloqueada' : 'están bloqueadas'}` : ''
-        }.`,
+      sentence: (sees, edit, details, view) =>
+        `Ve ${sees === 1 ? '1 persona' : `${sees} personas`}: ${edit} para editar${
+          details ? `, ${details} solo datos` : ''
+        }${view ? `, ${view} solo para ver` : ''}.`,
       notShared: (n) => (n === 1 ? '1 persona no está compartida.' : `${n} personas no están compartidas.`),
-      tapHint: 'Toca una persona: añadir su línea de sangre, limitar el acceso ahí o ver por qué está bloqueada.',
+      tapHint: 'Toca una persona: cambiar su nivel, añadir su línea de sangre o limitar el acceso ahí.',
       fit: 'Mostrar todo el árbol',
       status: {
-        editable: 'Editable',
-        locked: 'Bloqueado',
-        readonly: 'Solo visible',
+        editable: 'Editar',
+        locked: 'Solo ver',
+        readonly: 'Fuera, visible',
         hidden: 'No compartido',
       },
       line: 'Línea',
       stop: 'Hasta aquí',
       marriedIn: 'Familia política y cónyuges',
       reason: {
-        boundary: (names) => `Bloqueado: de aquí cuelgan otras personas no compartidas: ${names}.`,
-        stop: (names) => `Bloqueado: el acceso termina aquí («hasta aquí»); más allá: ${names}.`,
-        spouse: 'No editable: familia política, pertenece a su propia familia, no a la línea de sangre.',
-        manual: 'Bloqueado: bloqueado individualmente por un moderador.',
+        boundary: (names) => `En el borde: aquí cuelgan personas no compartidas: ${names}.`,
+        stop: (names) => `En el borde: el acceso termina aquí («hasta aquí»); más allá: ${names}.`,
+        spouse: 'Familia política: pertenece a su propia familia, no a la línea de sangre.',
+        manual: 'Fijado individualmente por un moderador.',
       },
       addLineOf: (name) => `Añadir la línea de sangre de ${name}`,
       stopHere: 'Limitar hasta aquí',
       detailsOnly: 'Solo datos',
       detailsOnlyHint: 'Datos y fotos sí; no se añaden parientes ni se puede borrar.',
-      unlock: 'Permitir editar de todos modos',
-      relock: 'Volver a bloquear',
-      lock: 'Bloquear a esta persona',
-      unlockManual: 'Quitar el bloqueo',
+      levelLabel: 'Derechos para esta persona',
+      standard: '(por defecto)',
+      lineFull: 'Las personas de las que parten las líneas siempre tienen todos los derechos.',
+      edgeFull: 'Todos los derechos: añadir la línea de sangre de la persona que está más allá.',
       search: 'Buscar en la lista …',
       more: (n) => `y ${n} más`,
       changes: 'Qué cambia',
-      gained: (n) => `${n} editable${n === 1 ? '' : 's'} de nuevo`,
-      unlocked: (n) => `${n} desbloqueado${n === 1 ? '' : 's'}`,
-      newlyLocked: (n) => `${n} bloqueado${n === 1 ? '' : 's'} ahora`,
+      gained: (n) => `${n} compartidos de nuevo`,
+      unlocked: (n) => `${n} con más derechos`,
+      newlyLocked: (n) => `${n} con menos derechos`,
       lost: (n) => `${n} ya no compartido${n === 1 ? '' : 's'}`,
       noChanges: 'Aún no hay cambios.',
     },

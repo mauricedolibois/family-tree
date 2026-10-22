@@ -47,6 +47,9 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
   const accessAsked = requests.mine.access?.line.person === person.id
   const canEdit = canEditPerson(person.id)
   const locked = isLocked(person.id)
+  // At the edge of the member's part: their details yes, their relatives no
+  const detailsOnly = canEdit && isDetailsOnly(person.id)
+  const limited = locked || detailsOnly
   const { meId, setMe, focusOn, showLine, lineId, select, showRelation, relation } = useView()
   const { notify } = useToast()
   const [deleting, setDeleting] = useState(false)
@@ -255,9 +258,9 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
       {/* Family */}
       <section className="flex flex-col gap-4">
         <h3 className="section-heading">{t.person.family}</h3>
-        {locked && (
+        {limited && (
           <p className="-mt-2 text-sm text-ink-muted">
-            {t.person.lockedHint(person.name)}{' '}
+            {locked ? t.person.lockedHint(person.name) : t.person.detailsOnlyHint(person.name)}{' '}
             {previewAs ? null : accessAsked ? (
               <span className="italic">{t.requests.accessPending}</span>
             ) : (
@@ -276,7 +279,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addParent, run: () => onAdd('PARENT') }
               : undefined
           }
-          lockedAdd={locked && parents.length < 2 ? t.person.addParent : undefined}
+          lockedAdd={limited && parents.length < 2 ? t.person.addParent : undefined}
         />
         <Relatives
           title={t.person.spouse}
@@ -287,7 +290,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addSpouse, run: () => onAdd('SPOUSE') }
               : undefined
           }
-          lockedAdd={locked && !spouse ? t.person.addSpouse : undefined}
+          lockedAdd={limited && !spouse ? t.person.addSpouse : undefined}
         />
         <Relatives
           title={t.person.children}
@@ -299,14 +302,14 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addChild, run: () => onAdd('CHILD'), tour: 'add-child' }
               : undefined
           }
-          lockedAdd={locked ? t.person.addChild : undefined}
+          lockedAdd={limited ? t.person.addChild : undefined}
         />
         {siblings.length > 0 && <Relatives title={t.person.siblings} ids={siblings} onOpen={focusOn} />}
       </section>
 
       {canEdit &&
         !(scope && linePeople(scope).has(person.id)) &&
-        !isDetailsOnly(person.id) &&
+        !detailsOnly &&
         (!account || canManage) &&
         canDelete(tree, person.id) && (
           <div className="border-t border-card-rule pt-4">

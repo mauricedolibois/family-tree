@@ -152,8 +152,9 @@ export const fr: Messages = {
     addSpouse: 'Ajouter un conjoint',
     addChild: 'Ajouter un enfant',
     locked: 'Verrouillé',
-    lockedHint: (name) =>
-      `À ${name} se rattachent des branches de la famille qui ne te sont pas partagées : tu ne peux donc rien modifier ni ajouter ici.`,
+    lockedHint: (name) => `Tu peux seulement voir ${name}, pas le modifier.`,
+    detailsOnlyHint: (name) =>
+      `Pour ${name}, tu peux modifier les infos et les photos, mais pas ajouter de proches ni supprimer quoi que ce soit – le reste de la famille reste intact.`,
     adopted: (female) => (female ? 'adoptée' : 'adopté'),
     remove: 'Retirer de l’arbre',
     confirmRemove: (name) => `Retirer ${name} de l’arbre ? La version précédente est sauvegardée automatiquement.`,
@@ -567,56 +568,105 @@ export const fr: Messages = {
       cancel: 'Annuler',
       lines: 'Lignées partagées',
       linesHint:
-        'Une lignée, c’est une personne avec ses ancêtres et ses descendants, et si tu veux ses lignes collatérales (frères et sœurs, cousins). Là où d’autres branches de la famille se rattachent, la personne est verrouillée ; une lignée de plus étend l’accès à cet endroit.',
+        'Une lignée, c’est une personne avec ses ancêtres et ses descendants, et si tu veux ses lignes collatérales (frères et sœurs, cousins). Là où d’autres branches de la famille se rattachent, seules les infos de la personne sont modifiables ; une lignée de plus y donne tous les droits.',
       firstLine: 'Par quelle lignée l’accès commence-t-il ?',
       addLine: 'Ajouter une autre lignée',
       lineOf: (name) => `Lignée de ${name}`,
       removeLine: (name) => `Retirer la lignée de ${name}`,
       search: 'Saisir un nom …',
       noMatch: 'Personne trouvé.',
+      modesTitle: 'Tout l’arbre ou seulement une partie ?',
+      modes: [
+        {
+          title: 'Tout l’arbre',
+          text: 'Le membre voit tout ; les éditeurs peuvent tout modifier.',
+          example: 'Pour la famille proche qui entretient l’arbre avec toi.',
+        },
+        {
+          title: 'Seulement une partie',
+          text: 'Tu partages des lignées : une personne avec ses ancêtres, ses descendants et, si tu veux, ses lignes collatérales. Chaque personne y a l’un des trois niveaux (« i » près des lignées et de l’aperçu).',
+          example: 'Pour la belle-famille : Anna complète sa propre famille sans modifier celle de son mari.',
+        },
+        {
+          title: 'Masquer le reste de l’arbre',
+          text: 'Coché, le membre ne voit que sa partie ; décoché, il voit tout mais ne modifie que sa partie. Les lecteurs ne voient toujours que leur partie.',
+          example: 'Masque-le si Anna ne doit pas voir la famille de son mari.',
+        },
+      ],
+      sideTitle: 'Que sont les lignes collatérales ?',
+      sideExample: {
+        0: 'Exemple : Anna, ses parents, grands-parents et enfants.',
+        1: 'Exemple : en plus le frère d’Anna et les frères et sœurs de ses parents (oncles, tantes).',
+        2: 'Exemple : en plus les enfants du frère d’Anna et ses cousins.',
+        3: 'Exemple : toute la famille d’origine d’Anna avec toutes ses branches.',
+      },
       stops: 'Limité jusqu’à',
       unstop: (name) => `Lever la limite à ${name}`,
       badge: 'Accès partiel',
     },
+    rights: {
+      title: 'Que peut faire le membre ?',
+      intro:
+        'Dans la partie partagée, chaque personne a l’un des trois niveaux. Exemple : Anna est entrée dans la famille par mariage et reçoit sa lignée avec sa fratrie.',
+      levels: {
+        edit: {
+          title: 'Modifier',
+          text: 'Tout changer : infos, photos, ajouter des proches, supprimer.',
+          example: 'Exemple : les parents d’Anna et ses enfants.',
+        },
+        details: {
+          title: 'Infos seulement',
+          text: 'Changer le nom, les dates, les textes et les photos, mais sans ajouter de proches ni supprimer. S’applique d’office au bord de la partie, là où d’autres branches se rattachent.',
+          example: 'Exemple : le frère marié d’Anna – sa femme et ses enfants ne sont pas partagés.',
+        },
+        view: {
+          title: 'Voir seulement',
+          text: 'Visible, mais non modifiable.',
+          example:
+            'Exemple : le mari d’Anna, qui fait partie de la famille de ses parents – ou qui le modérateur choisit.',
+        },
+      },
+      outro:
+        'Touche une personne dans l’aperçu pour changer son niveau. Tous les droits au bord s’obtiennent en ajoutant la lignée de la personne au-delà.',
+    },
     preview: {
       title: 'Aperçu',
-      sentence: (sees, edits, locked) =>
-        `Voit ${sees === 1 ? '1 personne' : `${sees} personnes`}, peut en modifier ${edits}${
-          locked ? `, ${locked} ${locked === 1 ? 'est verrouillée' : 'sont verrouillées'}` : ''
-        }.`,
+      sentence: (sees, edit, details, view) =>
+        `Voit ${sees === 1 ? '1 personne' : `${sees} personnes`} : ${edit} à modifier${
+          details ? `, ${details} infos seulement` : ''
+        }${view ? `, ${view} à voir seulement` : ''}.`,
       notShared: (n) => (n === 1 ? '1 personne n’est pas partagée.' : `${n} personnes ne sont pas partagées.`),
-      tapHint:
-        'Touche une personne : ajouter sa lignée, limiter l’accès à cet endroit ou voir pourquoi elle est verrouillée.',
+      tapHint: 'Touche une personne : changer son niveau, ajouter sa lignée ou limiter l’accès à cet endroit.',
       fit: 'Afficher tout l’arbre',
       status: {
-        editable: 'Modifiable',
-        locked: 'Verrouillé',
-        readonly: 'Visible seulement',
+        editable: 'Modifier',
+        locked: 'Voir seulement',
+        readonly: 'Hors partie, visible',
         hidden: 'Non partagé',
       },
       line: 'Lignée',
       stop: 'Jusqu’ici',
       marriedIn: 'Par alliance et conjoints',
       reason: {
-        boundary: (names) => `Verrouillé : d’autres personnes non partagées s’y rattachent : ${names}.`,
-        stop: (names) => `Verrouillé : l’accès s’arrête ici (« jusqu’ici ») ; au-delà : ${names}.`,
-        spouse: 'Non modifiable : par alliance, fait partie de sa propre famille, pas de la lignée.',
-        manual: 'Verrouillé : verrouillé individuellement par un modérateur.',
+        boundary: (names) => `Au bord : des personnes non partagées s’y rattachent : ${names}.`,
+        stop: (names) => `Au bord : l’accès s’arrête ici (« jusqu’ici ») ; au-delà : ${names}.`,
+        spouse: 'Par alliance : fait partie de sa propre famille, pas de la lignée.',
+        manual: 'Fixé individuellement par un modérateur.',
       },
       addLineOf: (name) => `Ajouter la lignée de ${name}`,
       stopHere: 'Limiter jusqu’ici',
       detailsOnly: 'Infos seulement',
       detailsOnlyHint: 'Infos et photos oui ; pas d’ajout de proches, pas de suppression.',
-      unlock: 'Autoriser la modification quand même',
-      relock: 'Verrouiller à nouveau',
-      lock: 'Verrouiller cette personne',
-      unlockManual: 'Lever le verrou',
+      levelLabel: 'Droits pour cette personne',
+      standard: '(par défaut)',
+      lineFull: 'Les personnes dont partent les lignées ont toujours tous les droits.',
+      edgeFull: 'Tous les droits : ajouter la lignée de la personne au-delà.',
       search: 'Chercher dans la liste …',
       more: (n) => `et ${n} de plus`,
       changes: 'Ce qui change',
-      gained: (n) => `${n} nouvellement modifiable${n === 1 ? '' : 's'}`,
-      unlocked: (n) => `${n} déverrouillé${n === 1 ? '' : 's'}`,
-      newlyLocked: (n) => `${n} nouvellement verrouillé${n === 1 ? '' : 's'}`,
+      gained: (n) => `${n} nouvellement partagé${n > 1 ? 's' : ''}`,
+      unlocked: (n) => `${n} avec plus de droits`,
+      newlyLocked: (n) => `${n} avec moins de droits`,
       lost: (n) => `${n} plus partagé${n === 1 ? '' : 's'}`,
       noChanges: 'Pas encore de changement.',
     },

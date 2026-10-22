@@ -1,13 +1,13 @@
 // src/components/manage/ScopePreview.tsx
 // What a part of the tree gives a member, before it is saved (family/scope.ts): a
-// small tree with every person's state, locked people clearly marked, and a list
-// that says why someone is locked. Tapping a person offers to add their blood line
+// small tree with every person's level (edit, details only, view), and a list that
+// says why. Tapping a person offers to change their level, to add their blood line
 // or to end the part there.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
-import { Eye, Flag, GitBranch, Lock, LockOpen, Maximize, Minus, Pencil, Plus, X } from 'lucide-react'
+import { Eye, Flag, GitBranch, Lock, Maximize, Minus, PenLine, Pencil, Plus, X } from 'lucide-react'
 import { lifeYears } from '@/family/format'
 import type { Tree } from '@/family/model'
 import {
@@ -24,6 +24,8 @@ import { Connectors } from '@/components/tree/Connectors'
 import { PersonCard, type CardState } from '@/components/tree/PersonCard'
 import { useTreeLayout } from '@/components/tree/useTreeLayout'
 import { Button } from '@/components/ui/Button'
+import { Segmented } from '@/components/ui/Choice'
+import { InfoTip } from '@/components/ui/InfoTip'
 import { useI18n } from '@/i18n/I18nProvider'
 
 /** Names shown in a sentence before "and n more" */
@@ -33,10 +35,41 @@ export type ScopeActions = {
   addLine: (personId: string) => void
   removeLine: (personId: string) => void
   toggleStop: (personId: string) => void
-  /** Exception: edit a locked person's details all the same, or lock them again */
-  toggleUnlock: (personId: string) => void
-  /** Exception: lock someone of the part all the same, or lift that */
-  toggleLock: (personId: string) => void
+  /** Exceptions for one person: only to see (lock), details only (unlock), or neither */
+  setExceptions: (personId: string, exceptions: { lock: boolean; unlock: boolean }) => void
+}
+
+/** What a member may do with a person of their part */
+export type Level = 'edit' | 'details' | 'view'
+
+const levelOf = (e: ScopeEntry): Level => (e.status === 'locked' ? 'view' : e.detailsOnly ? 'details' : 'edit')
+
+const LEVEL_ICON = { edit: Pencil, details: PenLine, view: Lock } as const
+
+/** The three levels with an example each, behind an "i" */
+export function RightsHelp() {
+  const { t } = useI18n()
+  const r = t.members.rights
+  return (
+    <InfoTip label={r.title} wide>
+      <span className="block font-semibold">{r.title}</span>
+      <span className="mt-1 block text-ink-muted">{r.intro}</span>
+      {(['edit', 'details', 'view'] as const).map((level) => {
+        const Icon = LEVEL_ICON[level]
+        return (
+          <span key={level} className="mt-2 flex gap-2">
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent-deep" />
+            <span>
+              <span className="block font-semibold">{r.levels[level].title}</span>
+              <span className="block">{r.levels[level].text}</span>
+              <span className="block italic text-ink-muted">{r.levels[level].example}</span>
+            </span>
+          </span>
+        )
+      })}
+      <span className="mt-2 block text-ink-muted">{r.outro}</span>
+    </InfoTip>
+  )
 }
 
 /** "Hans, Ute and 3 more", for reasons and changes */
@@ -66,15 +99,20 @@ export function ScopePreview({ tree, scope, actions }: { tree: Tree; scope: Tree
   const described = useMemo(() => describeScope(tree, scope), [tree, scope])
   const [selected, setSelected] = useState<string | null>(null)
   const count = (...s: ScopeStatus[]) => [...described.values()].filter((e) => s.includes(e.status)).length
+  const levels = [...described.values()].filter((e) => e.status === 'editable' || e.status === 'locked').map(levelOf)
+  const at = (level: Level) => levels.filter((l) => l === level).length
   const sees = count('editable', 'locked', ...(scope.hideRest ? [] : (['readonly'] as const)))
   const notShared = count('hidden', 'readonly')
 
   return (
     <section className="flex min-w-0 flex-col gap-3 rounded-control border border-card-rule bg-canvas-raised/40 p-3">
       <div>
-        <h3 className="section-heading">{p.title}</h3>
+        <h3 className="section-heading flex items-center gap-1">
+          {p.title}
+          <RightsHelp />
+        </h3>
         <p className="mt-1 text-[15px] text-ink">
-          {p.sentence(sees, count('editable'), count('locked'))}{' '}
+          {p.sentence(sees, at('edit'), at('details'), at('view'))}{' '}
           {notShared > 0 && <span className="text-ink-muted">{p.notShared(notShared)}</span>}
         </p>
       </div>
@@ -274,7 +312,7 @@ function CardMarks({
         )}
         {detailsOnly && (
           <span className={clsx(badge, 'bg-accent-deep text-on-primary')}>
-            <Pencil className="h-4 w-4" />
+            <PenLine className="h-4 w-4" />
             {p.detailsOnly}
           </span>
         )}
@@ -300,10 +338,10 @@ function Legend() {
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-ink-muted">
       {item('border-frame/80 bg-card', p.status.editable)}
-      {item('border-danger bg-danger/15 ring-2 ring-danger', p.status.locked)}
-      {item('border-card-rule bg-card opacity-40', `${p.status.hidden} / ${p.status.readonly}`)}
-      {item('border-accent bg-card ring-2 ring-accent', p.line)}
       {item('border-card-rule bg-card outline-dashed outline-2 outline-offset-1 outline-accent-deep', p.detailsOnly)}
+      {item('border-danger bg-danger/15 ring-2 ring-danger', p.status.locked)}
+      {item('border-accent bg-card ring-2 ring-accent', p.line)}
+      {item('border-card-rule bg-card opacity-40', `${p.status.hidden} / ${p.status.readonly}`)}
     </div>
   )
 }
@@ -329,15 +367,24 @@ function Selected({
   const reasonText = useReasonText(tree)
   const person = tree.members[id]
   const isLine = linePeople(scope).has(id)
-  const isStart = id === startOf(scope)
   const isStop = scope.stops.includes(id)
   const inPart = entry.status === 'editable' || entry.status === 'locked'
   const reason = entry.reason
-  // Adding the line of someone beyond a lock is what usually unlocks it
-  const beyond =
-    reason && 'via' in reason && !entry.detailsOnly
-      ? reason.via.filter((v) => !linePeople(scope).has(v)).slice(0, 3)
-      : []
+  // The level this person has without exceptions: what the moderator changes from
+  const natural = useMemo(() => {
+    const without = (ids: string[]) => ids.filter((x) => x !== id)
+    const e = describeScope(tree, { ...scope, lock: without(scope.lock), unlock: without(scope.unlock) }).get(id)
+    return e ? { level: levelOf(e), reason: e.reason } : null
+  }, [tree, scope, id])
+  // Full rights at the edge come with the line of someone beyond it
+  const edge = natural?.reason && 'via' in natural.reason ? natural.reason : null
+  const beyond = edge ? edge.via.filter((v) => !linePeople(scope).has(v)).slice(0, 3) : []
+  const choices: Level[] = natural?.level === 'edit' ? ['edit', 'details', 'view'] : ['details', 'view']
+  const choose = (level: Level) =>
+    actions.setExceptions(id, {
+      lock: level === 'view' && natural?.level !== 'view',
+      unlock: level === 'details' && natural?.level !== 'details',
+    })
 
   return (
     <div
@@ -366,7 +413,7 @@ function Selected({
       {reason && (
         <p className="flex items-start gap-2 text-sm text-ink">
           {entry.detailsOnly ? (
-            <LockOpen className="mt-0.5 h-4 w-4 shrink-0 text-accent-deep" />
+            <PenLine className="mt-0.5 h-4 w-4 shrink-0 text-accent-deep" />
           ) : (
             <Lock className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
           )}
@@ -404,43 +451,37 @@ function Selected({
           </Button>
         )}
       </div>
-      {/* Exceptions for this one person */}
-      {inPart && !isStart && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-card-rule pt-2">
-          {reason?.kind === 'manual' ? (
-            <Button
-              size="sm"
-              variant="quiet"
-              icon={<LockOpen className="h-4 w-4" />}
-              onClick={() => actions.toggleLock(id)}
-            >
-              {p.unlockManual}
-            </Button>
-          ) : entry.status === 'locked' ? (
-            <>
-              <Button size="sm" icon={<Pencil className="h-4 w-4" />} onClick={() => actions.toggleUnlock(id)}>
-                {p.unlock}
-              </Button>
-              <span className="text-[13px] text-ink-muted">{p.detailsOnlyHint}</span>
-            </>
-          ) : entry.detailsOnly ? (
-            <Button
-              size="sm"
-              variant="quiet"
-              icon={<Lock className="h-4 w-4" />}
-              onClick={() => actions.toggleUnlock(id)}
-            >
-              {p.relock}
-            </Button>
+      {/* The level for this one person; the people of the lines always have full rights */}
+      {inPart && natural && (
+        <div className="flex flex-col gap-1 border-t border-card-rule pt-2">
+          {isLine ? (
+            <p className="text-sm text-ink-muted">{p.lineFull}</p>
           ) : (
-            <Button
-              size="sm"
-              variant="quiet"
-              icon={<Lock className="h-4 w-4" />}
-              onClick={() => actions.toggleLock(id)}
-            >
-              {p.lock}
-            </Button>
+            <>
+              <Segmented
+                label={p.levelLabel}
+                value={levelOf(entry)}
+                dense
+                options={choices.map((level) => {
+                  const Icon = LEVEL_ICON[level]
+                  return {
+                    value: level,
+                    label: (
+                      <>
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {t.members.rights.levels[level].title}
+                        {level === natural.level && <span className="text-[13px] opacity-75">{p.standard}</span>}
+                      </>
+                    ),
+                  }
+                })}
+                onChange={choose}
+              />
+              <p className="text-[13px] text-ink-muted">
+                {t.members.rights.levels[levelOf(entry)].text}
+                {edge && ` ${p.edgeFull}`}
+              </p>
+            </>
           )}
         </div>
       )}

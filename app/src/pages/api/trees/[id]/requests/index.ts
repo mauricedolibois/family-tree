@@ -1,8 +1,8 @@
 // What members of a tree ask for (lib/requests.ts). GET: the member's own open
 // requests and those they may decide. POST {kind: 'claim', personId}: "that's me",
 // to be confirmed by a moderator or a close relative (moderators are linked right
-// away). POST {kind: 'access', personId}: another blood line at a locked person, for
-// the moderators to decide.
+// away). POST {kind: 'access', personId}: another blood line at a person the member
+// may not fully edit (locked or details only), for the moderators to decide.
 
 import { linkedPeople, linkPerson } from '@/lib/accounts'
 import { canManage, treeMembership, withUser } from '@/lib/auth'
@@ -60,8 +60,9 @@ export default withUser('api/trees/[id]/requests', async (req, res, user) => {
   }
 
   if (body.kind === 'access') {
-    // Asking makes sense only at someone locked for this member
-    if (!membership.scope || !scopeSets(tree, membership.scope).locked.has(personId)) {
+    // Asking makes sense only where the member may not change everything
+    const sets = membership.scope && scopeSets(tree, membership.scope)
+    if (!sets || !(sets.locked.has(personId) || sets.detailsOnly.has(personId))) {
       return res.status(400).json({ error: 'not locked' })
     }
     if (!(await createAccessRequest(treeId, user.id, requestedLine(personId)))) {

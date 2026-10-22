@@ -154,8 +154,9 @@ export const de = {
     addSpouse: 'Ehepartner hinzufügen',
     addChild: 'Kind hinzufügen',
     locked: 'Gesperrt',
-    lockedHint: (name: string) =>
-      `An ${name} hängen Familienzweige, die für dich nicht freigegeben sind. Darum kannst du hier nichts ändern oder hinzufügen.`,
+    lockedHint: (name: string) => `Du kannst ${name} nur ansehen, nicht ändern.`,
+    detailsOnlyHint: (name: string) =>
+      `Bei ${name} kannst du Angaben und Fotos ändern, aber keine Verwandten hinzufügen und nichts löschen – so bleibt die übrige Familie unberührt.`,
     adopted: (_female: boolean) => 'adoptiert',
     remove: 'Aus dem Stammbaum entfernen',
     confirmRemove: (name: string) => `${name} aus dem Stammbaum entfernen? Der Stand davor wird automatisch gesichert.`,
@@ -570,56 +571,104 @@ export const de = {
       cancel: 'Abbrechen',
       lines: 'Freigegebene Blutlinien',
       linesHint:
-        'Eine Blutlinie ist eine Person mit ihren Vorfahren und Nachkommen, auf Wunsch mit Seitenlinien (Geschwister, Cousins). Wo weitere Familienzweige dranhängen, ist die Person gesperrt; mit einer weiteren Linie lässt sich die Freigabe dort erweitern.',
+        'Eine Blutlinie ist eine Person mit ihren Vorfahren und Nachkommen, auf Wunsch mit Seitenlinien (Geschwister, Cousins). Wo weitere Familienzweige dranhängen, sind nur die Angaben der Person bearbeitbar; eine weitere Linie gibt dort volle Rechte.',
       firstLine: 'Mit wessen Blutlinie beginnt die Freigabe?',
       addLine: 'Weitere Blutlinie hinzufügen',
       lineOf: (name: string) => `Blutlinie von ${name}`,
       removeLine: (name: string) => `Blutlinie von ${name} entfernen`,
       search: 'Name eingeben …',
       noMatch: 'Niemand gefunden.',
+      modesTitle: 'Ganzer Stammbaum oder nur ein Teil?',
+      modes: [
+        {
+          title: 'Ganzer Stammbaum',
+          text: 'Das Mitglied sieht alles; Bearbeiter dürfen alles ändern.',
+          example: 'Für die engste Familie, die den Baum mitpflegt.',
+        },
+        {
+          title: 'Nur ein Teil',
+          text: 'Freigegeben werden Blutlinien: eine Person mit Vorfahren, Nachkommen und auf Wunsch Seitenlinien. Darin hat jede Person eine von drei Stufen („i“ bei den Blutlinien und der Vorschau).',
+          example: 'Für Angeheiratete: Anna ergänzt ihre eigene Familie, ohne die Familie ihres Mannes zu ändern.',
+        },
+        {
+          title: 'Übrigen Stammbaum ausblenden',
+          text: 'Mit Haken sieht das Mitglied nur seinen Teil, ohne Haken alles, bearbeitet aber nur seinen Teil. Wer nur ansehen darf, sieht immer nur seinen Teil.',
+          example: 'Ausblenden, wenn Anna die Familie ihres Mannes nicht sehen soll.',
+        },
+      ],
+      sideTitle: 'Was sind Seitenlinien?',
+      sideExample: {
+        0: 'Beispiel: Anna, ihre Eltern, Großeltern und Kinder.',
+        1: 'Beispiel: dazu Annas Bruder und die Geschwister ihrer Eltern (Onkel, Tanten).',
+        2: 'Beispiel: dazu die Kinder von Annas Bruder und ihre Cousins.',
+        3: 'Beispiel: Annas ganze Herkunftsfamilie mit allen Zweigen.',
+      },
       stops: 'Begrenzt bis',
       unstop: (name: string) => `Begrenzung bei ${name} aufheben`,
       badge: 'Teilzugriff',
     },
+    rights: {
+      title: 'Was darf das Mitglied?',
+      intro:
+        'Im freigegebenen Teil hat jede Person eine von drei Stufen. Beispiel: Anna hat eingeheiratet und bekommt ihre Blutlinie mit Geschwistern.',
+      levels: {
+        edit: {
+          title: 'Bearbeiten',
+          text: 'Alles ändern: Angaben, Fotos, Verwandte hinzufügen, löschen.',
+          example: 'Beispiel: Annas Eltern und ihre Kinder.',
+        },
+        details: {
+          title: 'Nur Angaben',
+          text: 'Name, Daten, Texte und Fotos ändern, aber keine Verwandten hinzufügen und nicht löschen. Gilt von selbst am Rand des Teils, wo weitere Familienzweige dranhängen.',
+          example: 'Beispiel: Annas verheirateter Bruder – seine Frau und Kinder sind nicht freigegeben.',
+        },
+        view: {
+          title: 'Nur ansehen',
+          text: 'Zu sehen, aber nicht änderbar.',
+          example: 'Beispiel: Annas Ehemann, er gehört zur Familie seiner Eltern – oder wen der Moderator so festlegt.',
+        },
+      },
+      outro:
+        'Tippe in der Vorschau auf eine Person, um ihre Stufe zu ändern. Volle Rechte am Rand gibt es, indem du die Blutlinie der Person dahinter hinzufügst.',
+    },
     preview: {
       title: 'Vorschau',
-      sentence: (sees: number, edits: number, locked: number) =>
-        `Sieht ${sees === 1 ? '1 Person' : `${sees} Personen`}, kann ${edits} davon bearbeiten${
-          locked ? `, ${locked} ${locked === 1 ? 'ist' : 'sind'} gesperrt` : ''
-        }.`,
+      sentence: (sees: number, edit: number, details: number, view: number) =>
+        `Sieht ${sees === 1 ? '1 Person' : `${sees} Personen`}: ${edit} bearbeiten${
+          details ? `, ${details} nur Angaben` : ''
+        }${view ? `, ${view} nur ansehen` : ''}.`,
       notShared: (n: number) => (n === 1 ? '1 Person ist nicht freigegeben.' : `${n} Personen sind nicht freigegeben.`),
-      tapHint:
-        'Tippe auf eine Person: Blutlinie hinzufügen, Freigabe dort begrenzen oder sehen, warum sie gesperrt ist.',
+      tapHint: 'Tippe auf eine Person: Stufe ändern, Blutlinie hinzufügen oder die Freigabe dort begrenzen.',
       fit: 'Ganzen Baum zeigen',
       status: {
-        editable: 'Bearbeitbar',
-        locked: 'Gesperrt',
-        readonly: 'Nur sichtbar',
+        editable: 'Bearbeiten',
+        locked: 'Nur ansehen',
+        readonly: 'Außerhalb, sichtbar',
         hidden: 'Nicht freigegeben',
       },
       line: 'Linie',
       stop: 'Bis hier',
       marriedIn: 'Eingeheiratet und Ehepartner',
       reason: {
-        boundary: (names: string) => `Gesperrt: Daran hängen weitere Personen, die nicht freigegeben sind: ${names}.`,
-        stop: (names: string) => `Gesperrt: Die Freigabe endet hier („bis hier“), dahinter ${names}.`,
-        spouse: 'Nicht bearbeitbar: eingeheiratet, gehört zur eigenen Familie, nicht zur Blutlinie.',
-        manual: 'Gesperrt: einzeln vom Moderator gesperrt.',
+        boundary: (names: string) => `Am Rand: Hier hängen Personen dran, die nicht freigegeben sind: ${names}.`,
+        stop: (names: string) => `Am Rand: Die Freigabe endet hier („bis hier“), dahinter ${names}.`,
+        spouse: 'Eingeheiratet: gehört zur eigenen Familie, nicht zur Blutlinie.',
+        manual: 'Vom Moderator einzeln festgelegt.',
       },
       addLineOf: (name: string) => `Blutlinie von ${name} hinzufügen`,
       stopHere: 'Bis hier begrenzen',
       detailsOnly: 'Nur Angaben',
       detailsOnlyHint: 'Angaben und Fotos ja; keine Verwandten hinzufügen, nicht löschen.',
-      unlock: 'Trotzdem bearbeiten erlauben',
-      relock: 'Wieder sperren',
-      lock: 'Diese Person sperren',
-      unlockManual: 'Sperre aufheben',
+      levelLabel: 'Rechte für diese Person',
+      standard: '(Standard)',
+      lineFull: 'Personen, mit deren Blutlinie die Freigabe beginnt, haben immer volle Rechte.',
+      edgeFull: 'Volle Rechte: die Blutlinie der Person dahinter hinzufügen.',
       search: 'In der Liste suchen …',
       more: (n: number) => `und ${n} weitere`,
       changes: 'Was sich ändert',
-      gained: (n: number) => `${n} neu bearbeitbar`,
-      unlocked: (n: number) => `${n} entsperrt`,
-      newlyLocked: (n: number) => `${n} neu gesperrt`,
+      gained: (n: number) => `${n} neu freigegeben`,
+      unlocked: (n: number) => `${n} mit mehr Rechten`,
+      newlyLocked: (n: number) => `${n} mit weniger Rechten`,
       lost: (n: number) => `${n} nicht mehr freigegeben`,
       noChanges: 'Noch keine Änderung.',
     },

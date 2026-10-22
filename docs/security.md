@@ -42,7 +42,7 @@ Members limited to **a part of the tree** (`scope` on the membership, see
 | Endpoint | Part, rest hidden | Part, rest visible |
 | --- | --- | --- |
 | `GET /api/trees/<id>` | only the part (`viewFor`) | everything |
-| `PUT /api/trees/<id>` (editors) | merged by `mergeScopedSave`: only the part changes, locked people and the lines' people stay, otherwise 403 | same |
+| `PUT /api/trees/<id>` (editors) | merged by `mergeScopedSave`: only the part changes; people with details only keep their links and stay, view-only people and the lines' people stay, otherwise 403 | same |
 | `GET /api/media/<id>/<file>` | only files of people in the part and own fresh uploads, otherwise 404 | everything |
 | `GET /api/trees/<id>/download` | only the part | everything |
 | `/api/trees/<id>/calendar` | 403 (the feed holds the whole tree) | link yes, renewing no |
@@ -105,7 +105,7 @@ Further limits:
 - Viewers can still download everything they see (the ZIP download); that is
   the point of being a member, not a gap.
 - A part of a tree limits contents, not facts one can infer: a member sees that
-  their start person has a spouse, that a locked person has relatives beyond the
-  part (not who), and kinship labels only cover the people in their part. A
+  their start person has a spouse, that someone at the edge has relatives beyond
+  the part (not who), and kinship labels only cover the people in their part. A
   calendar link they got before being limited keeps working until it is renewed.
 - The Supabase secrets themselves (`supabase.md`, step 4).

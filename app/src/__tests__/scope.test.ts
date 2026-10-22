@@ -48,16 +48,27 @@ describe('scope sets', () => {
     expect(sorted(editable)).toEqual(['P1', 'P2', 'S', 'X'])
   })
 
-  it('lock people on whom family lines outside the part hang', () => {
+  it('give only their details to people on whom family lines outside the part hang', () => {
     // K's line: X's parents also have S, who is not in the part
-    const { editable, locked } = scopeSets(base, { person: 'K', up: null, down: null, side: 0, hideRest: true })
-    expect(sorted(locked)).toEqual(['P1', 'P2'])
-    expect(sorted(editable)).toEqual(['G', 'H', 'K', 'X', 'Y'])
+    const { editable, locked, detailsOnly } = scopeSets(base, {
+      person: 'K',
+      up: null,
+      down: null,
+      side: 0,
+      hideRest: true,
+    })
+    expect(sorted(detailsOnly)).toEqual(['P1', 'P2'])
+    expect(sorted(editable)).toEqual(['G', 'H', 'K', 'P1', 'P2', 'X', 'Y'])
+    expect(locked.size).toBe(0)
   })
 
-  it('lock a married-in spouse with their own family, never the start person', () => {
+  it('show the spouse of a line person only; a spouse further down with own family gets the details', () => {
     const fromTop = scopeSets(base, { person: 'G', up: null, down: null, side: 0, hideRest: true })
-    expect(sorted(fromTop.locked)).toEqual(['X'])
+    // H married G, the start person: belongs to her own family
+    expect(fromTop.visible.has('H') && !fromTop.editable.has('H')).toBe(true)
+    expect(fromTop.locked.size).toBe(0) // no lock mark for that
+    // X married G's son and has her parents in the tree: her details only
+    expect(fromTop.detailsOnly.has('X')).toBe(true)
     expect(fromTop.editable.has('K')).toBe(true)
     // X's parents and child are outside, yet X stays editable as the start person
     const alone = scopeSets(base, { person: 'X', up: 0, down: 0, side: 0, hideRest: true })
@@ -216,11 +227,15 @@ describe('saving with a scope', () => {
     expect(canAddInPart(view, scope, 'Y', 'CHILD')).toBe(false) // outside the part
   })
 
-  it('refuses changing or deleting a locked person', () => {
+  it('takes the details of someone at the edge, but neither deletes nor changes those only to see', () => {
     const line: Legacy = { person: 'K', up: null, down: null, side: 0, hideRest: true }
-    const changed = copy(viewFor(base, line))
+    const renamed = copy(viewFor(base, line))
+    renamed.members.P1.name = 'Paul B.'
+    expect(mergeScopedSave(base, renamed, line).ok).toBe(true)
+    const viewOnly = { ...lines(line), lock: ['P1'] }
+    const changed = copy(S.viewFor(base, viewOnly))
     changed.members.P1.name = 'Changed'
-    expect(mergeScopedSave(base, changed, line)).toMatchObject({ ok: false, error: 'outside scope' })
+    expect(S.mergeScopedSave(base, changed, viewOnly)).toMatchObject({ ok: false, error: 'outside scope' })
     const gone = copy(viewFor(base, line))
     delete gone.members.P1
     gone.members.P2.spouseId = null
@@ -322,6 +337,17 @@ const lineOf = (...people: string[]): TreeScope => ({
   lock: [],
   hideRest: true,
 })
+/** Everyone by level: edit, details (only), view, hidden, readonly */
+const levels = (scope: TreeScope) => {
+  const out: Record<string, string[]> = {}
+  for (const [id, e] of describeScope(family, scope)) {
+    const level =
+      e.status === 'editable' ? (e.detailsOnly ? 'details' : 'edit') : e.status === 'locked' ? 'view' : e.status
+    ;(out[level] ??= []).push(id)
+  }
+  for (const k of Object.keys(out)) out[k].sort()
+  return out
+}
 const byStatus = (scope: TreeScope) => {
   const out: Record<string, string[]> = {}
   for (const [id, e] of describeScope(family, scope)) (out[e.status] ??= []).push(id)
@@ -330,15 +356,16 @@ const byStatus = (scope: TreeScope) => {
 }
 
 describe('blood lines', () => {
-  it('give only the line: further family lines lock the people they hang on', () => {
-    expect(byStatus(lineOf('lisa'))).toEqual({
-      editable: ['lisa', 'maria', 'mia', 'peter'],
-      locked: ['erna', 'karl', 'thomas'],
+  it('give only the line: where further family lines hang on, only the details', () => {
+    expect(levels(lineOf('lisa'))).toEqual({
+      edit: ['lisa', 'maria', 'mia', 'peter'],
+      details: ['erna', 'karl'],
+      view: ['thomas'],
       hidden: ['gisela', 'hans', 'tim', 'ute', 'werner'],
     })
     const d = describeScope(family, lineOf('lisa'))
     expect(d.get('karl')?.reason).toEqual({ kind: 'boundary', via: ['hans'] })
-    expect(d.get('thomas')?.reason).toEqual({ kind: 'boundary', via: ['werner', 'gisela'] })
+    expect(d.get('thomas')?.reason).toEqual({ kind: 'spouse' })
     expect(d.get('peter')?.lines).toEqual(['lisa'])
   })
 
@@ -349,9 +376,9 @@ describe('blood lines', () => {
     expect(describeScope(family, both).get('ute')).toEqual({ status: 'locked', lines: [], reason: { kind: 'spouse' } })
     expect(S.scopeSets(family, both).locked.has('ute')).toBe(false)
     expect(diffScopes(family, lineOf('lisa'), both)).toEqual({
-      gained: ['hans', 'tim'],
+      gained: ['hans', 'ute', 'tim'],
       unlocked: ['karl', 'erna'],
-      locked: ['ute'],
+      locked: [],
       lost: [],
     })
   })
@@ -372,11 +399,12 @@ describe('blood lines', () => {
       lock: [],
       hideRest: true,
     })
-    expect(S.scopeSets(base, line()).locked.has('P1')).toBe(true)
+    expect(S.scopeSets(base, line()).detailsOnly.has('P1')).toBe(true)
     expect(S.canAddInPart(base, line(), 'P1', 'CHILD')).toBe(false)
     const withSiblings = S.scopeSets(base, line(1))
     expect(sorted(withSiblings.editable)).toEqual(['K', 'P1', 'P2', 'S', 'X'])
-    expect(sorted(withSiblings.locked)).toEqual(['Y']) // her husband, with the main family beyond
+    expect(withSiblings.detailsOnly.size).toBe(0)
+    expect(withSiblings.editable.has('Y')).toBe(false) // her husband, of the main family
     expect(S.canAddInPart(base, line(1), 'P1', 'CHILD')).toBe(true)
     expect(parseScope(line(1))).toEqual(line(1))
   })
@@ -408,8 +436,16 @@ describe('blood lines', () => {
 describe('exceptions', () => {
   const lisa = lineOf('lisa')
 
-  it('let a locked person be edited all the same, but only their details', () => {
-    const scope = { ...lisa, unlock: ['karl'] }
+  it('limit someone to their details by hand, or let a married-in spouse that far', () => {
+    expect(levels({ ...lisa, unlock: ['peter', 'thomas'] })).toMatchObject({
+      edit: ['lisa', 'maria', 'mia'],
+      details: ['erna', 'karl', 'peter', 'thomas'],
+    })
+    expect(levels({ ...lisa, lock: ['karl'] }).view).toEqual(['karl', 'thomas'])
+  })
+
+  it('let someone at the edge change their details, never their links', () => {
+    const scope = lisa
     expect(describeScope(family, scope).get('karl')).toMatchObject({ status: 'editable', detailsOnly: true })
     const sets = S.scopeSets(family, scope)
     expect(sets.locked.has('karl')).toBe(false)

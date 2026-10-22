@@ -66,8 +66,8 @@ on the members page (slider button next to the member) or from a person's info
 sheet ("Access …"). A part is made of **blood lines**: a person with their
 ancestors and descendants, each with its own number of generations up and down
 and, if chosen, side lines (siblings, cousins, all blood relatives with their
-families). Someone who married in gets their line with siblings, so they can add
-their own brothers and sisters and their parents stay editable. A part starts with
+families). A new part starts with the line of the invited person and their
+siblings, so someone who married in can add their own brothers and sisters. A part starts with
 one line and grows by adding the line of another person. Parts set before lines
 existed (a start person with side lines) are read as one such line.
 
@@ -79,30 +79,38 @@ Per member the moderator chooses:
 - **rest visible** (editors only): the member sees everything but changes only
   their part.
 
-People of the part on whom family lines outside the part hang are **locked**: the
-member sees them but cannot change them, delete them or add relatives to them.
-Examples are a grandfather whose other son is not in the part, the topmost
-ancestor when their parents are beyond the chosen generations, or someone who
-married in and whose own parents are in the tree. Their info sheet shows a small
-lock, the "add" buttons are greyed out, a short sentence explains why, and the
-member can **ask for access**: a moderator then sees "Lisa asks for access to
-Thomas and descendants" with what would change, and confirms or rejects it. The
-people the lines start from are never locked. A couple can still get a new child
-when one of the two is locked. Spouses of the lines' people who are no blood
-relative of any line are shown but not editable.
+Every person of the part has one of **three levels**:
+
+- **Edit**: everything, including adding relatives and deleting.
+- **Details only**: name, dates, texts and photos, but no relatives added and not
+  deleted, so the family beyond stays untouched. People at the edge of the part
+  get it by themselves: those on whom family lines outside the part hang, for
+  example a grandfather whose other son is not in the part, a married sister whose
+  husband and children are not shared, or the topmost ancestor when their parents
+  are beyond the chosen generations.
+- **View only**: someone who married into a line (they belong to their own
+  family), and anyone the moderator sets so.
+
+The people the lines start from always have full rights. A couple can still get
+a new child when one of the two may not be changed. In the info sheet the member
+sees why they may change only the details, the "add" buttons are greyed out, and
+they can **ask for access**: a moderator then sees "Lisa asks for access to
+Thomas and descendants" with what would change, and confirms or rejects it.
 
 Further tools in the editor:
 
 - **Up to here**: the part ends at a person; they belong to it, nobody beyond them
-  (they are locked when there are people beyond).
-- **Exceptions per person**: "Allow editing anyway" for a locked person (their
-  details and photos only; no relatives added, links unchanged, not deleted), and
-  "Lock this person" for someone of the part.
-- **Preview**: a small tree with every person's state (editable, locked with a
-  clear red mark, not shared), a sentence like "sees 7 people, can edit 4, 3 are
-  locked", and a list that says why someone is locked, with a button that adds the
-  line that unlocks them. Changing an existing part shows what changes before
-  saving.
+  (details only when there are people beyond).
+- **Level per person**: tapping a person in the preview offers edit, details only
+  or view only; their default is marked. Full rights at the edge come with the
+  blood line of the person beyond, which the preview offers as a button.
+- **Help**: the "i" next to "Access", the side lines and the preview explains the
+  choices with examples, on hover or tap.
+- **Preview**: a small tree with every person's level (view only with a clear
+  red mark, details only dashed, not shared faded), a sentence like "sees 7
+  people: 3 to edit, 2 details only, 2 view only", and a list that says why.
+  Changing an existing part shows before saving who is newly shared, who gets more
+  or fewer rights and who is no longer shared.
 - **View as**: the eye next to a member opens the real tree exactly as they see it,
   read only.
 
@@ -111,8 +119,9 @@ still edit them afterwards: the interface offers "add" only there, and the serve
 refuses anything else. A new sibling, for example, needs the side line "siblings".
 
 The server enforces it (`app/src/family/scope.ts`): it cuts what it sends, telling
-which people are locked (only visible in the whole tree), and on saving it takes
-over only the people of the part and new people linked to them; everything else
+which people have details only or view only (only visible in the whole tree), and
+on saving it takes over only the people of the part and new people linked to
+them; everything else
 comes from the stored tree, so links to the hidden rest stay intact. Changes
 outside the part are refused with a message. Moderators always have the whole
 tree; making someone a moderator removes their part. If the start person (the

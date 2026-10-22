@@ -34,9 +34,13 @@ export type TreeScope = {
   lines: BloodLine[]
   /** People where the part ends: they belong to it, nobody beyond them */
   stops: string[]
-  /** Exceptions: locked people whose own details may be edited all the same */
+  /**
+   * Exceptions: people of the part limited to their own details ("details only"),
+   * or someone who married in allowed that far. People at the edge of the part
+   * have that anyway.
+   */
   unlock: string[]
-  /** Exceptions: people of the part who are locked all the same */
+  /** Exceptions: people of the part who may only be seen */
   lock: string[]
   /** true: everyone outside the part is hidden; false: visible, read-only */
   hideRest: boolean
@@ -176,23 +180,31 @@ export type ScopeEntry = {
   lines: string[]
   reason?: LockReason
   /**
-   * Locked by its reason, but unlocked by hand: the person's own details may be
-   * edited, their relatives not (no one added to them, they cannot be deleted)
+   * Only the person's own details may be edited, their relatives not (no one
+   * added to them, they cannot be deleted): people at the edge of the part, and
+   * anyone limited so by hand
    */
   detailsOnly?: boolean
 }
 
 /**
  * Everyone in the tree and what the part gives the member about them. The part is
- * every line with spouses (couples stay together). In it, people linked to
- * someone outside it are locked: further family lines hang on them that the
- * member was not given (a grandfather whose other son is not in the part, a
- * spouse with their own parents, a stop with people beyond). A line's own person
- * is never locked. A start person that no longer exists leaves an empty part
- * rather than the whole tree.
+ * every line with spouses (couples stay together), and each person in it gets one
+ * of three levels:
+ * - edit: everything, including adding relatives and deleting;
+ * - details only: name, dates and photos, for people at the edge of the part,
+ *   on whom family lines hang that the member was not given (a grandfather whose
+ *   other son is not in the part, a married sister with her own family, a stop
+ *   with people beyond); their links to that family stay as they are;
+ * - view (status locked): someone who married into a line, and anyone locked by
+ *   hand.
+ * The moderator can lower anyone (unlock: details only, lock: view), raise
+ * someone who married in to details only, and give full rights at the edge by
+ * adding that person's line. A line's own person always has full rights. A start
+ * person that no longer exists leaves an empty part rather than the whole tree.
  *
- * Locked people can only be found in the whole tree: on a view with the rest
- * hidden their links outside are cut, so the client gets them from the server.
+ * The edge can only be found in the whole tree: on a view with the rest hidden
+ * the links outside are cut, so the client gets these levels from the server.
  */
 export function describeScope(tree: Tree, scope: TreeScope): Map<string, ScopeEntry> {
   const ix = buildIndex(tree)
@@ -233,23 +245,26 @@ export function describeScope(tree: Tree, scope: TreeScope): Map<string, ScopeEn
     const via = [...new Set([...parentsOf(ix, id), ...childrenOf(ix, id), ...(sp ? [sp] : [])])].filter(
       (x) => !part.has(x),
     )
-    const reason: LockReason | undefined = via.length
-      ? { kind: stop.has(id) ? 'stop' : 'boundary', via }
-      : marriedIn.has(id)
+    const reason: LockReason | undefined = marriedIn.has(id)
       ? { kind: 'spouse' }
+      : via.length
+      ? { kind: stop.has(id) ? 'stop' : 'boundary', via }
       : undefined
-    if (!reason) out.set(id, { status: 'editable', lines: lineIds })
-    else if (scope.unlock.includes(id)) out.set(id, { status: 'editable', lines: lineIds, reason, detailsOnly: true })
-    else out.set(id, { status: 'locked', lines: lineIds, reason })
+    const details = scope.unlock.includes(id)
+    // Someone who married in belongs to their own family: only to see, unless allowed by hand
+    if (reason?.kind === 'spouse' && !details) out.set(id, { status: 'locked', lines: lineIds, reason })
+    // At the edge, or limited by hand: their details, never the links to the family beyond
+    else if (reason || details) out.set(id, { status: 'editable', lines: lineIds, reason, detailsOnly: true })
+    else out.set(id, { status: 'editable', lines: lineIds })
   }
   return out
 }
 
 /**
  * Who a member with this scope sees and may edit (describeScope). `locked` holds
- * those the interface marks with a lock; someone who married into a line is not
- * editable either, without a mark. `detailsOnly`: editable people whose
- * relatives are not (unlocked by hand).
+ * those locked by hand, marked with a lock; someone who married into a line is
+ * not editable either, without a mark. `detailsOnly`: editable people whose
+ * relatives are not (at the edge of the part, or limited by hand).
  */
 export function scopeSets(
   tree: Tree,
@@ -269,33 +284,37 @@ export function scopeSets(
 }
 
 export type ScopeDiff = {
-  /** Editable now, outside the part before */
+  /** In the part now, outside it before */
   gained: string[]
-  /** Editable now, locked before */
+  /** More rights than before: details instead of view, or everything instead of details */
   unlocked: string[]
-  /** Locked now, editable or outside the part before */
+  /** Fewer rights than before, still in the part */
   locked: string[]
   /** In the part before, outside it now */
   lost: string[]
 }
 
+/** 0 outside the part, 1 view, 2 details only, 3 everything */
+const level = (e?: ScopeEntry) =>
+  !e || (e.status !== 'editable' && e.status !== 'locked') ? 0 : e.status === 'locked' ? 1 : e.detailsOnly ? 2 : 3
+
 /** What changes for a member when their part changes from `before` to `after` (null = whole tree) */
 export function diffScopes(tree: Tree, before: TreeScope | null, after: TreeScope | null): ScopeDiff {
-  const statusOf = (scope: TreeScope | null): Map<string, { status: ScopeStatus }> =>
+  const entries = (scope: TreeScope | null): Map<string, ScopeEntry> =>
     scope
       ? describeScope(tree, scope)
-      : new Map(Object.keys(tree.members).map((id) => [id, { status: 'editable' as const }]))
-  const a = statusOf(before)
-  const b = statusOf(after)
-  const inPart = (s?: ScopeStatus) => s === 'editable' || s === 'locked'
+      : new Map(Object.keys(tree.members).map((id) => [id, { status: 'editable' as const, lines: [] }]))
+  const a = entries(before)
+  const b = entries(after)
   const diff: ScopeDiff = { gained: [], unlocked: [], locked: [], lost: [] }
   for (const id of Object.keys(tree.members)) {
-    const was = a.get(id)?.status
-    const now = b.get(id)?.status
-    if (now === 'editable' && was === 'locked') diff.unlocked.push(id)
-    else if (now === 'editable' && !inPart(was)) diff.gained.push(id)
-    else if (now === 'locked' && was !== 'locked') diff.locked.push(id)
-    else if (!inPart(now) && inPart(was)) diff.lost.push(id)
+    const was = level(a.get(id))
+    const now = level(b.get(id))
+    if (was === now) continue
+    if (!was) diff.gained.push(id)
+    else if (!now) diff.lost.push(id)
+    else if (now > was) diff.unlocked.push(id)
+    else diff.locked.push(id)
   }
   return diff
 }

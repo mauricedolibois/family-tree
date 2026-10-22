@@ -11,16 +11,21 @@ import type { Tree } from '@/family/model'
 import type { Role } from '@/lib/accounts'
 import { useI18n } from '@/i18n/I18nProvider'
 import { selectClass } from './parts'
-import { ScopeChanges, ScopePreview, type ScopeActions } from './ScopePreview'
+import { RightsHelp, ScopeChanges, ScopePreview, type ScopeActions } from './ScopePreview'
+import { InfoTip } from '@/components/ui/InfoTip'
 
 /** Ancestors and descendants offered as fixed numbers; beyond that "all" */
 const MAX_OFFERED = 8
 /** Matches shown while searching a person */
 const MATCHES = 8
 
-/** What a new part starts with: no line yet, or the whole blood line of this person; the rest hidden */
+/**
+ * What a new part starts with: no line yet, or the whole blood line of this person
+ * with their siblings (someone who married in adds their own brothers and
+ * sisters); the rest hidden
+ */
 export const newScope = (person?: string): TreeScope => ({
-  lines: person ? [{ person, up: null, down: null }] : [],
+  lines: person ? [{ person, up: null, down: null, side: 1 }] : [],
   stops: [],
   unlock: [],
   lock: [],
@@ -56,12 +61,13 @@ export function ScopeEditor({
   const setLine = (i: number, patch: Partial<BloodLine>) =>
     value && set({ lines: value.lines.map((l, j) => (j === i ? { ...l, ...patch } : l)) })
   const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
+  const put = (list: string[], id: string, on: boolean) => [...list.filter((x) => x !== id), ...(on ? [id] : [])]
   const actions: ScopeActions = {
     addLine: (person) => value && onChange(withLine(value, person)),
     removeLine: (person) => value && set({ lines: value.lines.filter((l) => l.person !== person) }),
     toggleStop: (person) => value && set({ stops: toggle(value.stops, person) }),
-    toggleUnlock: (person) => value && set({ unlock: toggle(value.unlock, person) }),
-    toggleLock: (person) => value && set({ lock: toggle(value.lock, person) }),
+    setExceptions: (person, { lock, unlock }) =>
+      value && set({ lock: put(value.lock, person, lock), unlock: put(value.unlock, person, unlock) }),
   }
   const name = (id: string) => tree?.members[id]?.name ?? '?'
   const shown = scopeForRole(value, role)
@@ -86,9 +92,22 @@ export function ScopeEditor({
 
   return (
     <fieldset className="flex min-w-0 flex-col gap-3">
-      <label className="flex flex-col gap-1">
-        <span className="field-label">{a.label}</span>
+      <div className="flex flex-col gap-1">
+        <span className="field-label flex items-center gap-1">
+          {a.label}
+          <InfoTip label={a.modesTitle} wide>
+            <span className="block font-semibold">{a.modesTitle}</span>
+            {a.modes.map((m) => (
+              <span key={m.title} className="mt-2 block">
+                <span className="block font-semibold">{m.title}</span>
+                <span className="block">{m.text}</span>
+                <span className="block italic text-ink-muted">{m.example}</span>
+              </span>
+            ))}
+          </InfoTip>
+        </span>
         <select
+          aria-label={a.label}
           className={selectClass}
           value={value ? 'part' : 'whole'}
           onChange={(e) => onChange(e.target.value === 'part' ? before ?? newScope() : null)}
@@ -96,13 +115,16 @@ export function ScopeEditor({
           <option value="whole">{a.whole}</option>
           <option value="part">{a.part}</option>
         </select>
-      </label>
+      </div>
       {value && (
         <>
           <p className="text-sm text-ink-muted">{a.linesHint}</p>
           {value.lines.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="field-label">{a.lines}</span>
+              <span className="field-label flex items-center gap-1">
+                {a.lines}
+                <RightsHelp />
+              </span>
               {value.lines.map((l, i) => (
                 <div key={l.person} className="flex flex-col gap-2 rounded-control border border-accent/60 bg-card p-3">
                   <div className="flex items-center gap-2">
@@ -126,9 +148,22 @@ export function ScopeEditor({
                     {generations(l.up, t.scope.ancestors, (up) => setLine(i, { up }))}
                     {generations(l.down, t.scope.descendants, (down) => setLine(i, { down }))}
                   </div>
-                  <label className="flex flex-col gap-1">
-                    <span className="field-label">{t.scope.sideLines}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="field-label flex items-center gap-1">
+                      {t.scope.sideLines}
+                      <InfoTip label={a.sideTitle} wide>
+                        <span className="block font-semibold">{a.sideTitle}</span>
+                        {([0, 1, 2, 3] as const).map((side) => (
+                          <span key={side} className="mt-2 block">
+                            <span className="block font-semibold">{t.scope.side[side]}</span>
+                            <span className="block">{t.scope.sideHint[side]}</span>
+                            <span className="block italic text-ink-muted">{a.sideExample[side]}</span>
+                          </span>
+                        ))}
+                      </InfoTip>
+                    </span>
                     <select
+                      aria-label={t.scope.sideLines}
                       className={selectClass}
                       value={l.side ?? 0}
                       onChange={(e) => {
@@ -143,7 +178,7 @@ export function ScopeEditor({
                       ))}
                     </select>
                     <span className="text-sm text-ink-muted">{t.scope.sideHint[l.side ?? 0]}</span>
-                  </label>
+                  </div>
                 </div>
               ))}
             </div>
