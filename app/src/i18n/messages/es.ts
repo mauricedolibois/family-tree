@@ -91,6 +91,7 @@ export const es: Messages = {
     clear: 'Borrar búsqueda',
   },
   tree: {
+    minimap: 'Mapa general',
     layoutFailed: 'No se ha podido ordenar el árbol.',
     drawing: 'Dibujando el árbol …',
     zoomIn: 'Ampliar',

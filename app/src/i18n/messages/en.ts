@@ -90,6 +90,7 @@ export const en: Messages = {
     clear: 'Clear search',
   },
   tree: {
+    minimap: 'Overview map',
     layoutFailed: 'The tree could not be laid out.',
     drawing: 'Drawing the tree …',
     zoomIn: 'Zoom in',

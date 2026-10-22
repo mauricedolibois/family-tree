@@ -101,13 +101,15 @@ export default function AdminPage({ nav, treeId }: Props) {
             <>
               {data.schema && <FormMessage>{t.setup.outdated(data.schema.have, data.schema.need)}</FormMessage>}
               {!data.mail && <FormMessage tone="info">{t.admin.noMail}</FormMessage>}
-              {/* This tree's invitations are on its members tab */}
-              <InvitesCard
-                title={treeId ? t.manage.otherInvites : t.admin.openInvites}
-                invites={data.invites.filter((i) => !treeId || i.treeId !== treeId)}
-                date={date}
-                onRevoke={(id) => run(`/api/admin/invites/${id}`, null, 'DELETE')}
-              />
+              {/* This tree's invitations are on its members tab; others only when there are some */}
+              {(!treeId || data.invites.some((i) => i.treeId !== treeId)) && (
+                <InvitesCard
+                  title={treeId ? t.manage.otherInvites : t.admin.openInvites}
+                  invites={data.invites.filter((i) => !treeId || i.treeId !== treeId)}
+                  date={date}
+                  onRevoke={(id) => run(`/api/admin/invites/${id}`, null, 'DELETE')}
+                />
+              )}
               <TreesCard trees={data.trees} users={data.users} me={data.me} run={run} />
               <TrashCard trash={data.trash} date={date} run={run} />
               <UsersCard data={data} run={run} />

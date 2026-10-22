@@ -95,6 +95,7 @@ export const de = {
     clear: 'Suche leeren',
   },
   tree: {
+    minimap: 'Übersichtskarte',
     layoutFailed: 'Der Baum konnte nicht angeordnet werden.',
     drawing: 'Der Baum wird gezeichnet …',
     zoomIn: 'Vergrößern',

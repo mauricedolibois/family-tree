@@ -93,6 +93,7 @@ export const fr: Messages = {
     clear: 'Effacer la recherche',
   },
   tree: {
+    minimap: 'Carte d’ensemble',
     layoutFailed: 'L’arbre n’a pas pu être disposé.',
     drawing: 'Dessin de l’arbre …',
     zoomIn: 'Agrandir',
