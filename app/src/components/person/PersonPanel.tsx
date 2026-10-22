@@ -61,15 +61,15 @@ export function PersonPanel() {
       data-tour="sheet"
       aria-label={t.sheet.aboutPerson(person.name)}
       className={
-        'surface panel-enter fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-panel border-t border-frame/60 shadow-sheet transition-[max-height] duration-300 ease-settle ' +
+        'surface panel-enter fixed inset-x-0 bottom-0 z-40 flex flex-col overflow-hidden rounded-t-panel border-t border-frame/60 shadow-sheet transition-[max-height] duration-300 ease-settle ' +
         (expanded ? 'max-h-[88dvh] ' : 'max-h-[46dvh] ') +
         'md:absolute md:inset-x-auto md:bottom-3 md:right-3 md:top-3 md:max-h-none md:w-[420px] md:rounded-panel md:border md:shadow-lifted'
       }
     >
-      {/* Frame around the info sheet (gold rule in the classic theme) */}
+      {/* Frame around the info sheet (gold rule in the classic theme, none in modern) */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-2 rounded-t-[14px] border border-frame/35 md:rounded-[14px]"
+        className="sheet-frame pointer-events-none absolute inset-2 rounded-t-[14px] md:rounded-[14px]"
       />
       <div className="relative flex shrink-0 items-center justify-between px-3 pb-1 pt-2">
         {mode.kind !== 'details' ? (

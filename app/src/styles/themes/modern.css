@@ -173,6 +173,10 @@
 :where([data-theme='modern']) .header-bar {
   background-color: rgb(var(--primary));
 }
+/* The sign-in pages: darkest shade, so the card stands out in light and dark mode */
+:where([data-theme='modern']) .cover {
+  background-color: rgb(var(--primary-deep));
+}
 :where([data-theme='modern']) .header-rule {
   box-shadow: 0 1px 0 rgb(var(--card-rule) / 0.4);
 }

@@ -208,6 +208,9 @@
     0 3px 0 rgb(var(--primary-deep)),
     0 4px 0 rgb(var(--accent) / 0.35);
 }
+:where([data-theme='classic']) .sheet-frame {
+  border: 1px solid rgb(var(--frame) / 0.35);
+}
 :where([data-theme='classic']) .framed {
   position: relative;
   border: 1.5px solid rgb(var(--accent) / 0.8);
