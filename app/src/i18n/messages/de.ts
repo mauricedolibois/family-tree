@@ -52,7 +52,6 @@ export const de = {
     exportPdf: 'Als PDF exportieren',
     startTour: 'Einführung starten',
     logout: 'Abmelden',
-    download: 'Herunterladen',
     switchTree: 'Stammbaum wechseln',
   },
   errors: {
@@ -662,13 +661,11 @@ export const de = {
     inviteEmailHint: 'Mit Adresse kann nur diese Person den Link benutzen.',
     inviteEmailHintMail: 'Mit Adresse geht die Einladung per Mail raus und nur diese Person kann sie benutzen.',
     tree: 'Stammbaum',
-    noTree: '– kein Stammbaum –',
     role: 'Rolle',
     makeAdmin: 'Auch Admin-Rechte',
     validFor: 'Gültig',
     days: 'Tage',
     createInvite: 'Einladung erstellen',
-    nothingToGrant: 'Wähle einen Stammbaum oder Admin-Rechte.',
     inviteMailed: 'Die Einladung ist per Mail verschickt. Zur Sicherheit hier der Link:',
     inviteCopy: 'Gib diesen Link weiter. Er funktioniert einmal.',
     openInvites: 'Offene Einladungen',
@@ -731,6 +728,15 @@ export const de = {
   nav: {
     toTree: 'Zum Stammbaum',
     myTrees: 'Meine Stammbäume',
+  },
+  manage: {
+    tabs: { members: 'Mitglieder', history: 'Verlauf & Sicherungen', admin: 'Bäume & Konten' },
+    developer: 'Für Entwickler',
+    downloadTitle: 'Herunterladen',
+    downloadHint:
+      'Der jetzige Stand mit allen Bildern als ZIP-Datei. Frühere Stände lädst du im Verlauf oben herunter.',
+    downloadButton: 'Stammbaum herunterladen',
+    otherInvites: 'Offene Einladungen in anderen Stammbäumen',
   },
   history: {
     title: 'Verlauf & Sicherungen',

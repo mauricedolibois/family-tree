@@ -135,7 +135,7 @@ export default function MembersPage({ treeId, nav }: Props) {
         <title>{data ? `${t.members.title} – ${data.tree.name}` : t.members.title}</title>
       </Head>
       <div className="page-backdrop min-h-dvh">
-        <PageHeader title={t.members.title} nav={nav} current="members" />
+        <PageHeader title={t.admin.title} nav={nav} current="members" />
 
         <main className="mx-auto flex max-w-3xl flex-col gap-5 p-3 sm:p-5">
           {error && <FormMessage>{error}</FormMessage>}
@@ -250,6 +250,7 @@ export default function MembersPage({ treeId, nav }: Props) {
                 api={api}
                 tree={tree}
                 mail={data.mail}
+                canGrantAdmin={data.meIsAdmin}
                 taken={taken}
                 person={focusId && !taken.has(focusId) ? focusId : null}
                 statusText={statusText}
@@ -468,6 +469,7 @@ function InviteForm({
   api,
   tree,
   mail,
+  canGrantAdmin,
   taken,
   person: initialPerson,
   statusText,
@@ -476,6 +478,8 @@ function InviteForm({
   api: string
   tree: Tree | null
   mail: boolean
+  /** Admins may also hand on admin rights */
+  canGrantAdmin: boolean
   /** People someone is linked to or invited as already */
   taken: Set<string>
   /** Opened from a person's info sheet: invite as this person */
@@ -494,6 +498,7 @@ function InviteForm({
     setPersonId(id)
     setScope(id ? newScope(id) : null)
   }
+  const [admin, setAdmin] = useState(false)
   const [days, setDays] = useState(7)
   const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -507,11 +512,13 @@ function InviteForm({
       role,
       scope: scopeForRole(scope, role),
       personId,
+      admin,
       days,
     })
     if (!ok) return setError(statusText(data.error))
     setResult({ path: String(data.path), mailed: !!data.mailed })
     setEmail('')
+    setAdmin(false)
     pickPerson(null)
     onCreated()
   }
@@ -572,6 +579,12 @@ function InviteForm({
           />
           {t.admin.days}
         </label>
+        {canGrantAdmin && (
+          <label className="flex items-center gap-2 text-[15px] text-ink sm:col-span-2">
+            <input type="checkbox" checked={admin} onChange={(e) => setAdmin(e.target.checked)} />
+            {t.admin.makeAdmin}
+          </label>
+        )}
         <p className="text-sm text-ink-muted sm:col-span-2">{t.members.rolesHelp}</p>
         {role !== 'moderator' && (
           <div className="min-w-0 sm:col-span-2">

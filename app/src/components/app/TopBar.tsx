@@ -3,7 +3,7 @@
 // (slots header-bar and header-rule, e.g. book cloth with gold lettering).
 
 import { useState } from 'react'
-import { BookOpen, Cake, Download, Moon, Printer, Search, Sun, X } from 'lucide-react'
+import { BookOpen, Cake, Moon, Printer, Search, Sun, X } from 'lucide-react'
 import { useFamily } from './FamilyProvider'
 import { useView } from './ViewProvider'
 import { SearchBox } from './SearchBox'
@@ -115,13 +115,6 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
       </MenuItem>
       <MenuItem icon={<BookOpen className="h-4 w-4" />} onClick={() => setTourOpen(true)}>
         {t.topBar.startTour}
-      </MenuItem>
-      {/* The server sends a ZIP file with the tree and its photos; the page stays */}
-      <MenuItem
-        icon={<Download className="h-4 w-4" />}
-        onClick={() => (window.location.href = `/api/trees/${treeId}/download`)}
-      >
-        {t.topBar.download}
       </MenuItem>
     </NavMenu>
   )

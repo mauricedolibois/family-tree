@@ -49,7 +49,6 @@ export const es: Messages = {
     exportPdf: 'Exportar como PDF',
     startTour: 'Iniciar la visita guiada',
     logout: 'Cerrar sesión',
-    download: 'Descargar',
     switchTree: 'Cambiar de árbol',
   },
   errors: {
@@ -655,13 +654,11 @@ export const es: Messages = {
     inviteEmailHint: 'Con una dirección, solo esa persona puede usar el enlace.',
     inviteEmailHintMail: 'Con una dirección, la invitación se envía por correo y solo esa persona puede usarla.',
     tree: 'Árbol',
-    noTree: '– ningún árbol –',
     role: 'Rol',
     makeAdmin: 'También derechos de admin',
     validFor: 'Válida durante',
     days: 'días',
     createInvite: 'Crear invitación',
-    nothingToGrant: 'Elige un árbol o derechos de admin.',
     inviteMailed: 'La invitación se ha enviado por correo. Por si acaso, aquí está el enlace:',
     inviteCopy: 'Comparte este enlace. Funciona una sola vez.',
     openInvites: 'Invitaciones pendientes',
@@ -724,6 +721,15 @@ export const es: Messages = {
   nav: {
     toTree: 'Al árbol',
     myTrees: 'Mis árboles',
+  },
+  manage: {
+    tabs: { members: 'Miembros', history: 'Historial y copias', admin: 'Árboles y cuentas' },
+    developer: 'Para desarrolladores',
+    downloadTitle: 'Descargar',
+    downloadHint:
+      'El estado actual con todas las fotos como archivo ZIP. Los estados anteriores se descargan arriba, en el historial.',
+    downloadButton: 'Descargar árbol',
+    otherInvites: 'Invitaciones abiertas en otros árboles',
   },
   history: {
     title: 'Historial y copias',

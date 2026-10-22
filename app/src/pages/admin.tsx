@@ -1,13 +1,17 @@
-// Administration: invitations, trees and accounts. Admins only; for everyone
-// else the page does not exist.
+// Administration: trees and accounts, a tab of the management area. Admins only;
+// for everyone else the page does not exist. People are invited on a tree's
+// members tab, so they always get a person in the tree; ?tree= is the tree the
+// admin came from.
 
 import { useCallback, useEffect, useState } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
 import clsx from 'clsx'
-import { KeyRound, Plus, Trash2, Upload, UserMinus } from 'lucide-react'
+import { ChevronRight, KeyRound, Plus, Trash2, Upload, UserMinus } from 'lucide-react'
 import type { AdminUserView } from '@/lib/accounts'
+import { treeAccess } from '@/lib/auth'
+import { treeIdParam } from '@/lib/ids'
 import { navContext, requirePageUser } from '@/lib/pageAuth'
 import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
@@ -18,13 +22,18 @@ import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
 
-type Props = { nav: NavContext; locale: Locale }
+type Props = { nav: NavContext; locale: Locale; treeId: string | null }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const auth = await requirePageUser(ctx)
   if (auth.redirect) return { redirect: auth.redirect }
   if (!auth.user.is_admin) return { notFound: true }
-  return { props: { nav: await navContext(auth.user), locale: localeFromRequest(ctx.req) } }
+  const treeId = treeIdParam(ctx.query.tree)
+  const access = treeId ? await treeAccess(auth.user, treeId) : null
+  const tree = treeId && access ? { id: treeId, access } : undefined
+  return {
+    props: { nav: await navContext(auth.user, tree), locale: localeFromRequest(ctx.req), treeId: tree?.id ?? null },
+  }
 }
 
 type Role = 'viewer' | 'editor' | 'moderator'
@@ -33,6 +42,7 @@ type DeletedTree = { id: string; name: string; deleted_at: string }
 type Invite = {
   id: string
   email: string | null
+  treeId: string | null
   tree: string | null
   role: Role | null
   admin: boolean
@@ -50,7 +60,7 @@ type Overview = {
   invites: Invite[]
 }
 
-export default function AdminPage({ nav }: Props) {
+export default function AdminPage({ nav, treeId }: Props) {
   const { t, locale } = useI18n()
   const [data, setData] = useState<Overview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -91,16 +101,28 @@ export default function AdminPage({ nav }: Props) {
             <>
               {data.schema && <FormMessage>{t.setup.outdated(data.schema.have, data.schema.need)}</FormMessage>}
               {!data.mail && <FormMessage tone="info">{t.admin.noMail}</FormMessage>}
-              <InviteCard trees={data.trees} mail={data.mail} onCreated={load} />
+              {/* This tree's invitations are on its members tab */}
               <InvitesCard
-                invites={data.invites}
+                title={treeId ? t.manage.otherInvites : t.admin.openInvites}
+                invites={data.invites.filter((i) => !treeId || i.treeId !== treeId)}
                 date={date}
                 onRevoke={(id) => run(`/api/admin/invites/${id}`, null, 'DELETE')}
               />
               <TreesCard trees={data.trees} users={data.users} me={data.me} run={run} />
-              <ImportCard onDone={load} />
               <TrashCard trash={data.trash} date={date} run={run} />
               <UsersCard data={data} run={run} />
+              <details className="group rounded-card border border-card-rule bg-card/70">
+                <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                  <ChevronRight
+                    className="h-4 w-4 text-ink-muted transition-transform group-open:rotate-90"
+                    aria-hidden
+                  />
+                  {t.manage.developer}
+                </summary>
+                <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+                  <ImportCard onDone={load} />
+                </div>
+              </details>
             </>
           )}
         </main>
@@ -109,103 +131,20 @@ export default function AdminPage({ nav }: Props) {
   )
 }
 
-function InviteCard({ trees, mail, onCreated }: { trees: Tree[]; mail: boolean; onCreated: () => void }) {
-  const { t } = useI18n()
-  const [email, setEmail] = useState('')
-  // As in AddToTree: a picked tree that has gone (deleted meanwhile) falls back to the shown one
-  const [picked, setPicked] = useState<string | null>(null)
-  const treeId = picked === '' || trees.some((tr) => tr.id === picked) ? picked! : trees[0]?.id ?? ''
-  const [role, setRole] = useState<Role>('editor')
-  const [admin, setAdmin] = useState(false)
-  const [days, setDays] = useState(7)
-  const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setResult(null)
-    if (!treeId && !admin) return setError(t.admin.nothingToGrant)
-    const { ok, data } = await postJson('/api/admin/invites', { email, treeId: treeId || null, role, admin, days })
-    if (!ok) return setError(t.admin.status[String(data.error)] ?? t.common.retry)
-    setResult({ path: String(data.path), mailed: !!data.mailed })
-    setEmail('')
-    onCreated()
-  }
-
-  return (
-    <Card title={t.admin.inviteTitle}>
-      <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span className="field-label">{t.admin.inviteEmail}</span>
-          <input
-            type="email"
-            className="field"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t.admin.optional}
-          />
-          <span className="text-sm text-ink-faint">{mail ? t.admin.inviteEmailHintMail : t.admin.inviteEmailHint}</span>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="field-label">{t.admin.tree}</span>
-          <select className={select} value={treeId} onChange={(e) => setPicked(e.target.value)}>
-            <option value="">{t.admin.noTree}</option>
-            {trees.map((tree) => (
-              <option key={tree.id} value={tree.id}>
-                {tree.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="field-label">{t.admin.role}</span>
-          <RoleSelect value={role} disabled={!treeId} onChange={setRole} />
-        </label>
-        <label className="flex items-center gap-2 text-[15px] text-ink">
-          <input type="checkbox" checked={admin} onChange={(e) => setAdmin(e.target.checked)} />
-          {t.admin.makeAdmin}
-        </label>
-        <label className="flex items-center gap-2 text-[15px] text-ink">
-          {t.admin.validFor}
-          <input
-            type="number"
-            min={1}
-            max={30}
-            className="field h-9 w-20 py-0 text-sm"
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-          />
-          {t.admin.days}
-        </label>
-        {error && (
-          <div className="sm:col-span-2">
-            <FormMessage>{error}</FormMessage>
-          </div>
-        )}
-        <div className="sm:col-span-2">
-          <Button type="submit" variant="primary" icon={<Plus className="h-4 w-4" />}>
-            {t.admin.createInvite}
-          </Button>
-        </div>
-      </form>
-      {result && <LinkBox path={result.path} note={result.mailed ? t.admin.inviteMailed : t.admin.inviteCopy} />}
-    </Card>
-  )
-}
-
 function InvitesCard({
+  title,
   invites,
   date,
   onRevoke,
 }: {
+  title: string
   invites: Invite[]
   date: (iso: string) => string
   onRevoke: (id: string) => void
 }) {
   const { t } = useI18n()
   return (
-    <Card title={t.admin.openInvites}>
+    <Card title={title}>
       {invites.length === 0 ? (
         <p className="text-sm text-ink-muted">{t.admin.noInvites}</p>
       ) : (

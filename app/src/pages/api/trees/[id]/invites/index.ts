@@ -1,5 +1,5 @@
 // Invite someone to this tree (moderators and admins). Moderators can grant every
-// tree role, but never admin rights. Viewers and editors can be limited to a part of
+// tree role, but never admin rights; admins may add them. Viewers and editors can be limited to a part of
 // the tree (scope, family/scope.ts). Every invitation names the person in the tree
 // the invited account belongs to; accepting links them.
 
@@ -25,6 +25,7 @@ export default withUser('api/trees/[id]/invites', async (req, res, user) => {
     scope?: unknown
     personId?: unknown
     days?: unknown
+    admin?: unknown
   }
   const email = inviteEmail(body.email)
   if (email === undefined) return res.status(400).json({ error: 'invalid email' })
@@ -35,6 +36,7 @@ export default withUser('api/trees/[id]/invites', async (req, res, user) => {
   if (scope && role === 'moderator') return res.status(400).json({ error: 'moderators see the whole tree' })
   const personId = await personInput(body.personId, tree.id)
   if (!personId || personId === 'invalid') return res.status(400).json({ error: 'invalid person' })
+  if (body.admin === true && !user.is_admin) return res.status(403).json({ error: 'forbidden' })
   if ((await linkedPeople(tree.id)).has(personId)) return res.status(409).json({ error: 'person taken' })
 
   const key = [`create:${user.id}`]
@@ -51,7 +53,7 @@ export default withUser('api/trees/[id]/invites', async (req, res, user) => {
     role,
     scope: scope ?? null,
     personId,
-    makeAdmin: false,
+    makeAdmin: body.admin === true,
     days: inviteDays(body.days),
   })
   return res.status(200).json(result)

@@ -1,10 +1,11 @@
 // History of one tree: earlier versions, what changed, who changed it. Moderators
-// and admins restore a version or download it with its photos.
+// and admins restore a version or download it with its photos. Downloading the
+// current tree and replacing it with a file are folded away for developers.
 
 import { useCallback, useEffect, useState } from 'react'
 import Head from 'next/head'
 import type { GetServerSideProps } from 'next'
-import { Download, RotateCcw, Upload } from 'lucide-react'
+import { ChevronRight, Download, RotateCcw, Upload } from 'lucide-react'
 import type { VersionSummary } from '@/lib/db'
 import { canManage, treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
@@ -106,7 +107,7 @@ export default function HistoryPage({ treeId, nav }: Props) {
         <title>{tree ? `${t.history.title} – ${tree.name}` : t.history.title}</title>
       </Head>
       <div className="page-backdrop min-h-dvh">
-        <PageHeader title={t.history.title} nav={nav} current="history" />
+        <PageHeader title={t.admin.title} nav={nav} current="history" />
 
         <main className="mx-auto flex max-w-3xl flex-col gap-5 p-3 sm:p-5">
           {tree && <p className="text-[15px] text-ink">{t.history.intro(tree.name)}</p>}
@@ -163,7 +164,30 @@ export default function HistoryPage({ treeId, nav }: Props) {
               )}
             </Card>
           )}
-          {tree && <ReplaceCard treeId={treeId} treeName={tree.name} onDone={() => void load()} />}
+          {tree && (
+            <details className="group rounded-card border border-card-rule bg-card/70">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
+                <ChevronRight
+                  className="h-4 w-4 text-ink-muted transition-transform group-open:rotate-90"
+                  aria-hidden
+                />
+                {t.manage.developer}
+              </summary>
+              <div className="flex flex-col gap-5 px-3 pb-3 sm:px-4 sm:pb-4">
+                <Card title={t.manage.downloadTitle}>
+                  <p className="mb-3 text-sm text-ink-muted">{t.manage.downloadHint}</p>
+                  {/* The server sends a ZIP file with the tree and its photos; the page stays */}
+                  <Button
+                    icon={<Download className="h-4 w-4" />}
+                    onClick={() => (window.location.href = `/api/trees/${treeId}/download`)}
+                  >
+                    {t.manage.downloadButton}
+                  </Button>
+                </Card>
+                <ReplaceCard treeId={treeId} treeName={tree.name} onDone={() => void load()} />
+              </div>
+            </details>
+          )}
         </main>
       </div>
     </>

@@ -28,6 +28,7 @@ export default withAdmin('api/admin', async (req, res, admin) => {
     invites: invites.map((i) => ({
       id: i.id,
       email: i.email,
+      treeId: i.tree_id,
       tree: i.tree_name,
       role: i.role,
       admin: i.make_admin,

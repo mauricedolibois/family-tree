@@ -49,7 +49,6 @@ export const en: Messages = {
     exportPdf: 'Export as PDF',
     startTour: 'Start guided tour',
     logout: 'Sign out',
-    download: 'Download',
     switchTree: 'Switch family tree',
   },
   errors: {
@@ -652,13 +651,11 @@ export const en: Messages = {
     inviteEmailHint: 'With an address, only that person can use the link.',
     inviteEmailHintMail: 'With an address, the invitation is emailed and only that person can use it.',
     tree: 'Family tree',
-    noTree: '– no family tree –',
     role: 'Role',
     makeAdmin: 'Admin rights as well',
     validFor: 'Valid for',
     days: 'days',
     createInvite: 'Create invitation',
-    nothingToGrant: 'Choose a family tree or admin rights.',
     inviteMailed: 'The invitation has been emailed. Here is the link, just in case:',
     inviteCopy: 'Pass this link on. It works once.',
     openInvites: 'Open invitations',
@@ -721,6 +718,15 @@ export const en: Messages = {
   nav: {
     toTree: 'To the tree',
     myTrees: 'My trees',
+  },
+  manage: {
+    tabs: { members: 'Members', history: 'History & backups', admin: 'Trees & accounts' },
+    developer: 'For developers',
+    downloadTitle: 'Download',
+    downloadHint:
+      'The current state with all photos as a ZIP file. Earlier states are downloaded from the history above.',
+    downloadButton: 'Download tree',
+    otherInvites: 'Open invitations in other trees',
   },
   history: {
     title: 'History & backups',
