@@ -73,9 +73,13 @@ export const de = {
     },
     saveFailed: 'Speichern fehlgeschlagen.',
     deleteFailed: 'Löschen fehlgeschlagen.',
+    preview: 'In der Vorschau wird nichts gespeichert.',
     outsideScope: 'Diese Änderung betrifft Personen außerhalb deines Teils des Stammbaums und wurde nicht gespeichert.',
   },
   family: {
+    previewAs: (name: string) => `Vorschau: So sieht ${name} den Stammbaum.`,
+    previewHint: 'Hier wird nichts gespeichert.',
+    previewBack: 'Zurück zu den Mitgliedern',
     loading: 'Stammbaum wird geladen',
     loadFailed: 'Der Stammbaum konnte nicht geladen werden.',
     loadFailedHint: 'Deine Daten sind sicher. Prüfe die Internetverbindung und versuche es noch einmal.',
@@ -86,11 +90,6 @@ export const de = {
     scopeGone: 'Dein Teil des Stammbaums ist nicht mehr da.',
     scopeGoneHint:
       'Die Person, ab der du Zugriff hattest, wurde entfernt. Ein Moderator kann dir einen neuen Teil zuweisen.',
-    partOf: (name: string, hidden: boolean) => (hidden ? `Teil ab ${name}` : `Bearbeiten ab ${name}`),
-    partOfHint: (hidden: boolean): string =>
-      hidden
-        ? 'Du siehst und bearbeitest nur diesen Teil des Stammbaums.'
-        : 'Du siehst den ganzen Stammbaum, bearbeitest aber nur diesen Teil.',
   },
   search: {
     label: 'Person suchen',
@@ -129,6 +128,7 @@ export const de = {
     youBadge: 'Du',
     edit: 'Bearbeiten',
     onlyThisLine: 'Nur diese Linie',
+    access: 'Zugriff …',
     showRelation: 'Beziehung zeigen',
     born: 'Geboren',
     bornIn: (place: string) => `in ${place}`,
@@ -152,9 +152,15 @@ export const de = {
     addParent: 'Elternteil hinzufügen',
     addSpouse: 'Ehepartner hinzufügen',
     addChild: 'Kind hinzufügen',
+    locked: 'Gesperrt',
+    lockedHint: (name: string) =>
+      `An ${name} hängen Familienzweige, die für dich nicht freigegeben sind. Darum kannst du hier nichts ändern oder hinzufügen.`,
     adopted: (_female: boolean) => 'adoptiert',
     remove: 'Aus dem Stammbaum entfernen',
     confirmRemove: (name: string) => `${name} aus dem Stammbaum entfernen? Der Stand davor wird automatisch gesichert.`,
+    hasAccount: 'Ist mit einem Konto verknüpft',
+    confirmRemoveAccount: (name: string) =>
+      `${name} ist mit einem Konto verknüpft. Trotzdem aus dem Stammbaum entfernen? Die Verknüpfung wird aufgehoben; der Stand davor wird automatisch gesichert.`,
     removed: (name: string) => `${name} wurde entfernt.`,
   },
   form: {
@@ -461,6 +467,7 @@ export const de = {
     joinTree: (tree: string, role: string) => `Stammbaum „${tree}“ (${role})`,
     andAdmin: 'und Admin-Rechte',
     becomeAdmin: 'Admin-Rechte für diese Seite',
+    asPerson: (person: string) => `Du trittst bei als ${person}.`,
     signedInAs: (name: string, email: string) => `Du bist angemeldet als ${name} (${email}).`,
     accept: 'Einladung annehmen',
     createAccount: 'Konto anlegen und beitreten',
@@ -524,38 +531,126 @@ export const de = {
     noMembers: 'Außer den Admins gehört noch niemand dazu.',
     remove: 'Entfernen',
     confirmRemove: (name: string, tree: string) => `${name} aus „${tree}“ entfernen?`,
+    viewAs: (name: string) => `Ansicht als ${name}`,
+    forPerson: {
+      title: (name: string) => `Zugriff auf ${name}`,
+      hint: 'Was die Mitglieder mit eingeschränktem Zugriff bei dieser Person dürfen. Mit einer Blutlinie gibst du sie samt Vorfahren und Nachkommen frei.',
+    },
+    person: {
+      who: 'Wer ist die Person im Stammbaum?',
+      whoHint:
+        'Beim Annehmen wird das Konto automatisch mit dieser Person verknüpft. Die Freigabe beginnt mit ihrer Blutlinie.',
+      choose: 'Person im Stammbaum',
+      none: 'Keiner Person zugeordnet',
+      link: 'Person zuordnen',
+      change: 'Andere Person',
+      unlink: 'Zuordnung lösen',
+    },
     access: {
       label: 'Zugriff',
       whole: 'Ganzer Stammbaum',
       part: 'Nur ein Teil des Stammbaums',
-      from: 'Ab Person',
-      choose: '– Person wählen –',
       all: 'alle',
       hideRest: 'Übrigen Stammbaum ausblenden',
       hideRestHint: 'Ohne Haken sieht die Person den ganzen Stammbaum, bearbeitet aber nur ihren Teil.',
       viewerHint: 'Wer nur ansehen darf, sieht nur diesen Teil.',
       spouseHint:
-        'Ehepartner der gewählten Person sind zu sehen, aber nicht bearbeitbar. Neue Personen lassen sich nur innerhalb dieses Rahmens anlegen – Kinder von Geschwistern zum Beispiel erst ab der Seitenlinie „Cousins“.',
+        'Ehepartner der Linien-Personen sind zu sehen, aber nicht bearbeitbar. Neue Personen lassen sich nur innerhalb der Linien anlegen: Kinder und Eltern ja, Geschwister erst mit deren eigener Blutlinie.',
       help: 'Praktisch für Angeheiratete: Sie ergänzen ihre eigene Familie (Eltern, Geschwister), ohne den Rest zu ändern – und auf Wunsch ohne ihn zu sehen.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
-          ? `Sieht nur den Teil ab ${name}`
+          ? `Sieht nur die Blutlinien von ${name}`
           : editor
-          ? `Sieht alles, bearbeitet nur den Teil ab ${name}`
-          : `Sieht alles (der Teil ab ${name} gilt fürs Bearbeiten)`,
+          ? `Sieht alles, bearbeitet nur die Blutlinien von ${name}`
+          : `Sieht alles (die Blutlinien von ${name} gelten fürs Bearbeiten)`,
       gone: 'Die Startperson ist nicht mehr im Stammbaum',
       edit: 'Zugriff ändern',
       save: 'Speichern',
       cancel: 'Abbrechen',
+      lines: 'Freigegebene Blutlinien',
+      linesHint:
+        'Eine Blutlinie ist eine Person mit ihren Vorfahren und Nachkommen, ohne Geschwister und Cousins. Wo weitere Familienzweige dranhängen, ist die Person gesperrt; mit einer weiteren Linie lässt sich die Freigabe dort erweitern.',
+      firstLine: 'Mit wessen Blutlinie beginnt die Freigabe?',
+      addLine: 'Weitere Blutlinie hinzufügen',
+      lineOf: (name: string) => `Blutlinie von ${name}`,
+      removeLine: (name: string) => `Blutlinie von ${name} entfernen`,
+      search: 'Name eingeben …',
+      noMatch: 'Niemand gefunden.',
+      legacySide: 'Seitenlinien (aus der bisherigen Freigabe)',
+      stops: 'Begrenzt bis',
+      unstop: (name: string) => `Begrenzung bei ${name} aufheben`,
       badge: 'Teilzugriff',
     },
+    preview: {
+      title: 'Vorschau',
+      sentence: (sees: number, edits: number, locked: number) =>
+        `Sieht ${sees === 1 ? '1 Person' : `${sees} Personen`}, kann ${edits} davon bearbeiten${
+          locked ? `, ${locked} ${locked === 1 ? 'ist' : 'sind'} gesperrt` : ''
+        }.`,
+      notShared: (n: number) => (n === 1 ? '1 Person ist nicht freigegeben.' : `${n} Personen sind nicht freigegeben.`),
+      tapHint:
+        'Tippe auf eine Person: Blutlinie hinzufügen, Freigabe dort begrenzen oder sehen, warum sie gesperrt ist.',
+      fit: 'Ganzen Baum zeigen',
+      status: {
+        editable: 'Bearbeitbar',
+        locked: 'Gesperrt',
+        readonly: 'Nur sichtbar',
+        hidden: 'Nicht freigegeben',
+      },
+      line: 'Linie',
+      stop: 'Bis hier',
+      marriedIn: 'Eingeheiratet und Ehepartner',
+      reason: {
+        boundary: (names: string) => `Gesperrt: Daran hängen weitere Personen, die nicht freigegeben sind: ${names}.`,
+        stop: (names: string) => `Gesperrt: Die Freigabe endet hier („bis hier“), dahinter ${names}.`,
+        spouse: 'Nicht bearbeitbar: eingeheiratet, gehört zur eigenen Familie, nicht zur Blutlinie.',
+        manual: 'Gesperrt: einzeln vom Moderator gesperrt.',
+      },
+      addLineOf: (name: string) => `Blutlinie von ${name} hinzufügen`,
+      stopHere: 'Bis hier begrenzen',
+      detailsOnly: 'Nur Angaben',
+      detailsOnlyHint: 'Angaben und Fotos ja; keine Verwandten hinzufügen, nicht löschen.',
+      unlock: 'Trotzdem bearbeiten erlauben',
+      relock: 'Wieder sperren',
+      lock: 'Diese Person sperren',
+      unlockManual: 'Sperre aufheben',
+      search: 'In der Liste suchen …',
+      more: (n: number) => `und ${n} weitere`,
+      changes: 'Was sich ändert',
+      gained: (n: number) => `${n} neu bearbeitbar`,
+      unlocked: (n: number) => `${n} entsperrt`,
+      newlyLocked: (n: number) => `${n} neu gesperrt`,
+      lost: (n: number) => `${n} nicht mehr freigegeben`,
+      noChanges: 'Noch keine Änderung.',
+    },
     status: {
+      'invalid person': 'Bitte wähle, wer die Person im Stammbaum ist.',
+      'person taken': 'Diese Person ist schon mit einem anderen Konto verknüpft oder eingeladen.',
       'invalid scope': 'Bitte eine Person aus dem Stammbaum wählen.',
       'moderators see the whole tree': 'Moderatoren haben immer Zugriff auf den ganzen Stammbaum.',
       self: 'Deine eigene Rolle kannst du hier nicht ändern.',
       'too many attempts': 'Zu viele Einladungen in kurzer Zeit. Bitte versuche es später noch einmal.',
       'invalid email': 'Diese E-Mail-Adresse sieht nicht gültig aus.',
     } as Record<string, string>,
+  },
+  requests: {
+    claimSent: 'Anfrage gesendet: Ein Moderator oder ein naher Verwandter bestätigt, dass du das bist.',
+    claimOpen: 'Du hast schon eine offene Anfrage „Das bin ich“.',
+    claimPending: 'Bestätigung „Das bin ich“ ausstehend',
+    askConfirm: 'Bestätigen lassen',
+    claimToConfirm: (member: string, person: string) => `${member} sagt: „Das bin ich“ – ${person}. Stimmt das?`,
+    confirm: 'Bestätigen',
+    reject: 'Ablehnen',
+    askAccess: 'Zugriff anfragen',
+    accessSent: 'Anfrage gesendet: Ein Moderator entscheidet über den Zugriff.',
+    accessOpen: 'Du hast schon eine offene Zugriffsanfrage.',
+    accessPending: 'Zugriff angefragt.',
+    accessWaiting: (n: number) => (n === 1 ? '1 Zugriffsanfrage wartet.' : `${n} Zugriffsanfragen warten.`),
+    toMembers: 'Zu den Mitgliedern',
+    failed: 'Das hat nicht geklappt. Bitte versuche es noch einmal.',
+    title: 'Offene Anfragen',
+    claimRow: (member: string, person: string) => `${member}: „Das bin ich“ – ${person}`,
+    accessRow: (member: string, person: string) => `${member} bittet um Zugriff auf ${person} und Nachkommen`,
   },
   admin: {
     title: 'Verwaltung',

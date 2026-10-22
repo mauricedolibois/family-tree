@@ -63,8 +63,11 @@ export function isHalfSibling(ix: TreeIndex, a: string, b: string): boolean {
   return shared > 0 && (shared < pa.length || shared < pb.length)
 }
 
-/** Ancestors with their distance in generations (parents = 1) */
-export function ancestorsOf(ix: TreeIndex, id: string): Map<string, number> {
+/**
+ * Ancestors with their distance in generations (parents = 1). People in `stop` are
+ * included, but nothing beyond them.
+ */
+export function ancestorsOf(ix: TreeIndex, id: string, stop?: ReadonlySet<string>): Map<string, number> {
   const out = new Map<string, number>()
   let frontier = [id]
   for (let gen = 1; frontier.length; gen++) {
@@ -73,15 +76,18 @@ export function ancestorsOf(ix: TreeIndex, id: string): Map<string, number> {
       for (const p of parentsOf(ix, f)) {
         if (out.has(p) || p === id) continue
         out.set(p, gen)
-        next.push(p)
+        if (!stop?.has(p)) next.push(p)
       }
     frontier = next
   }
   return out
 }
 
-/** Descendants with their distance in generations (children = 1) */
-export function descendantsOf(ix: TreeIndex, id: string): Map<string, number> {
+/**
+ * Descendants with their distance in generations (children = 1). People in `stop`
+ * are included, but nothing beyond them.
+ */
+export function descendantsOf(ix: TreeIndex, id: string, stop?: ReadonlySet<string>): Map<string, number> {
   const out = new Map<string, number>()
   let frontier = [id]
   for (let gen = 1; frontier.length; gen++) {
@@ -90,7 +96,7 @@ export function descendantsOf(ix: TreeIndex, id: string): Map<string, number> {
       for (const c of childrenOf(ix, f)) {
         if (out.has(c) || c === id) continue
         out.set(c, gen)
-        next.push(c)
+        if (!stop?.has(c)) next.push(c)
       }
     frontier = next
   }
@@ -122,29 +128,50 @@ export function lineDepth(ix: TreeIndex, id: string): { up: number; down: number
 }
 
 /**
- * People shown in the "line of …" view: the direct line within the chosen scope,
- * optional collateral lines, and spouses so that couples stay complete.
+ * The blood relatives of a "line of …" view: the direct line within the chosen
+ * scope and optional collateral lines, without anyone who married in. People in
+ * `stop` are included, but the line goes no further past them.
  */
-export function lineageView(ix: TreeIndex, id: string, scope: LineScope = DEFAULT_LINE_SCOPE): Set<string> {
+export function bloodLineOf(
+  ix: TreeIndex,
+  id: string,
+  scope: LineScope = DEFAULT_LINE_SCOPE,
+  stop?: ReadonlySet<string>,
+): { blood: Set<string>; descendants: string[] } {
   const within = (d: number, max: number | null) => max === null || d <= max
-  const ancestors = [...ancestorsOf(ix, id)].filter(([, d]) => within(d, scope.up)).map(([a]) => a)
-  const descendants = [...descendantsOf(ix, id)].filter(([, d]) => within(d, scope.down)).map(([c]) => c)
-  const set = new Set<string>([id, ...ancestors, ...descendants])
+  const ancestors = [...ancestorsOf(ix, id, stop)].filter(([, d]) => within(d, scope.up)).map(([a]) => a)
+  const descendants = [...descendantsOf(ix, id, stop)].filter(([, d]) => within(d, scope.down)).map(([c]) => c)
+  const blood = new Set<string>([id, ...ancestors, ...descendants])
 
   // Collateral lines branch off at the shown ancestors: their other children are
   // the line's siblings, whose children are nephews, cousins and so on.
   if (scope.side > 0) {
     const sideDepth = scope.side === 3 ? Infinity : scope.side
-    const line = new Set([id, ...ancestorsOf(ix, id).keys()])
+    const beyond = (x: string) => (stop?.has(x) ? [] : childrenOf(ix, x))
+    const line = new Set([id, ...ancestorsOf(ix, id, stop).keys()])
     for (const a of ancestors) {
-      let frontier = childrenOf(ix, a).filter((c) => !line.has(c))
+      let frontier = beyond(a).filter((c) => !line.has(c))
       for (let gen = 1; gen <= sideDepth && frontier.length; gen++) {
-        frontier.forEach((c) => set.add(c))
-        frontier = frontier.flatMap((f) => childrenOf(ix, f)).filter((c) => !set.has(c))
+        frontier.forEach((c) => blood.add(c))
+        frontier = frontier.flatMap(beyond).filter((c) => !blood.has(c))
       }
     }
   }
+  return { blood, descendants }
+}
 
+/**
+ * People shown in the "line of …" view: the blood line (bloodLineOf) and spouses,
+ * so that couples stay complete.
+ */
+export function lineageView(
+  ix: TreeIndex,
+  id: string,
+  scope: LineScope = DEFAULT_LINE_SCOPE,
+  stop?: ReadonlySet<string>,
+): Set<string> {
+  const { blood, descendants } = bloodLineOf(ix, id, scope, stop)
+  const set = new Set(blood)
   // Spouses: the person's own, those of descendants, and the other parent of any shown child
   for (const x of [id, ...descendants]) {
     const sp = spouseOf(ix, x)

@@ -48,7 +48,6 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
             <span className="title-text">{familyName}</span>
           </h1>
         )}
-        {!mobileSearch && <ScopeChip />}
 
         <div className="hidden w-80 md:block lg:w-96">
           <SearchBox />
@@ -85,25 +84,6 @@ function ThemeButton() {
       className="grid h-10 w-10 place-items-center rounded-full text-on-primary-accent/85 hover:bg-on-primary/10"
     >
       {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-    </button>
-  )
-}
-
-/** For members limited to a part of the tree: which part, a tap shows its start person */
-function ScopeChip() {
-  const { scope, index } = useFamily()
-  const { focusOn } = useView()
-  const { t } = useI18n()
-  const person = scope ? index.byId.get(scope.person) : undefined
-  if (!scope || !person) return null
-  return (
-    <button
-      type="button"
-      onClick={() => focusOn(person.id)}
-      title={t.family.partOfHint(scope.hideRest)}
-      className="hidden max-w-[14rem] shrink-0 truncate rounded-full border border-on-primary/30 px-3 py-1 text-[13px] text-on-primary/90 hover:bg-on-primary/10 sm:block"
-    >
-      {t.family.partOf(person.name, scope.hideRest)}
     </button>
   )
 }

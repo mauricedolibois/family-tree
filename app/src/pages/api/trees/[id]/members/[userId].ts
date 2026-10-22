@@ -1,13 +1,14 @@
 // One member of a tree: PUT {role, scope?} changes the role and the part of the tree
 // they are limited to (null: the whole tree; moderators always have the whole tree),
-// DELETE removes them from the tree.
+// PUT {personId} who they are in the tree (null: nobody), DELETE removes them.
+
 // Moderators manage everyone in their tree except themselves, so nobody locks
 // themselves out by accident; admins can change their own membership too.
 
-import { parseRole, removeMembership, roleIn, setMembership } from '@/lib/accounts'
+import { linkPerson, parseRole, removeMembership, roleIn, setMembership } from '@/lib/accounts'
 import { managedTree, withUser } from '@/lib/auth'
 import { isUuid } from '@/lib/ids'
-import { scopeInput } from '@/lib/treeScope'
+import { personInput, scopeInput } from '@/lib/treeScope'
 
 export default withUser('api/trees/[id]/members/[userId]', async (req, res, user) => {
   if (req.method !== 'PUT' && req.method !== 'DELETE') {
@@ -24,6 +25,14 @@ export default withUser('api/trees/[id]/members/[userId]', async (req, res, user
 
   if (req.method === 'PUT') {
     const body = req.body || {}
+    const personId = await personInput(body.personId, tree.id)
+    if (personId === 'invalid') return res.status(400).json({ error: 'invalid person' })
+    if (personId !== undefined) {
+      if (!(await linkPerson(memberId, tree.id, personId, 'moderator'))) {
+        return res.status(409).json({ error: 'person taken' })
+      }
+      if (body.role === undefined) return res.status(200).json({ ok: true })
+    }
     const role = parseRole(body.role)
     if (!role) return res.status(400).json({ error: 'invalid role' })
     const scope = await scopeInput(body.scope, tree.id)

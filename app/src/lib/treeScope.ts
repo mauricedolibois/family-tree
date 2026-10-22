@@ -9,8 +9,8 @@ import { parseScope, viewFor, type TreeScope } from '@/family/scope'
 
 /**
  * The part sent with a role change or an invitation: undefined when none was sent,
- * null for the whole tree, 'invalid' for a malformed part or a start person who is
- * not in the tree.
+ * null for the whole tree, 'invalid' for a malformed part or a line's person or stop
+ * who is not in the tree.
  */
 export async function scopeInput(value: unknown, treeId: string): Promise<TreeScope | null | undefined | 'invalid'> {
   if (value === undefined) return undefined
@@ -18,7 +18,21 @@ export async function scopeInput(value: unknown, treeId: string): Promise<TreeSc
   const scope = parseScope(value)
   if (!scope) return 'invalid'
   const loaded = await loadTree(treeId)
-  return loaded?.tree.members[scope.person] ? scope : 'invalid'
+  const members = loaded?.tree.members
+  const known = (id: string) => !!members?.[id]
+  return scope.lines.every((l) => known(l.person)) && scope.stops.every(known) ? scope : 'invalid'
+}
+
+/**
+ * A person of the tree sent with an invitation or a member change: undefined when
+ * none was sent, null to unlink, 'invalid' for someone who is not in the tree.
+ */
+export async function personInput(value: unknown, treeId: string): Promise<string | null | undefined | 'invalid'> {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  if (typeof value !== 'string' || !value || value.length > 100) return 'invalid'
+  const loaded = await loadTree(treeId)
+  return loaded?.tree.members[value] ? value : 'invalid'
 }
 
 // Photos and documents: those of the people in the part, and what the member

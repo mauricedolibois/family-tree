@@ -291,13 +291,18 @@ async function membershipRows(userId: string) {
   return (data ?? []) as unknown as Array<{ tree_id: string; role: Role; trees: { name: string } | null }>
 }
 
-export type Membership = { role: Role; scope: TreeScope | null }
+export type Membership = {
+  role: Role
+  scope: TreeScope | null
+  /** The person in the tree this account belongs to ("that's me"), once confirmed */
+  personId: string | null
+}
 
-/** The user's role in the tree and the part of it they are limited to, if any */
+/** The user's role in the tree, the part of it they are limited to and who they are in it */
 export async function membershipIn(userId: string, treeId: string): Promise<Membership | null> {
   const { data, error } = await db()
     .from('memberships')
-    .select('role,scope')
+    .select('role,scope,person_id')
     .eq('user_id', userId)
     .eq('tree_id', treeId)
     .maybeSingle()
@@ -305,7 +310,48 @@ export async function membershipIn(userId: string, treeId: string): Promise<Memb
   if (!data) return null
   const role = data.role as Role
   // Moderators always have the whole tree; the database enforces it too
-  return { role, scope: role === 'moderator' ? null : parseScope(data.scope) }
+  return { role, scope: role === 'moderator' ? null : parseScope(data.scope), personId: data.person_id ?? null }
+}
+
+/** How a member's person was confirmed */
+export type PersonConfirmation = 'invite' | 'moderator' | 'relative'
+
+/**
+ * Links a member to a person in the tree (null unlinks). False when another
+ * member of the tree is linked to that person already.
+ */
+export async function linkPerson(
+  userId: string,
+  treeId: string,
+  personId: string | null,
+  confirmedBy: PersonConfirmation,
+): Promise<boolean> {
+  const { error } = await db()
+    .from('memberships')
+    .update({ person_id: personId, person_confirmed_by: personId ? confirmedBy : null })
+    .eq('user_id', userId)
+    .eq('tree_id', treeId)
+  if (error?.code === '23505') return false
+  if (error) throw error
+  return true
+}
+
+/** Who is linked to which person in the tree: person id → user id */
+export async function linkedPeople(treeId: string): Promise<Map<string, string>> {
+  const { data, error } = await db()
+    .from('memberships')
+    .select('user_id,person_id')
+    .eq('tree_id', treeId)
+    .not('person_id', 'is', null)
+  if (error) throw error
+  return new Map((data ?? []).map((r) => [r.person_id as string, r.user_id as string]))
+}
+
+/** Drops the links to people no longer in the tree (after a moderator deleted them) */
+export async function unlinkMissingPeople(treeId: string, exists: (personId: string) => boolean): Promise<void> {
+  for (const [personId, userId] of await linkedPeople(treeId)) {
+    if (!exists(personId)) await linkPerson(userId, treeId, null, 'moderator')
+  }
 }
 
 export async function roleIn(userId: string, treeId: string): Promise<Role | null> {
@@ -342,6 +388,8 @@ export type TreeMember = {
   role: Role
   /** The part of the tree they are limited to; null for the whole tree */
   scope: TreeScope | null
+  /** The person in the tree they are, once confirmed */
+  personId: string | null
   /** Also runs the server; shown so everyone sees who that is */
   isAdmin: boolean
   verified: boolean
@@ -352,22 +400,24 @@ export type TreeMember = {
 export async function listTreeMembers(treeId: string): Promise<TreeMember[]> {
   const { data, error } = await db()
     .from('memberships')
-    .select('role,scope,users(id,name,email,is_admin,email_verified_at,disabled_at)')
+    .select('role,scope,person_id,users(id,name,email,is_admin,email_verified_at,disabled_at)')
     .eq('tree_id', treeId)
   if (error) throw error
   const rows = (data ?? []) as unknown as Array<{
     role: Role
     scope: unknown
+    person_id: string | null
     users: Pick<UserRow, 'id' | 'name' | 'email' | 'is_admin' | 'email_verified_at' | 'disabled_at'> | null
   }>
   return rows
     .filter((r) => r.users)
-    .map(({ role, scope, users: u }) => ({
+    .map(({ role, scope, person_id, users: u }) => ({
       id: u!.id,
       name: u!.name,
       email: u!.email,
       role,
       scope: role === 'moderator' ? null : parseScope(scope),
+      personId: person_id,
       isAdmin: u!.is_admin,
       verified: !!u!.email_verified_at,
       disabled: !!u!.disabled_at,
@@ -384,6 +434,8 @@ export type InviteRow = {
   role: Role | null
   /** The part of the tree the new member gets; null for the whole tree */
   scope: TreeScope | null
+  /** The person in the tree the invited account belongs to, linked on accepting */
+  person_id: string | null
   make_admin: boolean
   created_by: string | null
   created_at: string
@@ -392,7 +444,8 @@ export type InviteRow = {
   revoked_at: string | null
 }
 
-const INVITE_COLUMNS = 'id,email,tree_id,role,scope,make_admin,created_by,created_at,expires_at,used_at,revoked_at'
+const INVITE_COLUMNS =
+  'id,email,tree_id,role,scope,person_id,make_admin,created_by,created_at,expires_at,used_at,revoked_at'
 
 export async function createInvite(input: {
   tokenHash: string
@@ -400,6 +453,7 @@ export async function createInvite(input: {
   treeId: string | null
   role: Role | null
   scope?: TreeScope | null
+  personId?: string | null
   makeAdmin: boolean
   /** null for the first-admin link written at start */
   createdBy: string | null
@@ -413,6 +467,7 @@ export async function createInvite(input: {
       tree_id: input.treeId,
       role: input.role,
       scope: input.role && input.role !== 'moderator' ? input.scope ?? null : null,
+      person_id: input.treeId ? input.personId ?? null : null,
       make_admin: input.makeAdmin,
       created_by: input.createdBy,
       expires_at: input.expiresAt.toISOString(),

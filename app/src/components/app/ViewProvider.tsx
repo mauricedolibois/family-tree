@@ -51,7 +51,7 @@ const meKey = (family: string) => `stammbaum:ich:${family}`
 const scopeKey = 'stammbaum:linie'
 
 export function ViewProvider({ children }: { children: ReactNode }) {
-  const { index, familyName } = useFamily()
+  const { index, familyName, linkedMe } = useFamily()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [lineId, setLineId] = useState<string | null>(null)
   const [relation, setRelation] = useState<RelationPick | null>(null)
@@ -62,7 +62,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
   const [exportOpen, setExportOpen] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
 
-  // "Me" is remembered on this device only
+  // "Me" is remembered on this device; a person the server confirmed comes first
   useEffect(() => {
     try {
       const stored = localStorage.getItem(meKey(familyName))
@@ -145,7 +145,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       showRelation,
       birthdays,
       showBirthdays,
-      meId: valid(meId),
+      meId: linkedMe && index.byId.has(linkedMe) ? linkedMe : valid(meId),
       setMe,
       exportOpen,
       setExportOpen,
@@ -162,6 +162,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
       setLineScope,
       relation,
       meId,
+      linkedMe,
       setMe,
       focusRequest,
       focusOn,

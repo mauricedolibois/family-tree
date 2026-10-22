@@ -29,6 +29,8 @@ export async function issueInvite(input: {
   role: Role | null
   /** The part of the tree the new member gets; left out or null for the whole tree */
   scope?: TreeScope | null
+  /** Who the invited person is in the tree; linked to their account on accepting */
+  personId?: string | null
   makeAdmin: boolean
   days: number
 }): Promise<{ id: string; path: string; mailed: boolean }> {
@@ -39,6 +41,7 @@ export async function issueInvite(input: {
     treeId: input.tree?.id ?? null,
     role: input.tree ? input.role : null,
     scope: input.tree ? input.scope : null,
+    personId: input.tree ? input.personId ?? null : null,
     makeAdmin: input.makeAdmin,
     createdBy: input.inviter.id,
     expiresAt: new Date(Date.now() + input.days * 24 * 60 * 60 * 1000),
