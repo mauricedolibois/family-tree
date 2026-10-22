@@ -173,8 +173,8 @@ export function TreeCanvas() {
   const viewKey = pair
     ? `rel:${pair.from}:${pair.to}`
     : lineId
-    ? `line:${lineId}:${lineScope.up}:${lineScope.down}:${lineScope.side}`
-    : 'all'
+      ? `line:${lineId}:${lineScope.up}:${lineScope.down}:${lineScope.side}`
+      : 'all'
   const refitPending = useRef(false)
   const lastView = useRef(viewKey)
   useEffect(() => {
@@ -292,7 +292,7 @@ export function TreeCanvas() {
                   connectors={layout.connectors}
                   marriages={layout.marriages}
                   lineage={lineage}
-                  drawKey={pair ? viewKey : selectedId ?? ''}
+                  drawKey={pair ? viewKey : (selectedId ?? '')}
                 />
                 {layout.cards.map((c) => {
                   const person = index.byId.get(c.id)

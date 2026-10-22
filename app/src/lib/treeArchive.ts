@@ -126,7 +126,7 @@ export function readImportRequest(req: IncomingMessage): Promise<{ data: Uint8Ar
       try {
         const data = new Uint8Array(await fs.promises.readFile(file.filepath))
         const flat = Object.fromEntries(
-          Object.entries(fields).map(([k, v]) => [k, String(Array.isArray(v) ? v[0] : v ?? '')]),
+          Object.entries(fields).map(([k, v]) => [k, String(Array.isArray(v) ? v[0] : (v ?? ''))]),
         )
         resolve({ data, fields: flat })
       } catch (readError) {

@@ -7,7 +7,7 @@
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import type { IncomingMessage, ServerResponse } from 'http'
-import { parse, serialize } from 'cookie'
+import { parseCookie, stringifySetCookie } from 'cookie'
 
 export const SESSION_COOKIE = 'ft_user'
 const LEGACY_COOKIES = ['ft_session', 'fid']
@@ -64,7 +64,7 @@ export function verifySessionToken(token: string | undefined | null, now = Date.
 export function sessionFromReq(req: Pick<IncomingMessage, 'headers'>): Session | null {
   const header = req.headers.cookie
   if (!header) return null
-  return verifySessionToken(parse(header)[SESSION_COOKIE])
+  return verifySessionToken(parseCookie(header)[SESSION_COOKIE])
 }
 
 function cookieOptions(maxAge: number) {
@@ -83,15 +83,15 @@ function appendSetCookie(res: ServerResponse, cookies: string[]) {
   res.setHeader('Set-Cookie', [...prev, ...cookies])
 }
 
-const clearLegacy = () => LEGACY_COOKIES.map((name) => serialize(name, '', cookieOptions(0)))
+const clearLegacy = () => LEGACY_COOKIES.map((name) => stringifySetCookie({ name, value: '', ...cookieOptions(0) }))
 
 export function setSessionCookie(res: ServerResponse, session: Session) {
   appendSetCookie(res, [
-    serialize(SESSION_COOKIE, createSessionToken(session), cookieOptions(MAX_AGE_SECONDS)),
+    stringifySetCookie({ name: SESSION_COOKIE, value: createSessionToken(session), ...cookieOptions(MAX_AGE_SECONDS) }),
     ...clearLegacy(),
   ])
 }
 
 export function clearSessionCookie(res: ServerResponse) {
-  appendSetCookie(res, [serialize(SESSION_COOKIE, '', cookieOptions(0)), ...clearLegacy()])
+  appendSetCookie(res, [stringifySetCookie({ name: SESSION_COOKIE, value: '', ...cookieOptions(0) }), ...clearLegacy()])
 }

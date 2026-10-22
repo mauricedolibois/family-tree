@@ -78,7 +78,7 @@ export default function MembersPage({ treeId, nav }: Props) {
   // Opened from a person's info sheet: what each member has of this person
   const router = useRouter()
   const focusId = typeof router.query.person === 'string' ? router.query.person : null
-  const focus = focusId ? tree?.members[focusId] ?? null : null
+  const focus = focusId ? (tree?.members[focusId] ?? null) : null
 
   const load = useCallback(async () => {
     const [res, req] = await Promise.all([
@@ -156,8 +156,8 @@ export default function MembersPage({ treeId, nav }: Props) {
                         const status = !m.scope
                           ? t.members.preview.status.editable
                           : entry?.detailsOnly
-                          ? t.members.preview.detailsOnly
-                          : t.members.preview.status[entry?.status ?? 'hidden']
+                            ? t.members.preview.detailsOnly
+                            : t.members.preview.status[entry?.status ?? 'hidden']
                         return (
                           <li key={m.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
                             <span className="min-w-0 flex-1 text-[15px] text-ink">

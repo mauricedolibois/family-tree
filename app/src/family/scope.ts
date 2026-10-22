@@ -119,8 +119,8 @@ function parseLine(value: unknown, legacy: boolean): BloodLine | null {
     x === null
       ? null
       : Number.isInteger(x) && (x as number) >= 0 && (x as number) <= MAX_GENERATIONS
-      ? (x as number)
-      : undefined
+        ? (x as number)
+        : undefined
   const up = gens(v.up)
   const down = gens(v.down)
   // Parts from before lines always had side lines set; a line may leave them out
@@ -248,8 +248,8 @@ export function describeScope(tree: Tree, scope: TreeScope): Map<string, ScopeEn
     const reason: LockReason | undefined = marriedIn.has(id)
       ? { kind: 'spouse' }
       : via.length
-      ? { kind: stop.has(id) ? 'stop' : 'boundary', via }
-      : undefined
+        ? { kind: stop.has(id) ? 'stop' : 'boundary', via }
+        : undefined
     const details = scope.unlock.includes(id)
     // Someone who married in belongs to their own family: only to see, unless allowed by hand
     if (reason?.kind === 'spouse' && !details) out.set(id, { status: 'locked', lines: lineIds, reason })

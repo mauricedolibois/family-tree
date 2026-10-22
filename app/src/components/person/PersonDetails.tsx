@@ -89,8 +89,8 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
       message: answer.ok
         ? t.requests.accessSent
         : answer.error === 'request open'
-        ? t.requests.accessOpen
-        : t.requests.failed,
+          ? t.requests.accessOpen
+          : t.requests.failed,
     })
   }
 
@@ -196,10 +196,10 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
             !isDeceased(person)
               ? ''
               : p.deathDate
-              ? [formatDate(p.deathDate, locale), age && t.person.diedAtAge(age.years, age.approx)]
-                  .filter(Boolean)
-                  .join(', ')
-              : t.person.diedDateUnknown
+                ? [formatDate(p.deathDate, locale), age && t.person.diedAtAge(age.years, age.approx)]
+                    .filter(Boolean)
+                    .join(', ')
+                : t.person.diedDateUnknown
           }
         />
         {!isDeceased(person) && ageText && <Fact label={t.person.age} value={ageText} />}

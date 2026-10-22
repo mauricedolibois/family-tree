@@ -4,7 +4,7 @@
 
 import Link from 'next/link'
 import type { GetServerSideProps } from 'next'
-import { parse } from 'cookie'
+import { parseCookie } from 'cookie'
 import { ChevronRight, LogOut, Settings, Shield, Trees } from 'lucide-react'
 import { treesOf, type TreeSummary } from '@/lib/accounts'
 import { LAST_TREE_COOKIE, requirePageUser } from '@/lib/pageAuth'
@@ -22,7 +22,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const trees = await treesOf(user)
   const gone = !!ctx.query.gone
   if (!ctx.query.pick && !gone) {
-    const last = ctx.req.headers.cookie ? parse(ctx.req.headers.cookie)[LAST_TREE_COOKIE] : undefined
+    const last = ctx.req.headers.cookie ? parseCookie(ctx.req.headers.cookie)[LAST_TREE_COOKIE] : undefined
     const open = trees.length === 1 ? trees[0] : trees.find((t) => t.id === last)
     if (open) return { redirect: { destination: `/tree/${open.id}`, permanent: false } }
   }

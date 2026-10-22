@@ -38,12 +38,12 @@ function fingerprint(value) {
     Array.isArray(v)
       ? v.map(stable)
       : v && typeof v === 'object'
-      ? Object.fromEntries(
-          Object.keys(v)
-            .sort()
-            .map((k) => [k, stable(v[k])]),
-        )
-      : v
+        ? Object.fromEntries(
+            Object.keys(v)
+              .sort()
+              .map((k) => [k, stable(v[k])]),
+          )
+        : v
   return createHash('sha256')
     .update(JSON.stringify(stable(value)))
     .digest('hex')

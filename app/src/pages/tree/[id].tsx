@@ -2,7 +2,7 @@ import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { Eye } from 'lucide-react'
-import { serialize } from 'cookie'
+import { stringifySetCookie } from 'cookie'
 import { getTree, getUser, membershipIn, treesOf } from '@/lib/accounts'
 import { canEdit, canManage, treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
@@ -46,7 +46,13 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   // Remembered so the start page opens this tree next time
   ctx.res.setHeader(
     'Set-Cookie',
-    serialize(LAST_TREE_COOKIE, treeId, { path: '/', sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 }),
+    stringifySetCookie({
+      name: LAST_TREE_COOKIE,
+      value: treeId,
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365,
+    }),
   )
   // ?as=<user id>: only moderators, only for members of this tree
   const asId = typeof ctx.query.as === 'string' ? ctx.query.as : null
