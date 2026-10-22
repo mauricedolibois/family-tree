@@ -31,6 +31,14 @@ export async function navContext(user: UserRow, tree?: { id: string; access: Acc
   return {
     isAdmin: user.is_admin,
     treeCount: trees.length,
-    ...(tree ? { tree: { id: tree.id, canManage: canManage(tree.access) } } : {}),
+    ...(tree
+      ? {
+          tree: {
+            id: tree.id,
+            name: trees.find((t) => t.id === tree.id)?.name ?? '',
+            canManage: canManage(tree.access),
+          },
+        }
+      : {}),
   }
 }

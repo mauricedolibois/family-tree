@@ -1,7 +1,8 @@
 // src/components/app/PageHeader.tsx
-// Header of the pages around a tree (members, history, administration, account):
-// title, a way back to the tree where there is one, and the same menu as the tree.
-// Members, history and administration are tabs of one management area.
+// Header of the pages around a tree (managing it, administration, account): title, a
+// way back to the tree where there is one, and the same menu as the tree. Managing a
+// tree has two tabs, members and history; the administration of the server is a page
+// of its own, so the two are never mixed.
 
 import Link from 'next/link'
 import clsx from 'clsx'
@@ -32,16 +33,15 @@ export function PageHeader({ title, nav, current }: { title: string; nav: NavCon
   )
 }
 
-/** The tabs of the management area; nothing on other pages or with a single tab */
+/** The tabs of managing a tree: members and history; nothing on other pages */
 function ManageTabs({ nav, current }: { nav: NavContext; current: NavPage }) {
   const { t } = useI18n()
   const tree = nav.tree?.canManage ? nav.tree : undefined
-  const tabs = [
-    tree && { page: 'members', href: `/tree/${tree.id}/members`, label: t.manage.tabs.members },
-    tree && { page: 'history', href: `/tree/${tree.id}/history`, label: t.manage.tabs.history },
-    nav.isAdmin && { page: 'admin', href: tree ? `/admin?tree=${tree.id}` : '/admin', label: t.manage.tabs.admin },
-  ].filter((tab): tab is { page: NavPage; href: string; label: string } => !!tab)
-  if (tabs.length < 2 || !tabs.some((tab) => tab.page === current)) return null
+  if (!tree || (current !== 'members' && current !== 'history')) return null
+  const tabs: { page: NavPage; href: string; label: string }[] = [
+    { page: 'members', href: `/tree/${tree.id}/members`, label: t.manage.tabs.members },
+    { page: 'history', href: `/tree/${tree.id}/history`, label: t.manage.tabs.history },
+  ]
 
   return (
     <nav className="border-b border-card-rule bg-card/80">

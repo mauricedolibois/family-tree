@@ -5,7 +5,7 @@ to several family trees; what they may do is set per tree.
 
 | Role | May do |
 | --- | --- |
-| **Admin** (global) | Runs the server: accounts, admin rights, trees (create, rename, delete, import), memberships and open invitations of every tree on `/admin`, and invitations for admin rights alone. People are invited into a tree on its members tab, so an admin who is no member adds themselves first. Sees and edits a tree's contents only as a member of it, like everyone else; whoever creates or imports a tree becomes its moderator. |
+| **Admin** (global) | Runs the server: accounts, admin rights, trees (create, rename, delete, import), memberships and open invitations of every tree on `/admin` (menu → Administration), and invitations for admin rights alone. Managing one tree (members, invitations, history) happens in that tree as its moderator; `/admin` lists every tree with "Join" or "Manage" for that. Sees and edits a tree's contents only as a member of it, like everyone else; whoever creates or imports a tree becomes its moderator. |
 | **Moderator** (per tree) | Like an editor, and also invite people to the tree, change the roles of its members and remove them (`/tree/<id>/members`). |
 | **Editor** (per tree) | Read and change the tree, upload photos, renew the calendar link. |
 | **Viewer** (per tree) | Read the tree, use views, birthdays, PDF export and the calendar subscription. |
@@ -19,7 +19,7 @@ not exist.
 ## Joining
 
 People join through **invitation links**, created by a tree's moderators on its
-members tab (menu → Administration → Members, or "Access …" in a person's info
+members tab (menu → "Manage <tree>", or "Access …" in a person's info
 sheet), or by admins on `/admin` for admin rights alone:
 
 - for one tree with a role, optionally also with admin rights (only admins grant
@@ -168,7 +168,7 @@ with who made the change and what it did. Right after their own change, editors
 see **Undo**: it saves the version from just before again, with the usual
 conflict check, so it never overwrites what someone else changed meanwhile.
 
-Moderators and admins open the **history** (menu → History): every version with
+Moderators open the **history** (menu → "Manage <tree>" → History): every version with
 what changed, who and when, newest first. **Restore** sets the whole tree back to
 a version; the current one is saved first, so a restore can be undone the same
 way. **Download** gives a version as a ZIP file with its photos.
@@ -177,8 +177,8 @@ way. **Download** gives a version as a ZIP file with its photos.
 
 Everyone in a tree can download it with all photos as a ZIP file (menu →
 Download). Admins turn such a file, or a JSON backup from earlier versions of the
-app, into a new tree on `/admin`; moderators can replace their tree with one on
-the members page, after an automatic backup. Photos come along only in ZIP files;
+app, into a new tree on `/admin`; moderators can replace their tree with one in the
+history tab ("For developers"), after an automatic backup. Photos come along only in ZIP files;
 links in a JSON backup to photos of trees the importing person cannot see are
 dropped.
 
@@ -216,8 +216,8 @@ accounts can sign in.
    ```
 
    It returns a path like `/invite/3f9c…`; open `https://<your domain>/invite/3f9c…`.
-4. On `/admin`, add yourself to the existing tree as moderator, then **invite the
-   family** on its members tab, as editors or viewers.
+4. On `/admin`, **join** the existing tree (as moderator), then **invite the
+   family** under "Manage <tree>", as editors or viewers.
 
 **HTTP basic auth in front of the app:** invited people would need its credentials
 as well, before they even reach the invitation page. With personal accounts it is

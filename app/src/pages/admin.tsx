@@ -1,4 +1,4 @@
-// Administration: trees and accounts, a tab of the management area. Admins only;
+// Administration of the server: trees and accounts, apart from managing one tree. Admins only;
 // for everyone else the page does not exist. People are invited on a tree's
 // members tab, so they always get a person in the tree; only admin rights alone,
 // without a tree, are handed out here. ?tree= is the tree the admin came from.
@@ -246,7 +246,8 @@ function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserV
   const [name, setName] = useState('')
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null)
   const members = (id: string) => users.filter((u) => u.trees.some((tr) => tr.id === id)).length
-  const mine = new Set(users.find((u) => u.id === me)?.trees.map((tr) => tr.id) ?? [])
+  const myRole = new Map(users.find((u) => u.id === me)?.trees.map((tr) => [tr.id, tr.role]) ?? [])
+  const mine = new Set(myRole.keys())
 
   return (
     <Card title={t.admin.treesTitle}>
@@ -291,6 +292,23 @@ function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserV
                   </span>
                 )}
                 <span className="text-[13px] text-ink-muted">{t.admin.memberCount(members(tree.id))}</span>
+                {/* Managing a tree happens in the tree, as its moderator: one step from here */}
+                {myRole.get(tree.id) === 'moderator' ? (
+                  <Link
+                    href={`/tree/${tree.id}/members`}
+                    className="rounded-control px-3 py-1.5 text-sm font-medium text-ink hover:bg-canvas-raised"
+                  >
+                    {t.admin.manage}
+                  </Link>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="quiet"
+                    onClick={() => run(`/api/admin/users/${me}/trees/${tree.id}`, { role: 'moderator' }, 'PUT')}
+                  >
+                    {mine.has(tree.id) ? t.admin.becomeModerator : t.admin.join}
+                  </Button>
+                )}
                 <Button size="sm" variant="quiet" onClick={() => setEditing({ id: tree.id, name: tree.name })}>
                   {t.admin.rename}
                 </Button>

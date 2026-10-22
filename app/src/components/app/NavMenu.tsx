@@ -1,11 +1,12 @@
 // src/components/app/NavMenu.tsx
-// The menu behind the ☰ button, the same on every signed-in page: the tree's own
-// management (members, history, administration in one place), switching trees,
-// account, sign-out, language and design.
+// The menu behind the ☰ button, the same on every signed-in page: managing this tree
+// (moderators), the administration of the server (admins), switching trees, account,
+// sign-out, language and design. The two management areas are kept apart: one is
+// about this family tree, the other about every tree and account on the server.
 // The tree page adds its tree actions on top (children).
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowLeftRight, LogOut, Menu, Settings, Trees, Wrench } from 'lucide-react'
+import { ArrowLeftRight, LogOut, Menu, Settings, Shield, Trees, Users } from 'lucide-react'
 import { useI18n } from '@/i18n/I18nProvider'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
 import { ThemePicker } from '@/components/ui/ThemePicker'
@@ -15,18 +16,11 @@ export type NavContext = {
   isAdmin: boolean
   treeCount: number
   /** The tree the page belongs to, if any */
-  tree?: { id: string; canManage: boolean }
+  tree?: { id: string; name: string; canManage: boolean }
 }
 
-/** The page the menu is on, so it does not link to itself; members, history and admin are tabs of one management area */
+/** The page the menu is on, so it does not link to itself; members and history are the tabs of managing a tree */
 export type NavPage = 'tree' | 'members' | 'history' | 'account' | 'admin'
-
-/** Where the management area opens: the tree's members, or the administration for admins without a tree to manage */
-export function manageHref(nav: NavContext): string | null {
-  if (nav.tree?.canManage) return `/tree/${nav.tree.id}/members`
-  if (nav.isAdmin) return nav.tree ? `/admin?tree=${nav.tree.id}` : '/admin'
-  return null
-}
 
 export function NavMenu({ nav, current, children }: { nav: NavContext; current: NavPage; children?: ReactNode }) {
   const { t } = useI18n()
@@ -52,8 +46,7 @@ export function NavMenu({ nav, current, children }: { nav: NavContext; current: 
     window.location.href = '/login'
   }
   const tree = nav.tree
-  const manage = manageHref(nav)
-  const managing = current === 'members' || current === 'history' || current === 'admin'
+  const managingTree = current === 'members' || current === 'history'
 
   return (
     <div ref={ref} className="relative">
@@ -82,8 +75,14 @@ export function NavMenu({ nav, current, children }: { nav: NavContext; current: 
               {t.nav.toTree}
             </MenuItem>
           )}
-          {manage && !managing && (
-            <MenuItem icon={<Wrench className="h-4 w-4" />} onClick={go(manage)}>
+          {tree?.canManage && !managingTree && (
+            <MenuItem icon={<Users className="h-4 w-4" />} onClick={go(`/tree/${tree.id}/members`)}>
+              {t.nav.manageTree(tree.name)}
+            </MenuItem>
+          )}
+          {/* ?tree= keeps the way back to the tree the admin came from */}
+          {nav.isAdmin && current !== 'admin' && (
+            <MenuItem icon={<Shield className="h-4 w-4" />} onClick={go(tree ? `/admin?tree=${tree.id}` : '/admin')}>
               {t.admin.title}
             </MenuItem>
           )}

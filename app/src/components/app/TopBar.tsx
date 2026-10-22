@@ -90,13 +90,13 @@ function ThemeButton() {
 
 /** The shared menu, with this page's tree actions on top */
 function AppMenu({ viewer }: { viewer: Viewer }) {
-  const { treeId } = useFamily()
+  const { treeId, familyName } = useFamily()
   const { setExportOpen, setTourOpen, showBirthdays, select } = useView()
   const { t } = useI18n()
   const nav = {
     isAdmin: viewer.isAdmin,
     treeCount: viewer.treeCount,
-    tree: { id: treeId, canManage: viewer.canManage },
+    tree: { id: treeId, name: familyName, canManage: viewer.canManage },
   }
 
   return (
