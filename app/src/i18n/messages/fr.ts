@@ -701,6 +701,9 @@ export const fr: Messages = {
   },
   admin: {
     title: 'Administration',
+    join: 'Rejoindre',
+    becomeModerator: 'Devenir modérateur',
+    manage: 'Gérer',
     noMail: 'Ce site n’envoie pas d’e-mails : transmets toi-même les invitations et les liens de réinitialisation.',
     copy: 'Copier',
     inviteTitle: 'Inviter',
@@ -777,11 +780,12 @@ export const fr: Messages = {
     toDark: 'Affichage sombre',
   },
   nav: {
+    manageTree: (name) => `Gérer ${name}`,
     toTree: 'Vers l’arbre',
     myTrees: 'Mes arbres',
   },
   manage: {
-    tabs: { members: 'Membres', history: 'Historique et sauvegardes', admin: 'Arbres et comptes' },
+    tabs: { members: 'Membres', history: 'Historique et sauvegardes' },
     developer: 'Pour les développeurs',
     downloadTitle: 'Télécharger',
     downloadHint:

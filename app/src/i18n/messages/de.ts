@@ -702,7 +702,10 @@ export const de = {
     accessRow: (member: string, person: string) => `${member} bittet um Zugriff auf ${person} und Nachkommen`,
   },
   admin: {
-    title: 'Verwaltung',
+    title: 'Administration',
+    join: 'Beitreten',
+    becomeModerator: 'Moderator werden',
+    manage: 'Verwalten',
     noMail: 'Diese Seite verschickt keine Mails: Einladungen und Links zum Zurücksetzen gibst du selbst weiter.',
     copy: 'Kopieren',
     inviteTitle: 'Einladen',
@@ -779,11 +782,12 @@ export const de = {
     toDark: 'Dunkle Ansicht',
   },
   nav: {
+    manageTree: (name: string) => `${name} verwalten`,
     toTree: 'Zum Stammbaum',
     myTrees: 'Meine Stammbäume',
   },
   manage: {
-    tabs: { members: 'Mitglieder', history: 'Verlauf & Sicherungen', admin: 'Bäume & Konten' },
+    tabs: { members: 'Mitglieder', history: 'Verlauf & Sicherungen' },
     developer: 'Für Entwickler',
     downloadTitle: 'Herunterladen',
     downloadHint:

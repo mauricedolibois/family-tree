@@ -107,7 +107,7 @@ export default function HistoryPage({ treeId, nav }: Props) {
         <title>{tree ? `${t.history.title} – ${tree.name}` : t.history.title}</title>
       </Head>
       <div className="page-backdrop min-h-dvh">
-        <PageHeader title={t.admin.title} nav={nav} current="history" />
+        <PageHeader title={t.nav.manageTree(nav.tree?.name ?? '')} nav={nav} current="history" />
 
         <main className="mx-auto flex max-w-3xl flex-col gap-5 p-3 sm:p-5">
           {tree && <p className="text-[15px] text-ink">{t.history.intro(tree.name)}</p>}

@@ -694,6 +694,9 @@ export const en: Messages = {
   },
   admin: {
     title: 'Administration',
+    join: 'Join',
+    becomeModerator: 'Become moderator',
+    manage: 'Manage',
     noMail: 'This site does not send emails: pass invitations and reset links on yourself.',
     copy: 'Copy',
     inviteTitle: 'Invite',
@@ -770,11 +773,12 @@ export const en: Messages = {
     toDark: 'Dark view',
   },
   nav: {
+    manageTree: (name) => `Manage ${name}`,
     toTree: 'To the tree',
     myTrees: 'My trees',
   },
   manage: {
-    tabs: { members: 'Members', history: 'History & backups', admin: 'Trees & accounts' },
+    tabs: { members: 'Members', history: 'History & backups' },
     developer: 'For developers',
     downloadTitle: 'Download',
     downloadHint:

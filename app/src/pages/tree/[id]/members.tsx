@@ -135,7 +135,7 @@ export default function MembersPage({ treeId, nav }: Props) {
         <title>{data ? `${t.members.title} – ${data.tree.name}` : t.members.title}</title>
       </Head>
       <div className="page-backdrop min-h-dvh">
-        <PageHeader title={t.admin.title} nav={nav} current="members" />
+        <PageHeader title={t.nav.manageTree(nav.tree?.name ?? '')} nav={nav} current="members" />
 
         <main className="mx-auto flex max-w-3xl flex-col gap-5 p-3 sm:p-5">
           {error && <FormMessage>{error}</FormMessage>}

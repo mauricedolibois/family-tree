@@ -698,6 +698,9 @@ export const es: Messages = {
   },
   admin: {
     title: 'Administración',
+    join: 'Unirse',
+    becomeModerator: 'Hacerse moderador',
+    manage: 'Gestionar',
     noMail: 'Este sitio no envía correos: transmite tú las invitaciones y los enlaces para restablecer contraseñas.',
     copy: 'Copiar',
     inviteTitle: 'Invitar',
@@ -774,11 +777,12 @@ export const es: Messages = {
     toDark: 'Vista oscura',
   },
   nav: {
+    manageTree: (name) => `Gestionar ${name}`,
     toTree: 'Al árbol',
     myTrees: 'Mis árboles',
   },
   manage: {
-    tabs: { members: 'Miembros', history: 'Historial y copias', admin: 'Árboles y cuentas' },
+    tabs: { members: 'Miembros', history: 'Historial y copias' },
     developer: 'Para desarrolladores',
     downloadTitle: 'Descargar',
     downloadHint:
