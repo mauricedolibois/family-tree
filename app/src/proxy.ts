@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const READ_ONLY = new Set(['GET', 'HEAD', 'OPTIONS'])
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (READ_ONLY.has(req.method)) return NextResponse.next()
   const site = req.headers.get('sec-fetch-site')
   if (site && site !== 'same-origin' && site !== 'none') {
