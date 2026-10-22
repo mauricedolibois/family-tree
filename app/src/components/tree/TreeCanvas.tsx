@@ -2,7 +2,7 @@
 // The tree as a zoomable, pannable canvas with the view switcher and relation card on top.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { TransformComponent, TransformWrapper, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
+import { TransformComponent, TransformWrapper, type ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch'
 import { Maximize, Minus, Plus } from 'lucide-react'
 import { lineageOf, lineageView, subTree } from '@/family/model'
 import { findConnection } from '@/family/kinship'
@@ -34,7 +34,7 @@ export function TreeCanvas() {
   const { t } = useI18n()
   const { selectedId, select, lineId, lineScope, showLine, relation, showRelation, birthdays, meId, focusRequest } =
     useView()
-  const api = useRef<ReactZoomPanPinchRef | null>(null)
+  const api = useRef<ReactZoomPanPinchContentRef | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
   const overlay = useRef<HTMLDivElement | null>(null)
   const pointerDown = useRef<{ x: number; y: number } | null>(null)
@@ -139,7 +139,7 @@ export function TreeCanvas() {
     (card: CardBox, time = 450, overview?: { scale: number }) => {
       const el = box.current
       if (!el || !api.current) return
-      const current = api.current.instance.transformState.scale
+      const current = api.current.instance.state.scale
       const scale = overview ? overview.scale : Math.max(current, READING_SCALE)
       const narrow = el.clientWidth < WIDE
       const { top, left } = insets()
@@ -236,7 +236,7 @@ export function TreeCanvas() {
       const el = box.current
       const card = cardById.get(id)
       if (!el || !card || !api.current) return
-      const { scale, positionX, positionY } = api.current.instance.transformState
+      const { scale, positionX, positionY } = api.current.instance.state
       const right = positionX + (card.x + card.w) * scale
       const bottom = positionY + (card.y + card.h) * scale
       const narrow = el.clientWidth < 768
@@ -275,7 +275,7 @@ export function TreeCanvas() {
         doubleClick={{ disabled: true }}
         wheel={{ step: 0.12 }}
         panning={{ velocityDisabled: false }}
-        onTransformed={(_, state) => trackView(state)}
+        onTransform={(_, state) => trackView(state)}
       >
         <TransformComponent wrapperClass="!h-full !w-full" contentClass="">
           <div
@@ -350,7 +350,7 @@ export function TreeCanvas() {
           highlight={new Set([selectedId, meId].filter((id): id is string => !!id))}
           onMove={(x, y) => {
             const el = box.current
-            const scale = api.current?.instance.transformState.scale
+            const scale = api.current?.instance.state.scale
             if (el && scale)
               api.current?.setTransform(el.clientWidth / 2 - x * scale, el.clientHeight / 2 - y * scale, scale, 0)
           }}

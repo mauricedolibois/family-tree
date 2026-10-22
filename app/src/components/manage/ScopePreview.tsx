@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
-import { TransformComponent, TransformWrapper, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
+import { TransformComponent, TransformWrapper, type ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch'
 import { Eye, Flag, GitBranch, Lock, Maximize, Minus, PenLine, Pencil, Plus, X } from 'lucide-react'
 import { lifeYears } from '@/family/format'
 import type { Tree } from '@/family/model'
@@ -154,7 +154,7 @@ function MiniTree({
   const p = t.members.preview
   const start = startOf(scope)
   const { layout } = useTreeLayout(tree, start || null)
-  const api = useRef<ReactZoomPanPinchRef | null>(null)
+  const api = useRef<ReactZoomPanPinchContentRef | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
   const owners = linePeople(scope)
   const stops = new Set(scope.stops)
