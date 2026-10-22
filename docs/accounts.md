@@ -5,7 +5,7 @@ to several family trees; what they may do is set per tree.
 
 | Role | May do |
 | --- | --- |
-| **Admin** (global) | Runs the server: accounts, admin rights, trees (create, rename, delete, import), invitations and memberships for every tree on `/admin`. Sees and edits a tree's contents only as a member of it, like everyone else; whoever creates or imports a tree becomes its moderator. |
+| **Admin** (global) | Runs the server: accounts, admin rights, trees (create, rename, delete, import), memberships and open invitations of every tree on `/admin`, and invitations for admin rights alone. People are invited into a tree on its members tab, so an admin who is no member adds themselves first. Sees and edits a tree's contents only as a member of it, like everyone else; whoever creates or imports a tree becomes its moderator. |
 | **Moderator** (per tree) | Like an editor, and also invite people to the tree, change the roles of its members and remove them (`/tree/<id>/members`). |
 | **Editor** (per tree) | Read and change the tree, upload photos, renew the calendar link. |
 | **Viewer** (per tree) | Read the tree, use views, birthdays, PDF export and the calendar subscription. |
@@ -18,10 +18,16 @@ not exist.
 
 ## Joining
 
-People join through **invitation links**, created by admins on `/admin` or by a
-tree's moderators on its members page (menu → Members):
+People join through **invitation links**, created by a tree's moderators on its
+members tab (menu → Administration → Members, or "Access …" in a person's info
+sheet), or by admins on `/admin` for admin rights alone:
 
-- for one tree with a role, for admin rights, or both (admin rights only from admins);
+- for one tree with a role, optionally also with admin rights (only admins grant
+  them), or for admin rights without a tree (`/admin`);
+- into a tree always **for a person in the tree** ("Who is this person in
+  the family tree?"): accepting links the new account to that person without
+  asking, the part of the tree starts with their blood line, and the introduction
+  starts with "That's you" instead of asking who they are;
 - optionally bound to an email address (then only that address can use it, and it
   counts as verified);
 - valid for 1 to 30 days and usable once; open invitations can be revoked.
@@ -38,13 +44,32 @@ invitation can send mail to any address.
 **Public registration** is off. With `ALLOW_REGISTRATION=true` anyone can sign up
 at `/register` and gets a new tree of their own as its moderator.
 
+## Who someone is in the tree
+
+A membership can be **linked to a person** in the tree (one account per person):
+
+- by the invitation, which names the person;
+- by a moderator on the members page ("Link a person", "Other person", ×);
+- by asking: a member without a link taps "That's me" on their card. Moderators are
+  linked right away; for everyone else it is a request that a moderator or a
+  **close relative with a linked account** (parent, child, sibling, spouse)
+  confirms, in the bar under the top bar or on the members page.
+
+The link makes "that's me" the same on every device (kinship, birthdays, "my
+line"). People linked to an account are shown as such; only moderators can delete
+them, which drops the link.
+
 ## Part of a tree
 
-Moderators can limit a viewer or editor to a part of the tree, on the members page
-(slider button next to the member) or right in the invitation. A part is chosen
-like "Only this line": a start person, how many generations of ancestors and
-descendants, and which side lines (none, siblings, cousins, all). The start
-person's spouse belongs to what the member sees, but not to what they may edit.
+Moderators can limit a viewer or editor to a part of the tree: in the invitation,
+on the members page (slider button next to the member) or from a person's info
+sheet ("Access …"). A part is made of **blood lines**: a person with their
+ancestors and descendants, each with its own number of generations up and down
+and, if chosen, side lines (siblings, cousins, all blood relatives with their
+families). A new part starts with the line of the invited person and their
+siblings, so someone who married in can add their own brothers and sisters. A part starts with
+one line and grows by adding the line of another person. Parts set before lines
+existed (a start person with side lines) are read as one such line.
 
 Per member the moderator chooses:
 
@@ -54,23 +79,55 @@ Per member the moderator chooses:
 - **rest visible** (editors only): the member sees everything but changes only
   their part.
 
-Typical use: someone who married into the family adds their own parents and
-siblings without seeing or changing the rest. New people can only be added where
-they stay within the part, so the member can still edit them afterwards: the
-interface offers "add" only there, and the server refuses anything else. For
-example a sibling's child needs side lines "cousins", a grandparent needs two
-generations of ancestors ("all", the default, always works), and side lines come
-without their spouses, as in "Only this line". A new child of the start person
-also gets the spouse as second parent.
+Every person of the part has one of **three levels**:
 
-The server enforces it (`app/src/family/scope.ts`): it cuts what it sends, and on
-saving it takes over only the people of the part and new people linked to them;
-everything else comes from the stored tree, so links to the hidden rest stay
-intact. Changes outside the part are refused with a message. Moderators always
-have the whole tree; making someone a moderator removes their part. If the start
-person is deleted, a member with the rest hidden sees nothing until a moderator
-sets a new part. Limiting someone does not invalidate a calendar link they
-already have: renew the link (birthday list → calendar) if that matters.
+- **Edit**: everything, including adding relatives and deleting.
+- **Details only**: name, dates, texts and photos, but no relatives added and not
+  deleted, so the family beyond stays untouched. People at the edge of the part
+  get it by themselves: those on whom family lines outside the part hang, for
+  example a grandfather whose other son is not in the part, a married sister whose
+  husband and children are not shared, or the topmost ancestor when their parents
+  are beyond the chosen generations.
+- **View only**: someone who married into a line (they belong to their own
+  family), and anyone the moderator sets so.
+
+The people the lines start from always have full rights. A couple can still get
+a new child when one of the two may not be changed. In the info sheet the member
+sees why they may change only the details, the "add" buttons are greyed out, and
+they can **ask for access**: a moderator then sees "Lisa asks for access to
+Thomas and descendants" with what would change, and confirms or rejects it.
+
+Further tools in the editor:
+
+- **Up to here**: the part ends at a person; they belong to it, nobody beyond them
+  (details only when there are people beyond).
+- **Level per person**: tapping a person in the preview offers edit, details only
+  or view only; their default is marked. Full rights at the edge come with the
+  blood line of the person beyond, which the preview offers as a button.
+- **Help**: the "i" next to "Access", the side lines and the preview explains the
+  choices with examples, on hover or tap.
+- **Preview**: a small tree with every person's level (view only with a clear
+  red mark, details only dashed, not shared faded), a sentence like "sees 7
+  people: 3 to edit, 2 details only, 2 view only", and a list that says why.
+  Changing an existing part shows before saving who is newly shared, who gets more
+  or fewer rights and who is no longer shared.
+- **View as**: the eye next to a member opens the real tree exactly as they see it,
+  read only.
+
+New people can only be added where they stay within the part, so the member can
+still edit them afterwards: the interface offers "add" only there, and the server
+refuses anything else. A new sibling, for example, needs the side line "siblings".
+
+The server enforces it (`app/src/family/scope.ts`): it cuts what it sends, telling
+which people have details only or view only (only visible in the whole tree), and
+on saving it takes over only the people of the part and new people linked to
+them; everything else
+comes from the stored tree, so links to the hidden rest stay intact. Changes
+outside the part are refused with a message. Moderators always have the whole
+tree; making someone a moderator removes their part. If the start person (the
+first line's person) is deleted, a member with the rest hidden sees nothing until a
+moderator sets a new part. Limiting someone does not invalidate a calendar link
+they already have: renew the link (birthday list → calendar) if that matters.
 
 ## Mail
 
@@ -159,7 +216,8 @@ accounts can sign in.
    ```
 
    It returns a path like `/invite/3f9c…`; open `https://<your domain>/invite/3f9c…`.
-4. On `/admin`, **invite the family** to the existing tree, as editors or viewers.
+4. On `/admin`, add yourself to the existing tree as moderator, then **invite the
+   family** on its members tab, as editors or viewers.
 
 **HTTP basic auth in front of the app:** invited people would need its credentials
 as well, before they even reach the invitation page. With personal accounts it is

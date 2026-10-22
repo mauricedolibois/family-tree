@@ -3,6 +3,7 @@
 
 import { managedTree, withUser } from '@/lib/auth'
 import { loadVersion, replaceTree } from '@/lib/db'
+import { forgetMissingPeople } from '@/lib/requests'
 import { validateStoredTree } from '@/storage/validate'
 
 export default withUser('api/trees/[id]/history/[versionId]', async (req, res, user) => {
@@ -25,5 +26,6 @@ export default withUser('api/trees/[id]/history/[versionId]', async (req, res, u
     note: `before restoring backup ${versionId}`,
     userId: user.id,
   })
+  await forgetMissingPeople(tree.id, checked.tree)
   return res.status(200).json({ ok: true, people: Object.keys(checked.tree.members).length })
 })

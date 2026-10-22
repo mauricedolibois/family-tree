@@ -52,11 +52,14 @@ function markSeen() {
 }
 
 function TourRunner() {
-  const { index, canEditPerson, canAddRelative, scope } = useFamily()
+  const { index, canEditPerson, canAddRelative, scope, linkedMe } = useFamily()
   const view = useView()
   const { meId, setMe, setTourOpen, focusOn, select, showLine, showRelation } = view
   const { t } = useI18n()
-  const [me, setChosen] = useState<string | null | undefined>(undefined) // undefined: still on the welcome screen
+  // undefined: still on the welcome screen; members whose invitation said who they are skip it
+  const [me, setChosen] = useState<string | null | undefined>(() =>
+    linkedMe && index.byId.has(linkedMe) ? linkedMe : undefined,
+  )
   const [stepId, setStepId] = useState<string | null>(null)
 
   const actions = useMemo(

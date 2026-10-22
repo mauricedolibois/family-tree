@@ -22,7 +22,11 @@ ids cannot be probed.
 | `POST /api/trees/<id>/media` upload | 401 | 403 | ✓ | ✓ | 404 | by role |
 | `GET /api/media/<id>/<file>` photo or document | 404 | ✓ | ✓ | ✓ | 404 | by role |
 | `GET /api/trees/<id>/download` ZIP with photos | 401 | ✓ | ✓ | ✓ | 404 | by role |
-| `GET /api/trees/<id>/members`, invitations, roles | 401 | 403 | 403 | ✓ | 404 | by role |
+| `GET /api/trees/<id>/members`, invitations, roles, linked person | 401 | 403 | 403 | ✓ | 404 | by role |
+| `GET /api/trees/<id>?as=<user>` view as a member (read only) | 401 | 403 | 403 | ✓ | 404 | by role |
+| `GET`/`POST /api/trees/<id>/requests` own "that's me" and access requests | 401 | ✓ | ✓ | ✓ | 404 | by role |
+| `PUT /api/trees/<id>/requests/<id>` confirm "that's me" | 401 | close relative | close relative | ✓ | 404 | by role |
+| `PUT /api/trees/<id>/requests/<id>` decide access request | 401 | 403 | 403 | ✓ | 404 | by role |
 | `/api/trees/<id>/history` versions, restore, download | 401 | 403 | 403 | ✓ | 404 | by role |
 | `POST /api/trees/<id>/import` replace from file | 401 | 403 | 403 | ✓ | 404 | by role |
 | `POST /api/trees/import` new tree from file | 401 | 403 | 403 | 403 | 403 | ✓ (becomes moderator) |
@@ -38,7 +42,7 @@ Members limited to **a part of the tree** (`scope` on the membership, see
 | Endpoint | Part, rest hidden | Part, rest visible |
 | --- | --- | --- |
 | `GET /api/trees/<id>` | only the part (`viewFor`) | everything |
-| `PUT /api/trees/<id>` (editors) | merged by `mergeScopedSave`: only the part changes, otherwise 403 | same |
+| `PUT /api/trees/<id>` (editors) | merged by `mergeScopedSave`: only the part changes; people with details only keep their links and stay, view-only people and the lines' people stay, otherwise 403 | same |
 | `GET /api/media/<id>/<file>` | only files of people in the part and own fresh uploads, otherwise 404 | everything |
 | `GET /api/trees/<id>/download` | only the part | everything |
 | `/api/trees/<id>/calendar` | 403 (the feed holds the whole tree) | link yes, renewing no |
@@ -53,6 +57,16 @@ Further limits:
 
 - Moderators manage everyone in their tree except themselves, never hand out
   admin rights and do not see invitations that grant them; 20 invitations per hour.
+  `POST /api/admin/invites` hands out admin rights alone; invitations into a tree
+  come from its members tab and always name a person there.
+- People linked to an account are deleted only by moderators (otherwise 403);
+  the link goes with them, also when a restore or an import removes them, and
+  open requests about them are closed, as are a member's own when they leave. One account per person and tree (unique index).
+- "That's me" is confirmed only by a moderator or by a member whose linked person
+  is a parent, child, sibling or spouse of the claimed person, never by the member
+  who asked; a member has at most one open request of each kind.
+- "View as" never saves: the client refuses, and the server answers 403 to
+  anything but reading with `?as`.
 - Media links in a tree can point to files of other trees, but the file is only
   served, exported or copied on import for people who may see *that* tree.
 - Uploaded and imported files: images, common videos and PDFs only, served with
@@ -91,7 +105,7 @@ Further limits:
 - Viewers can still download everything they see (the ZIP download); that is
   the point of being a member, not a gap.
 - A part of a tree limits contents, not facts one can infer: a member sees that
-  their start person has a spouse, and kinship labels only cover the people in
-  their part. A calendar link they got before being limited keeps working until
-  it is renewed.
+  their start person has a spouse, that someone at the edge has relatives beyond
+  the part (not who), and kinship labels only cover the people in their part. A
+  calendar link they got before being limited keeps working until it is renewed.
 - The Supabase secrets themselves (`supabase.md`, step 4).

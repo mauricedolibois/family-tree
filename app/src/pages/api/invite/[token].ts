@@ -4,6 +4,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import {
   claimInvite,
+  linkPerson,
   createUser,
   deleteUser,
   findInvite,
@@ -25,10 +26,26 @@ import { clientIp, isLimited, recordAttempt } from '@/lib/rateLimit'
 import { sendVerification } from '@/lib/accountMail'
 import { logError } from '@/lib/log'
 import { localeFromRequest } from '@/i18n/server'
+import { lifeYears } from '@/family/format'
+import { loadTree } from '@/lib/db'
 
 async function grant(invite: InviteDetails, user: UserRow) {
   if (invite.make_admin && !user.is_admin) await updateUser(user.id, { is_admin: true })
-  if (invite.tree_id && invite.role) await setMembership(user.id, invite.tree_id, invite.role, invite.scope)
+  if (invite.tree_id && invite.role) {
+    await setMembership(user.id, invite.tree_id, invite.role, invite.scope)
+    // The invitation says who they are: linked without asking. Should someone else
+    // have been linked to that person meanwhile, they join without the link.
+    if (invite.person_id && (await invitedPerson(invite))) {
+      await linkPerson(user.id, invite.tree_id, invite.person_id, 'invite')
+    }
+  }
+}
+
+/** The person the invitation names, if they are still in the tree */
+async function invitedPerson(invite: InviteDetails): Promise<{ name: string; years: string } | null> {
+  if (!invite.tree_id || !invite.person_id) return null
+  const person = (await loadTree(invite.tree_id))?.tree.members[invite.person_id]
+  return person ? { name: person.name, years: lifeYears(person) } : null
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -50,6 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         admin: invite.make_admin,
         email: invite.email,
         inviter: invite.inviter_name,
+        person: await invitedPerson(invite),
         signedInAs: me ? { name: me.name, email: me.email } : null,
       })
     }

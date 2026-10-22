@@ -7,7 +7,7 @@ import { mayReadAllMedia, treeMembership, withUser } from '@/lib/auth'
 import { getTree } from '@/lib/accounts'
 import { treeIdParam } from '@/lib/ids'
 import { downloadName, writeExport } from '@/lib/treeArchive'
-import { viewFor } from '@/family/scope'
+import { startOf, viewFor } from '@/family/scope'
 
 export const config = { api: { responseLimit: false } }
 
@@ -22,7 +22,7 @@ export default withUser('api/trees/[id]/download', async (req, res, user) => {
   const loaded = tree ? await loadTree(tree.id) : null
   if (!tree || !loaded) return res.status(404).json({ error: 'not found' })
   const scope = membership?.scope ?? null
-  if (scope?.hideRest && !loaded.tree.members[scope.person]) return res.status(403).json({ error: 'scope gone' })
+  if (scope?.hideRest && !loaded.tree.members[startOf(scope)]) return res.status(403).json({ error: 'scope gone' })
 
   res.setHeader('Content-Type', 'application/zip')
   res.setHeader('Content-Disposition', `attachment; filename="${downloadName(tree.name, new Date())}"`)

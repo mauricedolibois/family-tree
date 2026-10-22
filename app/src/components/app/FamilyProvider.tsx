@@ -4,7 +4,8 @@
 // Saves always carry the loaded version: if the tree was changed elsewhere in
 // the meantime, the user gets a notice instead of a silent overwrite.
 // Members limited to a part of the tree get their part from the server (header
-// x-tree-scope); canEditPerson tells which people they may change.
+// x-tree-scope) along with the locked people of their part; canEditPerson tells
+// which people they may change.
 
 import Link from 'next/link'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -15,7 +16,10 @@ import {
   canAddInPart,
   decodeScope,
   OutsideScopeError,
+  PreviewError,
   scopeSets,
+  TREE_ME_HEADER,
+  TREE_PREVIEW_HEADER,
   TREE_SCOPE_HEADER,
   type TreeScope,
 } from '@/family/scope'
@@ -38,8 +42,22 @@ type FamilyCtx = {
   treeId: string
   /** Editors may change the tree (or their part of it); viewers only read it */
   canEdit: boolean
+  /** A moderator looks at the tree as this member sees it: shown as for them, nothing is saved */
+  previewAs: string | null
+  /** Moderators manage members and who gets which part of the tree */
+  canManage: boolean
   /** May change this person: always for editors of the whole tree, within their part otherwise */
   canEditPerson: (id: string) => boolean
+  /** An editor's part ends at this person: further family lines hang on them that the member was not given */
+  isLocked: (id: string) => boolean
+  /** Unlocked by hand: the person's own details may be changed, their relatives not */
+  isDetailsOnly: (id: string) => boolean
+  /** The person in the tree the signed-in member is, confirmed on the server ("that's me") */
+  linkedMe: string | null
+  /** This person belongs to a member's account */
+  hasAccount: (id: string) => boolean
+  /** Loads the tree again, e.g. after the member was linked to their person */
+  reload: () => Promise<void>
   /** May add a relative of this person: within a part only if the new person stays in it */
   canAddRelative: (id: string, relation: Relation) => boolean
   /** The part of the tree the member is limited to; null for the whole tree */
@@ -63,26 +81,38 @@ export function useFamily(): FamilyCtx {
 export function FamilyProvider({
   treeId,
   familyName,
-  canEdit,
+  canEdit: ownCanEdit,
+  canManage = false,
+  previewAs = null,
   children,
 }: {
   treeId: string
   familyName: string
   canEdit: boolean
+  canManage?: boolean
+  previewAs?: string | null
   children: ReactNode
 }) {
   const url = `/api/trees/${treeId}`
+  const readUrl = previewAs ? `${url}?as=${encodeURIComponent(previewAs)}` : url
+  // In a preview, the buttons are those of the member, taken from their role
+  const [previewEdit, setPreviewEdit] = useState(false)
+  const canEdit = previewAs ? previewEdit : ownCanEdit
   const [tree, setTree] = useState<Tree | null>(null)
   const [status, setStatus] = useState<Status>('loading')
   const [conflict, setConflict] = useState(false)
   const [saving, setSaving] = useState(false)
   const [scope, setScope] = useState<TreeScope | null>(null)
+  const [locked, setLocked] = useState<Set<string>>(() => new Set())
+  const [detailsOnly, setDetailsOnly] = useState<Set<string>>(() => new Set())
+  const [linked, setLinked] = useState<Set<string>>(() => new Set())
+  const [linkedMe, setLinkedMe] = useState<string | null>(null)
   const version = useRef<string | null>(null)
 
   const load = useCallback(async () => {
     setStatus('loading')
     try {
-      const res = await fetch(url, { cache: 'no-store' })
+      const res = await fetch(readUrl, { cache: 'no-store' })
       if (res.status === 401) {
         window.location.href = '/login'
         return
@@ -97,17 +127,30 @@ export function FamilyProvider({
         setStatus('scope gone')
         return
       }
-      if (!res.ok) throw new Error(`GET ${url} ${res.status}`)
+      if (!res.ok) throw new Error(`GET ${readUrl} ${res.status}`)
+      // The server says when this is a preview; never treat a member's view as the whole tree
+      if (previewAs && res.headers.get(TREE_PREVIEW_HEADER) !== '1') throw new Error('not a preview')
+      setPreviewEdit(['editor', 'moderator'].includes(res.headers.get('X-Tree-Access') ?? ''))
       version.current = res.headers.get(TREE_VERSION_HEADER)
       setScope(decodeScope(res.headers.get(TREE_SCOPE_HEADER)))
-      setTree((await res.json()) as Tree)
+      const { lockedIds, detailsOnlyIds, linkedIds, ...loaded } = (await res.json()) as Tree & {
+        lockedIds?: string[]
+        detailsOnlyIds?: string[]
+        linkedIds?: string[]
+      }
+      setLocked(new Set(lockedIds ?? []))
+      setDetailsOnly(new Set(detailsOnlyIds ?? []))
+      setLinked(new Set(linkedIds ?? []))
+      const me = res.headers.get(TREE_ME_HEADER)
+      setLinkedMe(me ? decodeURIComponent(me) : null)
+      setTree(loaded)
       setConflict(false)
       setStatus('ready')
     } catch (e) {
       console.error('[FamilyProvider] loading failed', e)
       setStatus('error')
     }
-  }, [url])
+  }, [readUrl, previewAs])
 
   useEffect(() => {
     void load()
@@ -121,6 +164,8 @@ export function FamilyProvider({
 
   const commit = useCallback(
     async (next: Tree): Promise<Undo> => {
+      // What a preview shows is the member's part: saving it would cut the tree down
+      if (previewAs) throw new PreviewError()
       const before = current.current
       setSaving(true)
       try {
@@ -164,7 +209,7 @@ export function FamilyProvider({
         if (before) await commitRef.current(before)
       }
     },
-    [url],
+    [url, previewAs],
   )
   const commitRef = useRef(commit)
   commitRef.current = commit
@@ -173,19 +218,61 @@ export function FamilyProvider({
   // Computed like the server does on saving (family/scope.ts), so buttons only
   // appear where a change will be accepted
   const editable = useMemo(() => (tree && scope ? scopeSets(tree, scope).editable : null), [tree, scope])
-  const canEditPerson = useCallback((id: string) => canEdit && (!editable || editable.has(id)), [canEdit, editable])
+  const canEditPerson = useCallback(
+    (id: string) => canEdit && (!editable || editable.has(id)) && !locked.has(id),
+    [canEdit, editable, locked],
+  )
+  const isLocked = useCallback((id: string) => canEdit && locked.has(id), [canEdit, locked])
+  const isDetailsOnly = useCallback((id: string) => detailsOnly.has(id), [detailsOnly])
+  const hasAccount = useCallback((id: string) => linked.has(id), [linked])
   // Someone added outside the part could not be edited afterwards: no button for that
   const canAddRelative = useCallback(
     (id: string, relation: Relation) =>
-      canEditPerson(id) && (!scope || !tree || canAddInPart(tree, scope, id, relation)),
-    [canEditPerson, scope, tree],
+      canEditPerson(id) && !detailsOnly.has(id) && (!scope || !tree || canAddInPart(tree, scope, id, relation)),
+    [canEditPerson, detailsOnly, scope, tree],
   )
   const value = useMemo(
     () =>
       tree && index
-        ? { tree, index, familyName, treeId, canEdit, canEditPerson, canAddRelative, scope, commit, saving }
+        ? {
+            tree,
+            index,
+            familyName,
+            treeId,
+            canEdit,
+            previewAs,
+            canManage: canManage && !previewAs,
+            canEditPerson,
+            isLocked,
+            isDetailsOnly,
+            linkedMe,
+            hasAccount,
+            reload: load,
+            canAddRelative,
+            scope,
+            commit,
+            saving,
+          }
         : null,
-    [tree, index, familyName, treeId, canEdit, canEditPerson, canAddRelative, scope, commit, saving],
+    [
+      tree,
+      index,
+      familyName,
+      treeId,
+      canEdit,
+      previewAs,
+      canManage,
+      canEditPerson,
+      isLocked,
+      isDetailsOnly,
+      linkedMe,
+      hasAccount,
+      load,
+      canAddRelative,
+      scope,
+      commit,
+      saving,
+    ],
   )
 
   if (status === 'scope gone') return <ScopeGone />

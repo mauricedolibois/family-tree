@@ -17,6 +17,8 @@ type Info = {
   admin: boolean
   email: string | null
   inviter: string | null
+  /** Who the invited person is in the tree; their account is linked on accepting */
+  person: { name: string; years: string } | null
   signedInAs: { name: string; email: string } | null
 }
 
@@ -43,6 +45,7 @@ export default function InvitePage({ token }: Props) {
         const data = (await r.json()) as Info
         setInfo(data)
         if (data.email) setForm((f) => ({ ...f, email: data.email! }))
+        if (data.person) setForm((f) => ({ ...f, name: f.name || data.person!.name }))
       })
       .catch(() => setGone('invalid'))
   }, [api])
@@ -96,55 +99,64 @@ export default function InvitePage({ token }: Props) {
         <p className="text-center text-ink-muted">{t.auth.wait}</p>
       ) : checkMail ? (
         <FormMessage tone="info">{t.register.checkMail}</FormMessage>
-      ) : info.signedInAs ? (
-        <div className="flex flex-col gap-4">
-          <p className="text-[15px] text-ink">{t.invite.signedInAs(info.signedInAs.name, info.signedInAs.email)}</p>
-          {error && <FormMessage>{error}</FormMessage>}
-          <Button variant="primary" disabled={loading} onClick={() => accept({})} className="w-full">
-            {loading ? t.auth.wait : t.invite.accept}
-          </Button>
-        </div>
       ) : (
-        <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-          <Field
-            id="name"
-            label={t.account.name}
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            autoComplete="name"
-          />
-          <Field
-            id="email"
-            type="email"
-            label={t.login.email}
-            value={form.email}
-            readOnly={!!info.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            autoComplete="email"
-          />
-          <Field
-            id="password"
-            type="password"
-            label={t.auth.password}
-            hint={t.auth.minLength}
-            value={form.password}
-            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-            autoComplete="new-password"
-          />
-          {error && <FormMessage>{error}</FormMessage>}
-          <Button type="submit" variant="primary" disabled={loading} className="w-full">
-            {loading ? t.auth.wait : t.invite.createAccount}
-          </Button>
-          <p className="text-center text-[15px] text-ink-muted">
-            {t.invite.haveAccount}{' '}
-            <Link
-              href={`/login?next=${encodeURIComponent(here)}`}
-              className="font-medium text-link underline underline-offset-4"
-            >
-              {t.login.submit}
-            </Link>
-          </p>
-        </form>
+        <div className="flex flex-col gap-4">
+          {info.person && (
+            <p className="rounded-control border border-accent/60 bg-accent-soft/40 px-3 py-2 text-[15px] text-ink">
+              {t.invite.asPerson(info.person.years ? `${info.person.name} (${info.person.years})` : info.person.name)}
+            </p>
+          )}
+          {info.signedInAs ? (
+            <div className="flex flex-col gap-4">
+              <p className="text-[15px] text-ink">{t.invite.signedInAs(info.signedInAs.name, info.signedInAs.email)}</p>
+              {error && <FormMessage>{error}</FormMessage>}
+              <Button variant="primary" disabled={loading} onClick={() => accept({})} className="w-full">
+                {loading ? t.auth.wait : t.invite.accept}
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
+              <Field
+                id="name"
+                label={t.account.name}
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                autoComplete="name"
+              />
+              <Field
+                id="email"
+                type="email"
+                label={t.login.email}
+                value={form.email}
+                readOnly={!!info.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                autoComplete="email"
+              />
+              <Field
+                id="password"
+                type="password"
+                label={t.auth.password}
+                hint={t.auth.minLength}
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                autoComplete="new-password"
+              />
+              {error && <FormMessage>{error}</FormMessage>}
+              <Button type="submit" variant="primary" disabled={loading} className="w-full">
+                {loading ? t.auth.wait : t.invite.createAccount}
+              </Button>
+              <p className="text-center text-[15px] text-ink-muted">
+                {t.invite.haveAccount}{' '}
+                <Link
+                  href={`/login?next=${encodeURIComponent(here)}`}
+                  className="font-medium text-link underline underline-offset-4"
+                >
+                  {t.login.submit}
+                </Link>
+              </p>
+            </form>
+          )}
+        </div>
       )}
     </AuthLayout>
   )

@@ -3,6 +3,7 @@
 
 import { managedTree, mayReadAllMedia, withUser } from '@/lib/auth'
 import { replaceTree } from '@/lib/db'
+import { forgetMissingPeople } from '@/lib/requests'
 import { removeMedia } from '@/lib/media'
 import { ImportError, prepareImport, readImportRequest, unpackImport } from '@/lib/treeArchive'
 
@@ -23,6 +24,7 @@ export default withUser('api/trees/[id]/import', async (req, res, user) => {
     const mayRead = (id: string) => mayReadAllMedia(user, id)
     const imported = await prepareImport(unpackImport(data), tree.id, mayRead, stored)
     await replaceTree(tree.id, imported, { kind: 'import', note: 'before import', userId: user.id })
+    await forgetMissingPeople(tree.id, imported)
     return res.status(200).json({ ok: true, people: Object.keys(imported.members).length })
   } catch (err) {
     await removeMedia(stored).catch(() => {})

@@ -14,6 +14,7 @@ import { Connectors } from './Connectors'
 import { useTreeLayout } from './useTreeLayout'
 import { ViewModes } from './ViewModes'
 import { LineScopeCard } from './LineScopeCard'
+import { Minimap, type ViewState } from './Minimap'
 import { RelationCard } from '@/components/relation/RelationCard'
 import { BirthdaysCard } from '@/components/birthdays/BirthdaysCard'
 import { useI18n } from '@/i18n/I18nProvider'
@@ -39,6 +40,19 @@ export function TreeCanvas() {
   const pointerDown = useRef<{ x: number; y: number } | null>(null)
   const didInitialView = useRef(false)
   const [scopeOpen, setScopeOpen] = useState(false)
+  // Where the view is, for the minimap
+  const [view, setView] = useState<ViewState | null>(null)
+  const trackView = useCallback((state: { positionX: number; positionY: number; scale: number }) => {
+    const el = box.current
+    if (el)
+      setView({
+        x: state.positionX,
+        y: state.positionY,
+        scale: state.scale,
+        width: el.clientWidth,
+        height: el.clientHeight,
+      })
+  }, [])
   useEffect(() => {
     if (!lineId) setScopeOpen(false)
   }, [lineId])
@@ -261,6 +275,7 @@ export function TreeCanvas() {
         doubleClick={{ disabled: true }}
         wheel={{ step: 0.12 }}
         panning={{ velocityDisabled: false }}
+        onTransformed={(_, state) => trackView(state)}
       >
         <TransformComponent wrapperClass="!h-full !w-full" contentClass="">
           <div
@@ -326,6 +341,20 @@ export function TreeCanvas() {
             {t.tree.drawing}
           </p>
         </div>
+      )}
+
+      {layout && view && (
+        <Minimap
+          layout={layout}
+          view={view}
+          highlight={new Set([selectedId, meId].filter((id): id is string => !!id))}
+          onMove={(x, y) => {
+            const el = box.current
+            const scale = api.current?.instance.transformState.scale
+            if (el && scale)
+              api.current?.setTransform(el.clientWidth / 2 - x * scale, el.clientHeight / 2 - y * scale, scale, 0)
+          }}
+        />
       )}
 
       {/* Zoom */}

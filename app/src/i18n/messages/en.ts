@@ -48,8 +48,8 @@ export const en: Messages = {
     birthdays: 'Upcoming birthdays',
     exportPdf: 'Export as PDF',
     startTour: 'Start guided tour',
-    logout: 'Sign out',
     download: 'Download',
+    logout: 'Sign out',
     switchTree: 'Switch family tree',
   },
   errors: {
@@ -70,9 +70,13 @@ export const en: Messages = {
     },
     saveFailed: 'Saving failed.',
     deleteFailed: 'Deleting failed.',
+    preview: 'Nothing is saved in the preview.',
     outsideScope: 'This change affects people outside your part of the family tree and was not saved.',
   },
   family: {
+    previewAs: (name) => `Preview: this is how ${name} sees the family tree.`,
+    previewHint: 'Nothing is saved here.',
+    previewBack: 'Back to the members',
     loading: 'Loading family tree',
     loadFailed: 'The family tree could not be loaded.',
     loadFailedHint: 'Your data is safe. Check your internet connection and try again.',
@@ -81,17 +85,13 @@ export const en: Messages = {
     loadLatest: 'Load latest version',
     scopeGone: 'Your part of the family tree is gone.',
     scopeGoneHint: 'The person your access started from was removed. A moderator can give you a new part.',
-    partOf: (name: string, hidden: boolean) => (hidden ? `Part from ${name}` : `Editing from ${name}`),
-    partOfHint: (hidden: boolean) =>
-      hidden
-        ? 'You see and edit only this part of the family tree.'
-        : 'You see the whole family tree but edit only this part.',
   },
   search: {
     label: 'Search person',
     clear: 'Clear search',
   },
   tree: {
+    minimap: 'Overview map',
     layoutFailed: 'The tree could not be laid out.',
     drawing: 'Drawing the tree …',
     zoomIn: 'Zoom in',
@@ -124,6 +124,7 @@ export const en: Messages = {
     youBadge: 'You',
     edit: 'Edit',
     onlyThisLine: 'Only this line',
+    access: 'Access …',
     showRelation: 'Show relation',
     born: 'Born',
     bornIn: (place) => `in ${place}`,
@@ -147,9 +148,16 @@ export const en: Messages = {
     addParent: 'Add parent',
     addSpouse: 'Add spouse',
     addChild: 'Add child',
+    locked: 'Locked',
+    lockedHint: (name) => `You can only view ${name}, not change them.`,
+    detailsOnlyHint: (name) =>
+      `You can change the details and photos of ${name}, but not add relatives or delete anything – so the rest of the family stays untouched.`,
     adopted: () => 'adopted',
     remove: 'Remove from the family tree',
     confirmRemove: (name) => `Remove ${name} from the family tree? The previous version is backed up automatically.`,
+    hasAccount: 'Linked to an account',
+    confirmRemoveAccount: (name) =>
+      `${name} is linked to an account. Remove them from the family tree anyway? The link is dropped; the version before is backed up automatically.`,
     removed: (name) => `${name} was removed.`,
   },
   form: {
@@ -454,6 +462,7 @@ export const en: Messages = {
     joinTree: (tree, role) => `family tree “${tree}” (${role.toLowerCase()})`,
     andAdmin: 'and admin rights',
     becomeAdmin: 'admin rights for this site',
+    asPerson: (person) => `You join as ${person}.`,
     signedInAs: (name, email) => `You are signed in as ${name} (${email}).`,
     accept: 'Accept invitation',
     createAccount: 'Create account and join',
@@ -515,32 +524,148 @@ export const en: Messages = {
     noMembers: 'Nobody belongs to it yet apart from the admins.',
     remove: 'Remove',
     confirmRemove: (name, tree) => `Remove ${name} from the ${tree} family tree?`,
+    viewAs: (name) => `View as ${name}`,
+    forPerson: {
+      title: (name) => `Access to ${name}`,
+      hint: 'What members with limited access may do with this person. A blood line shares them with their ancestors and descendants.',
+    },
+    person: {
+      who: 'Who is this person in the family tree?',
+      whoHint:
+        'On accepting, the account is linked to this person automatically. The access starts with their blood line.',
+      choose: 'Person in the family tree',
+      none: 'Not linked to anyone',
+      link: 'Link a person',
+      change: 'Other person',
+      unlink: 'Remove the link',
+    },
     access: {
       label: 'Access',
       whole: 'Whole family tree',
       part: 'Only part of the family tree',
-      from: 'From person',
-      choose: '– Choose a person –',
       all: 'all',
       hideRest: 'Hide the rest of the tree',
       hideRestHint: 'Unticked, they see the whole tree but edit only their part.',
       viewerHint: 'Members who may only view see just this part.',
       spouseHint:
-        'The chosen person’s spouse is visible but cannot be edited. New people can only be added within these limits – children of siblings, for example, only from the “Cousins” side line on.',
+        'Spouses of the lines’ people are shown but not editable. New people can only be added within the lines: children and parents yes, siblings only with the side line “Siblings”.',
       help: 'Handy for in-laws: they add their own family (parents, siblings) without changing the rest – and, if you like, without seeing it.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
-          ? `Sees only the part from ${name}`
+          ? `Sees only the blood lines of ${name}`
           : editor
-          ? `Sees everything, edits only the part from ${name}`
-          : `Sees everything (the part from ${name} applies to editing)`,
+          ? `Sees everything, edits only the blood lines of ${name}`
+          : `Sees everything (the blood lines of ${name} applies to editing)`,
       gone: 'The start person is no longer in the tree',
       edit: 'Change access',
       save: 'Save',
       cancel: 'Cancel',
+      lines: 'Shared blood lines',
+      linesHint:
+        'A blood line is a person with their ancestors and descendants, with side lines (siblings, cousins) if you like. Where further family branches hang on someone, only that person’s details can be edited; another line gives full rights there.',
+      firstLine: 'Whose blood line does the access start with?',
+      addLine: 'Add another blood line',
+      lineOf: (name) => `Blood line of ${name}`,
+      removeLine: (name) => `Remove the blood line of ${name}`,
+      search: 'Type a name …',
+      noMatch: 'Nobody found.',
+      modesTitle: 'Whole tree or only a part?',
+      modes: [
+        {
+          title: 'Whole family tree',
+          text: 'The member sees everything; editors may change everything.',
+          example: 'For the closest family who look after the tree with you.',
+        },
+        {
+          title: 'Only a part',
+          text: 'You share blood lines: a person with ancestors, descendants and, if you like, side lines. In it, every person has one of three levels (“i” at the blood lines and the preview).',
+          example: 'For in-laws: Anna adds her own family without changing her husband’s.',
+        },
+        {
+          title: 'Hide the rest of the tree',
+          text: 'Ticked, the member sees only their part; unticked, they see everything but edit only their part. Viewers always see only their part.',
+          example: 'Hide it if Anna should not see her husband’s family.',
+        },
+      ],
+      sideTitle: 'What are side lines?',
+      sideExample: {
+        0: 'Example: Anna, her parents, grandparents and children.',
+        1: 'Example: also Anna’s brother and her parents’ siblings (uncles, aunts).',
+        2: 'Example: also the children of Anna’s brother and her cousins.',
+        3: 'Example: Anna’s whole family of origin with all branches.',
+      },
+      stops: 'Limited up to',
+      unstop: (name) => `Remove the limit at ${name}`,
       badge: 'Partial access',
     },
+    rights: {
+      title: 'What may the member do?',
+      intro:
+        'In the shared part every person has one of three levels. Example: Anna married in and gets her blood line with siblings.',
+      levels: {
+        edit: {
+          title: 'Edit',
+          text: 'Change everything: details, photos, add relatives, delete.',
+          example: 'Example: Anna’s parents and her children.',
+        },
+        details: {
+          title: 'Details only',
+          text: 'Change name, dates, texts and photos, but add no relatives and delete nothing. Applies by itself at the edge of the part, where further family branches hang on.',
+          example: 'Example: Anna’s married brother – his wife and children are not shared.',
+        },
+        view: {
+          title: 'View only',
+          text: 'Visible, but cannot be changed.',
+          example: 'Example: Anna’s husband, who belongs to his parents’ family – or whoever the moderator sets so.',
+        },
+      },
+      outro:
+        'Tap a person in the preview to change their level. Full rights at the edge come with the blood line of the person beyond it.',
+    },
+    preview: {
+      title: 'Preview',
+      sentence: (sees, edit, details, view) =>
+        `Sees ${sees === 1 ? '1 person' : `${sees} people`}: ${edit} to edit${
+          details ? `, ${details} details only` : ''
+        }${view ? `, ${view} view only` : ''}.`,
+      notShared: (n) => (n === 1 ? '1 person is not shared.' : `${n} people are not shared.`),
+      tapHint: 'Tap a person: change their level, add their blood line, or limit the access there.',
+      fit: 'Show the whole tree',
+      status: {
+        editable: 'Edit',
+        locked: 'View only',
+        readonly: 'Outside, visible',
+        hidden: 'Not shared',
+      },
+      line: 'Line',
+      stop: 'Up to here',
+      marriedIn: 'Married in and spouses',
+      reason: {
+        boundary: (names) => `At the edge: people who are not shared hang on here: ${names}.`,
+        stop: (names) => `At the edge: the access ends here ("up to here"); beyond: ${names}.`,
+        spouse: 'Married in: belongs to their own family, not to the blood line.',
+        manual: 'Set individually by a moderator.',
+      },
+      addLineOf: (name) => `Add the blood line of ${name}`,
+      stopHere: 'Limit up to here',
+      detailsOnly: 'Details only',
+      detailsOnlyHint: 'Details and photos yes; no relatives added, cannot be deleted.',
+      levelLabel: 'Rights for this person',
+      standard: '(default)',
+      lineFull: 'The people the blood lines start from always have full rights.',
+      edgeFull: 'Full rights: add the blood line of the person beyond.',
+      search: 'Search the list …',
+      more: (n) => `and ${n} more`,
+      changes: 'What changes',
+      gained: (n) => `${n} newly shared`,
+      unlocked: (n) => `${n} with more rights`,
+      newlyLocked: (n) => `${n} with fewer rights`,
+      lost: (n) => `${n} no longer shared`,
+      noChanges: 'No change yet.',
+    },
     status: {
+      'invalid person': 'Please choose who this person is in the family tree.',
+      'person taken': 'This person is already linked to another account or invited.',
       'invalid scope': 'Please choose a person from the tree.',
       'moderators see the whole tree': 'Moderators always have access to the whole tree.',
       self: 'You cannot change your own role here.',
@@ -548,23 +673,43 @@ export const en: Messages = {
       'invalid email': 'This email address does not look valid.',
     },
   },
+  requests: {
+    claimSent: 'Request sent: a moderator or a close relative confirms that this is you.',
+    claimOpen: 'You already have an open "that’s me" request.',
+    claimPending: '"That’s me" waiting for confirmation',
+    askConfirm: 'Have it confirmed',
+    claimToConfirm: (member, person) => `${member} says: "That’s me" – ${person}. Is that right?`,
+    confirm: 'Confirm',
+    reject: 'Reject',
+    askAccess: 'Ask for access',
+    accessSent: 'Request sent: a moderator decides about the access.',
+    accessOpen: 'You already have an open access request.',
+    accessPending: 'Access requested.',
+    accessWaiting: (n) => (n === 1 ? '1 access request is waiting.' : `${n} access requests are waiting.`),
+    toMembers: 'To the members',
+    failed: 'That did not work. Please try again.',
+    title: 'Open requests',
+    claimRow: (member, person) => `${member}: "That’s me" – ${person}`,
+    accessRow: (member, person) => `${member} asks for access to ${person} and descendants`,
+  },
   admin: {
     title: 'Administration',
     noMail: 'This site does not send emails: pass invitations and reset links on yourself.',
     copy: 'Copy',
     inviteTitle: 'Invite',
+    inviteAdminTitle: 'Invite an admin',
+    inviteAdminHint:
+      'Admin rights only, without a family tree: for someone who helps run the server. You invite people into a tree on its members page, always as a person in the tree.',
     inviteEmail: 'Email address',
     optional: 'optional',
     inviteEmailHint: 'With an address, only that person can use the link.',
     inviteEmailHintMail: 'With an address, the invitation is emailed and only that person can use it.',
     tree: 'Family tree',
-    noTree: '– no family tree –',
     role: 'Role',
     makeAdmin: 'Admin rights as well',
     validFor: 'Valid for',
     days: 'days',
     createInvite: 'Create invitation',
-    nothingToGrant: 'Choose a family tree or admin rights.',
     inviteMailed: 'The invitation has been emailed. Here is the link, just in case:',
     inviteCopy: 'Pass this link on. It works once.',
     openInvites: 'Open invitations',
@@ -627,6 +772,15 @@ export const en: Messages = {
   nav: {
     toTree: 'To the tree',
     myTrees: 'My trees',
+  },
+  manage: {
+    tabs: { members: 'Members', history: 'History & backups', admin: 'Trees & accounts' },
+    developer: 'For developers',
+    downloadTitle: 'Download',
+    downloadHint:
+      'The current state with all photos as a ZIP file. Earlier states are downloaded from the history above.',
+    downloadButton: 'Download tree',
+    otherInvites: 'Open invitations in other trees',
   },
   history: {
     title: 'History & backups',

@@ -48,8 +48,8 @@ export const fr: Messages = {
     birthdays: 'Prochains anniversaires',
     exportPdf: 'Exporter en PDF',
     startTour: 'Lancer la visite guidée',
-    logout: 'Se déconnecter',
     download: 'Télécharger',
+    logout: 'Se déconnecter',
     switchTree: 'Changer d’arbre',
   },
   errors: {
@@ -71,9 +71,13 @@ export const fr: Messages = {
     },
     saveFailed: 'L’enregistrement a échoué.',
     deleteFailed: 'La suppression a échoué.',
+    preview: 'Rien n’est enregistré dans l’aperçu.',
     outsideScope: 'Cette modification concerne des personnes hors de ta partie de l’arbre et n’a pas été enregistrée.',
   },
   family: {
+    previewAs: (name) => `Aperçu : voici comment ${name} voit l’arbre.`,
+    previewHint: 'Rien n’est enregistré ici.',
+    previewBack: 'Retour aux membres',
     loading: 'Chargement de l’arbre',
     loadFailed: 'L’arbre n’a pas pu être chargé.',
     loadFailedHint: 'Tes données sont en sécurité. Vérifie ta connexion internet et réessaie.',
@@ -84,18 +88,13 @@ export const fr: Messages = {
     scopeGone: 'Ta partie de l’arbre n’existe plus.',
     scopeGoneHint:
       'La personne à partir de laquelle tu avais accès a été supprimée. Un modérateur peut t’attribuer une nouvelle partie.',
-    partOf: (name: string, hidden: boolean) =>
-      hidden ? `Partie à partir de ${name}` : `Modification à partir de ${name}`,
-    partOfHint: (hidden: boolean) =>
-      hidden
-        ? 'Tu vois et modifies seulement cette partie de l’arbre.'
-        : 'Tu vois tout l’arbre, mais tu ne modifies que cette partie.',
   },
   search: {
     label: 'Chercher une personne',
     clear: 'Effacer la recherche',
   },
   tree: {
+    minimap: 'Carte d’ensemble',
     layoutFailed: 'L’arbre n’a pas pu être disposé.',
     drawing: 'Dessin de l’arbre …',
     zoomIn: 'Agrandir',
@@ -128,6 +127,7 @@ export const fr: Messages = {
     youBadge: 'Toi',
     edit: 'Modifier',
     onlyThisLine: 'Seulement cette lignée',
+    access: 'Accès …',
     showRelation: 'Afficher le lien',
     born: 'Naissance',
     bornIn: (place) => `à ${place}`,
@@ -151,9 +151,16 @@ export const fr: Messages = {
     addParent: 'Ajouter un parent',
     addSpouse: 'Ajouter un conjoint',
     addChild: 'Ajouter un enfant',
+    locked: 'Verrouillé',
+    lockedHint: (name) => `Tu peux seulement voir ${name}, pas le modifier.`,
+    detailsOnlyHint: (name) =>
+      `Pour ${name}, tu peux modifier les infos et les photos, mais pas ajouter de proches ni supprimer quoi que ce soit – le reste de la famille reste intact.`,
     adopted: (female) => (female ? 'adoptée' : 'adopté'),
     remove: 'Retirer de l’arbre',
     confirmRemove: (name) => `Retirer ${name} de l’arbre ? La version précédente est sauvegardée automatiquement.`,
+    hasAccount: 'Lié à un compte',
+    confirmRemoveAccount: (name) =>
+      `${name} est lié à un compte. Retirer quand même de l’arbre ? Le lien est supprimé ; la version précédente est sauvegardée automatiquement.`,
     removed: (name) => `${name} a été retiré·e.`,
   },
   form: {
@@ -461,6 +468,7 @@ export const fr: Messages = {
     joinTree: (tree, role) => `arbre « ${tree} » (${role.toLowerCase()})`,
     andAdmin: 'et droits d’admin',
     becomeAdmin: 'droits d’admin pour ce site',
+    asPerson: (person) => `Tu rejoins l’arbre en tant que ${person}.`,
     signedInAs: (name, email) => `Tu es connecté·e en tant que ${name} (${email}).`,
     accept: 'Accepter l’invitation',
     createAccount: 'Créer le compte et rejoindre',
@@ -523,32 +531,148 @@ export const fr: Messages = {
     noMembers: 'Personne n’en fait encore partie, à part les admins.',
     remove: 'Retirer',
     confirmRemove: (name, tree) => `Retirer ${name} de l’arbre « ${tree} » ?`,
+    viewAs: (name) => `Voir comme ${name}`,
+    forPerson: {
+      title: (name) => `Accès à ${name}`,
+      hint: 'Ce que les membres à accès limité peuvent faire avec cette personne. Une lignée la partage avec ses ancêtres et ses descendants.',
+    },
+    person: {
+      who: 'Qui est cette personne dans l’arbre ?',
+      whoHint: 'En acceptant, le compte est lié automatiquement à cette personne. L’accès commence par sa lignée.',
+      choose: 'Personne dans l’arbre',
+      none: 'Liée à personne',
+      link: 'Associer une personne',
+      change: 'Autre personne',
+      unlink: 'Supprimer le lien',
+    },
     access: {
       label: 'Accès',
       whole: 'Tout l’arbre',
       part: 'Seulement une partie de l’arbre',
-      from: 'À partir de',
-      choose: '– Choisir une personne –',
       all: 'toutes',
       hideRest: 'Masquer le reste de l’arbre',
       hideRestHint: 'Sans cette case, la personne voit tout l’arbre mais ne modifie que sa partie.',
       viewerHint: 'Qui peut seulement consulter ne voit que cette partie.',
       spouseHint:
-        'Le conjoint de la personne choisie est visible mais pas modifiable. On ne peut ajouter de nouvelles personnes que dans ces limites – les enfants des frères et sœurs, par exemple, seulement à partir de la ligne « Cousins ».',
+        'Les conjoints des personnes des lignées sont visibles mais non modifiables. On ne peut ajouter de nouvelles personnes qu’à l’intérieur des lignées : enfants et parents oui, frères et sœurs seulement avec la ligne collatérale « Fratrie ».',
       help: 'Pratique pour la belle-famille : elle ajoute sa propre famille (parents, frères et sœurs) sans modifier le reste – et, si tu veux, sans le voir.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
-          ? `Ne voit que la partie à partir de ${name}`
+          ? `Ne voit que les lignées de ${name}`
           : editor
-          ? `Voit tout, ne modifie que la partie à partir de ${name}`
-          : `Voit tout (la partie à partir de ${name} vaut pour les modifications)`,
+          ? `Voit tout, ne modifie que les lignées de ${name}`
+          : `Voit tout (les lignées de ${name} valent pour les modifications)`,
       gone: 'La personne de départ n’est plus dans l’arbre',
       edit: 'Modifier l’accès',
       save: 'Enregistrer',
       cancel: 'Annuler',
+      lines: 'Lignées partagées',
+      linesHint:
+        'Une lignée, c’est une personne avec ses ancêtres et ses descendants, et si tu veux ses lignes collatérales (frères et sœurs, cousins). Là où d’autres branches de la famille se rattachent, seules les infos de la personne sont modifiables ; une lignée de plus y donne tous les droits.',
+      firstLine: 'Par quelle lignée l’accès commence-t-il ?',
+      addLine: 'Ajouter une autre lignée',
+      lineOf: (name) => `Lignée de ${name}`,
+      removeLine: (name) => `Retirer la lignée de ${name}`,
+      search: 'Saisir un nom …',
+      noMatch: 'Personne trouvé.',
+      modesTitle: 'Tout l’arbre ou seulement une partie ?',
+      modes: [
+        {
+          title: 'Tout l’arbre',
+          text: 'Le membre voit tout ; les éditeurs peuvent tout modifier.',
+          example: 'Pour la famille proche qui entretient l’arbre avec toi.',
+        },
+        {
+          title: 'Seulement une partie',
+          text: 'Tu partages des lignées : une personne avec ses ancêtres, ses descendants et, si tu veux, ses lignes collatérales. Chaque personne y a l’un des trois niveaux (« i » près des lignées et de l’aperçu).',
+          example: 'Pour la belle-famille : Anna complète sa propre famille sans modifier celle de son mari.',
+        },
+        {
+          title: 'Masquer le reste de l’arbre',
+          text: 'Coché, le membre ne voit que sa partie ; décoché, il voit tout mais ne modifie que sa partie. Les lecteurs ne voient toujours que leur partie.',
+          example: 'Masque-le si Anna ne doit pas voir la famille de son mari.',
+        },
+      ],
+      sideTitle: 'Que sont les lignes collatérales ?',
+      sideExample: {
+        0: 'Exemple : Anna, ses parents, grands-parents et enfants.',
+        1: 'Exemple : en plus le frère d’Anna et les frères et sœurs de ses parents (oncles, tantes).',
+        2: 'Exemple : en plus les enfants du frère d’Anna et ses cousins.',
+        3: 'Exemple : toute la famille d’origine d’Anna avec toutes ses branches.',
+      },
+      stops: 'Limité jusqu’à',
+      unstop: (name) => `Lever la limite à ${name}`,
       badge: 'Accès partiel',
     },
+    rights: {
+      title: 'Que peut faire le membre ?',
+      intro:
+        'Dans la partie partagée, chaque personne a l’un des trois niveaux. Exemple : Anna est entrée dans la famille par mariage et reçoit sa lignée avec sa fratrie.',
+      levels: {
+        edit: {
+          title: 'Modifier',
+          text: 'Tout changer : infos, photos, ajouter des proches, supprimer.',
+          example: 'Exemple : les parents d’Anna et ses enfants.',
+        },
+        details: {
+          title: 'Infos seulement',
+          text: 'Changer le nom, les dates, les textes et les photos, mais sans ajouter de proches ni supprimer. S’applique d’office au bord de la partie, là où d’autres branches se rattachent.',
+          example: 'Exemple : le frère marié d’Anna – sa femme et ses enfants ne sont pas partagés.',
+        },
+        view: {
+          title: 'Voir seulement',
+          text: 'Visible, mais non modifiable.',
+          example:
+            'Exemple : le mari d’Anna, qui fait partie de la famille de ses parents – ou qui le modérateur choisit.',
+        },
+      },
+      outro:
+        'Touche une personne dans l’aperçu pour changer son niveau. Tous les droits au bord s’obtiennent en ajoutant la lignée de la personne au-delà.',
+    },
+    preview: {
+      title: 'Aperçu',
+      sentence: (sees, edit, details, view) =>
+        `Voit ${sees === 1 ? '1 personne' : `${sees} personnes`} : ${edit} à modifier${
+          details ? `, ${details} infos seulement` : ''
+        }${view ? `, ${view} à voir seulement` : ''}.`,
+      notShared: (n) => (n === 1 ? '1 personne n’est pas partagée.' : `${n} personnes ne sont pas partagées.`),
+      tapHint: 'Touche une personne : changer son niveau, ajouter sa lignée ou limiter l’accès à cet endroit.',
+      fit: 'Afficher tout l’arbre',
+      status: {
+        editable: 'Modifier',
+        locked: 'Voir seulement',
+        readonly: 'Hors partie, visible',
+        hidden: 'Non partagé',
+      },
+      line: 'Lignée',
+      stop: 'Jusqu’ici',
+      marriedIn: 'Par alliance et conjoints',
+      reason: {
+        boundary: (names) => `Au bord : des personnes non partagées s’y rattachent : ${names}.`,
+        stop: (names) => `Au bord : l’accès s’arrête ici (« jusqu’ici ») ; au-delà : ${names}.`,
+        spouse: 'Par alliance : fait partie de sa propre famille, pas de la lignée.',
+        manual: 'Fixé individuellement par un modérateur.',
+      },
+      addLineOf: (name) => `Ajouter la lignée de ${name}`,
+      stopHere: 'Limiter jusqu’ici',
+      detailsOnly: 'Infos seulement',
+      detailsOnlyHint: 'Infos et photos oui ; pas d’ajout de proches, pas de suppression.',
+      levelLabel: 'Droits pour cette personne',
+      standard: '(par défaut)',
+      lineFull: 'Les personnes dont partent les lignées ont toujours tous les droits.',
+      edgeFull: 'Tous les droits : ajouter la lignée de la personne au-delà.',
+      search: 'Chercher dans la liste …',
+      more: (n) => `et ${n} de plus`,
+      changes: 'Ce qui change',
+      gained: (n) => `${n} nouvellement partagé${n > 1 ? 's' : ''}`,
+      unlocked: (n) => `${n} avec plus de droits`,
+      newlyLocked: (n) => `${n} avec moins de droits`,
+      lost: (n) => `${n} plus partagé${n === 1 ? '' : 's'}`,
+      noChanges: 'Pas encore de changement.',
+    },
     status: {
+      'invalid person': 'Choisis qui est cette personne dans l’arbre.',
+      'person taken': 'Cette personne est déjà liée à un autre compte ou invitée.',
       'invalid scope': 'Choisis une personne de l’arbre.',
       'moderators see the whole tree': 'Les modérateurs ont toujours accès à tout l’arbre.',
       self: 'Tu ne peux pas modifier ton propre rôle ici.',
@@ -556,23 +680,43 @@ export const fr: Messages = {
       'invalid email': 'Cette adresse e-mail ne semble pas valide.',
     },
   },
+  requests: {
+    claimSent: 'Demande envoyée : un modérateur ou un proche parent confirme que c’est toi.',
+    claimOpen: 'Tu as déjà une demande « C’est moi » en cours.',
+    claimPending: '« C’est moi » en attente de confirmation',
+    askConfirm: 'Faire confirmer',
+    claimToConfirm: (member, person) => `${member} dit : « C’est moi » – ${person}. Est-ce exact ?`,
+    confirm: 'Confirmer',
+    reject: 'Refuser',
+    askAccess: 'Demander l’accès',
+    accessSent: 'Demande envoyée : un modérateur décide de l’accès.',
+    accessOpen: 'Tu as déjà une demande d’accès en cours.',
+    accessPending: 'Accès demandé.',
+    accessWaiting: (n) => (n === 1 ? '1 demande d’accès attend.' : `${n} demandes d’accès attendent.`),
+    toMembers: 'Vers les membres',
+    failed: 'Cela n’a pas fonctionné. Réessaie.',
+    title: 'Demandes en cours',
+    claimRow: (member, person) => `${member} : « C’est moi » – ${person}`,
+    accessRow: (member, person) => `${member} demande l’accès à ${person} et ses descendants`,
+  },
   admin: {
     title: 'Administration',
     noMail: 'Ce site n’envoie pas d’e-mails : transmets toi-même les invitations et les liens de réinitialisation.',
     copy: 'Copier',
     inviteTitle: 'Inviter',
+    inviteAdminTitle: 'Inviter un admin',
+    inviteAdminHint:
+      'Droits d’admin seulement, sans arbre : pour quelqu’un qui t’aide à gérer le serveur. Dans un arbre, tu invites depuis sa page des membres, toujours en tant que personne de l’arbre.',
     inviteEmail: 'Adresse e-mail',
     optional: 'facultatif',
     inviteEmailHint: 'Avec une adresse, seule cette personne peut utiliser le lien.',
     inviteEmailHintMail: 'Avec une adresse, l’invitation part par e-mail et seule cette personne peut l’utiliser.',
     tree: 'Arbre',
-    noTree: '– aucun arbre –',
     role: 'Rôle',
     makeAdmin: 'Aussi les droits d’admin',
     validFor: 'Valable',
     days: 'jours',
     createInvite: 'Créer l’invitation',
-    nothingToGrant: 'Choisis un arbre ou des droits d’admin.',
     inviteMailed: 'L’invitation est partie par e-mail. Voici le lien, au cas où :',
     inviteCopy: 'Transmets ce lien. Il fonctionne une seule fois.',
     openInvites: 'Invitations en attente',
@@ -635,6 +779,15 @@ export const fr: Messages = {
   nav: {
     toTree: 'Vers l’arbre',
     myTrees: 'Mes arbres',
+  },
+  manage: {
+    tabs: { members: 'Membres', history: 'Historique et sauvegardes', admin: 'Arbres et comptes' },
+    developer: 'Pour les développeurs',
+    downloadTitle: 'Télécharger',
+    downloadHint:
+      'L’état actuel avec toutes les photos dans un fichier ZIP. Les états antérieurs se téléchargent dans l’historique ci-dessus.',
+    downloadButton: 'Télécharger l’arbre',
+    otherInvites: 'Invitations ouvertes dans d’autres arbres',
   },
   history: {
     title: 'Historique et sauvegardes',

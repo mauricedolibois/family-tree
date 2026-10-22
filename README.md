@@ -12,7 +12,7 @@ It comes in two designs, classic (parchment) and modern, each light, dark or aut
 - **Gold line:** tapping a person highlights their ancestors and descendants.
 - **Views:** the whole family, "my line", or the line of any person. The reach of a line is adjustable: generations up and down, plus siblings, cousins or all blood relatives.
 - **Relation:** pick two people and the tree shows only the path between them, with the kinship term in both directions and their common ancestors.
-- **"How are we related?"** After choosing "that's me", every person shows who they are to you, e.g. "your great-grandfather" or "your second cousin". This is remembered on the device only and computed live, never stored with the data.
+- **"How are we related?"** After choosing "that's me", every person shows who they are to you, e.g. "your great-grandfather" or "your second cousin". For members whose invitation named their person (or whose "that's me" was confirmed) it is set on every device; otherwise it is remembered on the device only. Kinship is computed live, never stored with the data.
 - **Search** that jumps straight to the person.
 - **Guided tour on the first visit:** "who are you?", then step by step on your own entry: complete details, add a photo, add a child, your own line, the relation view. Every step can be tried or skipped; restart it from the menu.
 - **Add relatives** right from the info sheet: child, spouse, parent.
@@ -36,7 +36,8 @@ It comes in two designs, classic (parchment) and modern, each light, dark or aut
 
 ## Security and data
 
-- Personal accounts with email and password; admins, and moderators, editors and viewers per tree; invitation links from admins and moderators; optional email verification and mail over SMTP ([docs/accounts.md](docs/accounts.md)).
+- Personal accounts with email and password; admins, and moderators, editors and viewers per tree; invitation links from admins and moderators, each for a person in the tree; optional email verification and mail over SMTP ([docs/accounts.md](docs/accounts.md)).
+- Access by **blood line**: members can be limited to one or more blood lines; three levels per person (edit, details only, view only; details only where further family lines hang on), with a preview tree, help with examples, "view as" and requests for more access ([docs/accounts.md](docs/accounts.md)).
 - Signed session cookies (HMAC) that can be ended everywhere at once, and throttling against password guessing.
 - The server validates every tree before saving, and only saves if nobody changed the tree on another device in the meantime.
 - Automatic backups: before **every** change (with a note about what changed, e.g. "edited: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
@@ -121,7 +122,8 @@ a single transaction, so a failure changes nothing.
   docker logs family-tree-app | grep setup
   ```
 
-  Open the link (valid for 7 days), create your account and invite people on `/admin`.
+  Open the link (valid for 7 days) and create your account; create or import a tree on
+  `/admin` and invite people on its members tab.
 - **Installations from before `setup.sql`** (the original version with one shared
   password per family, and every later state up to personal accounts): back up the
   database, then run [`supabase/migrations/v1_from_legacy.sql`](supabase/migrations/v1_from_legacy.sql)

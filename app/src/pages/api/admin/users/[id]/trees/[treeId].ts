@@ -2,6 +2,7 @@
 // page stays; moderators always get the whole tree), DELETE removes the membership
 
 import { getTree, getUser, parseRole, removeMembership, setMembership } from '@/lib/accounts'
+import { closeRequestsOf } from '@/lib/requests'
 import { withAdmin } from '@/lib/auth'
 import { isUuid, treeIdParam } from '@/lib/ids'
 
@@ -19,6 +20,7 @@ export default withAdmin('api/admin/users/[id]/trees/[treeId]', async (req, res)
   }
   if (req.method === 'DELETE') {
     await removeMembership(userId, treeId)
+    await closeRequestsOf(userId, treeId)
     return res.status(200).json({ ok: true })
   }
   res.setHeader('Allow', 'PUT, DELETE')

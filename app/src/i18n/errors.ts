@@ -2,7 +2,7 @@
 // Turns errors from editing and uploading into text in the current language.
 
 import { EditError, describeEditError } from '@/family/edit'
-import { OutsideScopeError } from '@/family/scope'
+import { OutsideScopeError, PreviewError } from '@/family/scope'
 import type { Locale } from './locales'
 import type { Messages } from './messages'
 
@@ -19,5 +19,6 @@ export function errorText(err: unknown, t: Messages, locale: Locale, fallback: s
   if (err instanceof EditError) return describeEditError(err.code, err.names, locale)
   if (err instanceof UploadError) return t.errors.upload[err.code]
   if (err instanceof OutsideScopeError) return t.errors.outsideScope
+  if (err instanceof PreviewError) return t.errors.preview
   return fallback
 }

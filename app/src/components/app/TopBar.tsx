@@ -48,7 +48,6 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
             <span className="title-text">{familyName}</span>
           </h1>
         )}
-        {!mobileSearch && <ScopeChip />}
 
         <div className="hidden w-80 md:block lg:w-96">
           <SearchBox />
@@ -89,25 +88,6 @@ function ThemeButton() {
   )
 }
 
-/** For members limited to a part of the tree: which part, a tap shows its start person */
-function ScopeChip() {
-  const { scope, index } = useFamily()
-  const { focusOn } = useView()
-  const { t } = useI18n()
-  const person = scope ? index.byId.get(scope.person) : undefined
-  if (!scope || !person) return null
-  return (
-    <button
-      type="button"
-      onClick={() => focusOn(person.id)}
-      title={t.family.partOfHint(scope.hideRest)}
-      className="hidden max-w-[14rem] shrink-0 truncate rounded-full border border-on-primary/30 px-3 py-1 text-[13px] text-on-primary/90 hover:bg-on-primary/10 sm:block"
-    >
-      {t.family.partOf(person.name, scope.hideRest)}
-    </button>
-  )
-}
-
 /** The shared menu, with this page's tree actions on top */
 function AppMenu({ viewer }: { viewer: Viewer }) {
   const { treeId } = useFamily()
@@ -136,7 +116,7 @@ function AppMenu({ viewer }: { viewer: Viewer }) {
       <MenuItem icon={<BookOpen className="h-4 w-4" />} onClick={() => setTourOpen(true)}>
         {t.topBar.startTour}
       </MenuItem>
-      {/* The server sends a ZIP file with the tree and its photos; the page stays */}
+      {/* Every member may take what they see with them; the server sends only their part */}
       <MenuItem
         icon={<Download className="h-4 w-4" />}
         onClick={() => (window.location.href = `/api/trees/${treeId}/download`)}

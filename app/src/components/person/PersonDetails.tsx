@@ -3,14 +3,17 @@
 
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { ChevronRight, FileText, GitBranch, Pencil, Plus, Route, Trash2, UserRound } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronRight, FileText, GitBranch, KeyRound, Lock, Pencil, Plus, Route, Trash2, UserRound } from 'lucide-react'
 import { childrenOf, parentsOf, siblingsOf, spouseOf, type Person } from '@/family/model'
 import { ageOf, formatDate, isDeceased, lifeYears } from '@/family/format'
 import { describeKinship, kinshipLabel } from '@/family/kinship'
 import { canDelete, deletePerson, type Relation } from '@/family/edit'
 import { TreeConflictError, useFamily } from '@/components/app/FamilyProvider'
+import { linePeople } from '@/family/scope'
 import { useView } from '@/components/app/ViewProvider'
 import { useToast } from '@/components/app/Toast'
+import { useRequests } from '@/components/app/RequestsProvider'
 import { Portrait } from '@/components/ui/Portrait'
 import { CountryFlag } from '@/components/ui/CountryFlag'
 import { Button } from '@/components/ui/Button'
@@ -22,8 +25,31 @@ import { useI18n } from '@/i18n/I18nProvider'
 type Props = { person: Person; onEdit: () => void; onAdd: (r: Relation) => void }
 
 export function PersonDetails({ person, onEdit, onAdd }: Props) {
-  const { tree, index, commit, canEditPerson, canAddRelative, scope } = useFamily()
+  const {
+    tree,
+    treeId,
+    index,
+    commit,
+    canEditPerson,
+    isLocked,
+    isDetailsOnly,
+    canAddRelative,
+    scope,
+    canManage,
+    linkedMe,
+    hasAccount,
+    reload,
+    previewAs,
+  } = useFamily()
+  const account = hasAccount(person.id)
+  const requests = useRequests()
+  const claimed = requests.mine.claim?.personId === person.id
+  const accessAsked = requests.mine.access?.line.person === person.id
   const canEdit = canEditPerson(person.id)
+  const locked = isLocked(person.id)
+  // At the edge of the member's part: their details yes, their relatives no
+  const detailsOnly = canEdit && isDetailsOnly(person.id)
+  const limited = locked || detailsOnly
   const { meId, setMe, focusOn, showLine, lineId, select, showRelation, relation } = useView()
   const { notify } = useToast()
   const [deleting, setDeleting] = useState(false)
@@ -47,8 +73,30 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
     select(null)
   }
 
+  /** "That's me": shown right away on this device, confirmed by a moderator or a close relative */
+  const claimMe = async () => {
+    setMe(person.id)
+    if (previewAs) return
+    const answer = await requests.ask('claim', person.id)
+    if (answer.linked) return reload()
+    if (answer.ok) notify({ message: t.requests.claimSent })
+    else notify({ message: answer.error === 'request open' ? t.requests.claimOpen : t.requests.failed })
+  }
+
+  const askAccess = async () => {
+    const answer = await requests.ask('access', person.id)
+    notify({
+      message: answer.ok
+        ? t.requests.accessSent
+        : answer.error === 'request open'
+        ? t.requests.accessOpen
+        : t.requests.failed,
+    })
+  }
+
   const remove = async () => {
-    if (!window.confirm(t.person.confirmRemove(person.name))) return
+    const question = account ? t.person.confirmRemoveAccount(person.name) : t.person.confirmRemove(person.name)
+    if (!window.confirm(question)) return
     setDeleting(true)
     try {
       const undo = await commit(deletePerson(tree, person.id))
@@ -70,7 +118,16 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
         </span>
         <div className="min-w-0">
           <h2 className="font-display text-[1.75rem] leading-[1.1] text-ink">{person.name}</h2>
-          {lifeYears(person) && <p className="mt-0.5 font-text text-[18px] text-ink-muted">{lifeYears(person)}</p>}
+          {(lifeYears(person) || locked) && (
+            <p className="mt-0.5 flex items-center gap-2 font-text text-[18px] text-ink-muted">
+              {lifeYears(person)}
+              {locked && (
+                <span title={t.person.lockedHint(person.name)} aria-label={t.person.locked}>
+                  <Lock className="h-3 w-3 text-ink-faint" />
+                </span>
+              )}
+            </p>
+          )}
           {kin && (
             <p
               className={clsx(
@@ -84,6 +141,8 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
           {meId === person.id && (
             <p className="mt-1 font-text text-[17px] italic text-accent-deep">{t.person.thatsYou}</p>
           )}
+          {account && meId !== person.id && <p className="mt-1 text-sm text-ink-muted">{t.person.hasAccount}</p>}
+          {claimed && !linkedMe && <p className="mt-1 text-sm text-ink-muted">{t.requests.claimPending}</p>}
         </div>
       </div>
 
@@ -105,10 +164,20 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
             {t.person.showRelation}
           </Button>
         )}
-        {meId !== person.id && (
-          <Button size="sm" icon={<UserRound className="h-4 w-4" />} onClick={() => setMe(person.id)}>
-            {t.person.thatsMe}
+        {/* Chosen on this device only so far: ask for confirmation; one open request at a time */}
+        {!linkedMe && !requests.mine.claim && !previewAs && (
+          <Button size="sm" icon={<UserRound className="h-4 w-4" />} onClick={claimMe}>
+            {meId === person.id ? t.requests.askConfirm : t.person.thatsMe}
           </Button>
+        )}
+        {canManage && (
+          <Link
+            href={`/tree/${treeId}/members?person=${encodeURIComponent(person.id)}`}
+            className="inline-flex h-9 items-center gap-2 rounded-control border border-card-rule bg-card px-3 text-sm text-ink hover:border-line hover:bg-canvas-raised"
+          >
+            <KeyRound className="h-4 w-4" />
+            {t.person.access}
+          </Link>
         )}
       </div>
 
@@ -189,6 +258,18 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
       {/* Family */}
       <section className="flex flex-col gap-4">
         <h3 className="section-heading">{t.person.family}</h3>
+        {limited && (
+          <p className="-mt-2 text-sm text-ink-muted">
+            {locked ? t.person.lockedHint(person.name) : t.person.detailsOnlyHint(person.name)}{' '}
+            {previewAs ? null : accessAsked ? (
+              <span className="italic">{t.requests.accessPending}</span>
+            ) : (
+              <button type="button" onClick={askAccess} className="text-accent-deep underline">
+                {t.requests.askAccess}
+              </button>
+            )}
+          </p>
+        )}
         <Relatives
           title={t.person.parents}
           ids={parents}
@@ -198,6 +279,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addParent, run: () => onAdd('PARENT') }
               : undefined
           }
+          lockedAdd={limited && parents.length < 2 ? t.person.addParent : undefined}
         />
         <Relatives
           title={t.person.spouse}
@@ -208,6 +290,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addSpouse, run: () => onAdd('SPOUSE') }
               : undefined
           }
+          lockedAdd={limited && !spouse ? t.person.addSpouse : undefined}
         />
         <Relatives
           title={t.person.children}
@@ -219,17 +302,28 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addChild, run: () => onAdd('CHILD'), tour: 'add-child' }
               : undefined
           }
+          lockedAdd={limited ? t.person.addChild : undefined}
         />
         {siblings.length > 0 && <Relatives title={t.person.siblings} ids={siblings} onOpen={focusOn} />}
       </section>
 
-      {canEdit && person.id !== scope?.person && canDelete(tree, person.id) && (
-        <div className="border-t border-card-rule pt-4">
-          <Button variant="danger" size="sm" icon={<Trash2 className="h-4 w-4" />} onClick={remove} disabled={deleting}>
-            {t.person.remove}
-          </Button>
-        </div>
-      )}
+      {canEdit &&
+        !(scope && linePeople(scope).has(person.id)) &&
+        !detailsOnly &&
+        (!account || canManage) &&
+        canDelete(tree, person.id) && (
+          <div className="border-t border-card-rule pt-4">
+            <Button
+              variant="danger"
+              size="sm"
+              icon={<Trash2 className="h-4 w-4" />}
+              onClick={remove}
+              disabled={deleting}
+            >
+              {t.person.remove}
+            </Button>
+          </div>
+        )}
     </div>
   )
 }
@@ -255,17 +349,20 @@ function Relatives({
   ids,
   onOpen,
   add,
+  lockedAdd,
   tag,
 }: {
   title: string
   ids: string[]
   onOpen: (id: string) => void
   add?: { label: string; run: () => void; tour?: string }
+  /** What could be added here if the person were not locked: shown greyed out */
+  lockedAdd?: string
   tag?: (id: string) => string | null
 }) {
   const { index } = useFamily()
   // Nothing to show and nothing to add (e.g. for viewers): leave the heading out too
-  if (ids.length === 0 && !add) return null
+  if (ids.length === 0 && !add && !lockedAdd) return null
   return (
     <div>
       <p className="mb-1.5 text-sm text-ink-muted">{title}</p>
@@ -306,6 +403,19 @@ function Relatives({
               </span>
               {add.label}
             </button>
+          </li>
+        )}
+        {!add && lockedAdd && (
+          <li>
+            <span
+              aria-disabled="true"
+              className="flex w-full items-center gap-3 rounded-control border border-dashed border-card-rule px-2.5 py-2 text-[15px] text-ink-faint"
+            >
+              <span className="grid h-8 w-8 place-items-center rounded-full border border-card-rule">
+                <Lock className="h-3.5 w-3.5" />
+              </span>
+              {lockedAdd}
+            </span>
           </li>
         )}
       </ul>

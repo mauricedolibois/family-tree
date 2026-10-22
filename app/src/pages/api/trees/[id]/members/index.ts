@@ -15,6 +15,8 @@ export default withUser('api/trees/[id]/members', async (req, res, user) => {
   return res.status(200).json({
     tree: { id: tree.id, name: tree.name },
     me: user.id,
+    // Admins may change their own membership, moderators not
+    meIsAdmin: user.is_admin,
     mail: canSendMail(),
     members,
     // Invitations that also grant admin rights are managed on the admin page
@@ -25,6 +27,7 @@ export default withUser('api/trees/[id]/members', async (req, res, user) => {
         email: i.email,
         role: i.role,
         scope: i.scope,
+        personId: i.person_id,
         inviter: i.inviter_name,
         expiresAt: i.expires_at,
       })),
