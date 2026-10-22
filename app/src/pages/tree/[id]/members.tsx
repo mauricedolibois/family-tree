@@ -295,7 +295,8 @@ export default function MembersPage({ treeId, nav }: Props) {
                           id={`member-${m.id}`}
                           className="flex scroll-mt-4 flex-wrap items-center gap-x-3 gap-y-2 py-2.5"
                         >
-                          <span className="min-w-0 flex-1">
+                          {/* On phones the details get the whole width and the controls a row below */}
+                          <span className="w-full min-w-0 sm:w-auto sm:flex-1">
                             <span className="flex flex-wrap items-center gap-1.5 text-[15px] text-ink">
                               {m.name}
                               {self && <Badge>{t.admin.you}</Badge>}
@@ -315,49 +316,51 @@ export default function MembersPage({ treeId, nav }: Props) {
                               <span className="block text-[13px] text-ink-muted">{scopeText(m.scope, m.role)}</span>
                             )}
                           </span>
-                          {m.role !== 'moderator' && !self && (
-                            <Link
-                              href={`/tree/${treeId}?as=${encodeURIComponent(m.id)}`}
-                              aria-label={t.members.viewAs(m.name)}
-                              title={t.members.viewAs(m.name)}
-                              className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
-                            >
-                              <Eye className="h-4 w-4" aria-hidden />
-                            </Link>
-                          )}
-                          {m.role !== 'moderator' && (
+                          <span className="flex w-full items-center gap-1 sm:w-auto">
+                            {m.role !== 'moderator' && !self && (
+                              <Link
+                                href={`/tree/${treeId}?as=${encodeURIComponent(m.id)}`}
+                                aria-label={t.members.viewAs(m.name)}
+                                title={t.members.viewAs(m.name)}
+                                className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
+                              >
+                                <Eye className="h-4 w-4" aria-hidden />
+                              </Link>
+                            )}
+                            {m.role !== 'moderator' && (
+                              <button
+                                type="button"
+                                disabled={self}
+                                aria-label={t.members.access.edit}
+                                title={t.members.access.edit}
+                                aria-expanded={!!edit}
+                                onClick={() => setEditing(edit ? null : { id: m.id, scope: m.scope })}
+                                className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
+                              >
+                                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                              </button>
+                            )}
+                            <RoleSelect
+                              className={clsx(selectClass, 'min-w-0 flex-1 sm:w-40 sm:flex-none')}
+                              value={m.role}
+                              label={t.admin.role}
+                              disabled={self}
+                              onChange={(role) => run(`/members/${m.id}`, { role }, 'PUT')}
+                            />
                             <button
                               type="button"
                               disabled={self}
-                              aria-label={t.members.access.edit}
-                              title={t.members.access.edit}
-                              aria-expanded={!!edit}
-                              onClick={() => setEditing(edit ? null : { id: m.id, scope: m.scope })}
-                              className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
+                              aria-label={t.members.remove}
+                              title={t.members.remove}
+                              onClick={() =>
+                                window.confirm(t.members.confirmRemove(m.name, data.tree.name)) &&
+                                run(`/members/${m.id}`, null, 'DELETE')
+                              }
+                              className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-danger disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-muted"
                             >
-                              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                              <UserMinus className="h-4 w-4" aria-hidden />
                             </button>
-                          )}
-                          <RoleSelect
-                            className={clsx(selectClass, 'w-40')}
-                            value={m.role}
-                            label={t.admin.role}
-                            disabled={self}
-                            onChange={(role) => run(`/members/${m.id}`, { role }, 'PUT')}
-                          />
-                          <button
-                            type="button"
-                            disabled={self}
-                            aria-label={t.members.remove}
-                            title={t.members.remove}
-                            onClick={() =>
-                              window.confirm(t.members.confirmRemove(m.name, data.tree.name)) &&
-                              run(`/members/${m.id}`, null, 'DELETE')
-                            }
-                            className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-danger disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-muted"
-                          >
-                            <UserMinus className="h-4 w-4" aria-hidden />
-                          </button>
+                          </span>
                           {edit && (
                             <div className="flex w-full flex-col gap-3 rounded-control border border-card-rule p-3">
                               <ScopeEditor
