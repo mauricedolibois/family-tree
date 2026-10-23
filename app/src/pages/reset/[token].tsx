@@ -79,7 +79,7 @@ export default function ResetPage({ token }: Props) {
             autoComplete="new-password"
           />
           {error && <FormMessage>{error}</FormMessage>}
-          <Button type="submit" variant="primary" disabled={loading || !email} className="w-full">
+          <Button type="submit" variant="primary" loading={loading} disabled={!email} className="w-full">
             {loading ? t.auth.wait : t.reset.submit}
           </Button>
         </form>

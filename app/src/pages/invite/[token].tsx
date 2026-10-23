@@ -110,7 +110,7 @@ export default function InvitePage({ token }: Props) {
             <div className="flex flex-col gap-4">
               <p className="text-[15px] text-ink">{t.invite.signedInAs(info.signedInAs.name, info.signedInAs.email)}</p>
               {error && <FormMessage>{error}</FormMessage>}
-              <Button variant="primary" disabled={loading} onClick={() => accept({})} className="w-full">
+              <Button variant="primary" loading={loading} onClick={() => accept({})} className="w-full">
                 {loading ? t.auth.wait : t.invite.accept}
               </Button>
             </div>
@@ -142,7 +142,7 @@ export default function InvitePage({ token }: Props) {
                 autoComplete="new-password"
               />
               {error && <FormMessage>{error}</FormMessage>}
-              <Button type="submit" variant="primary" disabled={loading} className="w-full">
+              <Button type="submit" variant="primary" loading={loading} className="w-full">
                 {loading ? t.auth.wait : t.invite.createAccount}
               </Button>
               <p className="text-center text-[15px] text-ink-muted">

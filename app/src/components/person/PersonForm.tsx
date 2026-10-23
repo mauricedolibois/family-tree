@@ -4,6 +4,7 @@
 import { useRef, useState } from 'react'
 import clsx from 'clsx'
 import { FileText, ImagePlus, Star, Trash2 } from 'lucide-react'
+import { Spinner } from '@/components/ui/Spinner'
 import type { Gender, Person } from '@/family/model'
 import { addExistingParent, spouseOfSingleParent, updatePerson } from '@/family/edit'
 import { isDeceased, parseDateInput, toDateInput } from '@/family/format'
@@ -295,7 +296,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
               disabled={uploading}
               className="flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-control border border-dashed border-line/70 text-sm text-ink-muted hover:border-link hover:text-link"
             >
-              <ImagePlus className="h-6 w-6" />
+              {uploading ? <Spinner className="h-6 w-6" /> : <ImagePlus className="h-6 w-6" />}
               {uploading ? t.form.uploading : t.form.addFile}
             </button>
           </li>
@@ -325,7 +326,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
         className="sticky -bottom-[max(1.5rem,env(safe-area-inset-bottom))] -mx-5 -mb-[max(1.5rem,env(safe-area-inset-bottom))] flex gap-2 border-t border-card-rule bg-card/95 px-5 pb-[calc(0.75rem+max(1.5rem,env(safe-area-inset-bottom)))] pt-3 backdrop-blur"
         data-tour="form-actions"
       >
-        <Button type="submit" variant="primary" disabled={saving || uploading} className="flex-1">
+        <Button type="submit" variant="primary" loading={saving} disabled={uploading} className="flex-1">
           {saving ? t.form.saving : t.form.save}
         </Button>
         <Button variant="quiet" onClick={onDone} data-tour="form-cancel">

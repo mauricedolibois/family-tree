@@ -16,6 +16,7 @@ import { FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { PageHeader } from '@/components/app/PageHeader'
 import type { NavContext } from '@/components/app/NavMenu'
 import { Card, sendForm } from '@/components/manage/parts'
+import { PageLoading } from '@/components/ui/Spinner'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import type { Messages } from '@/i18n/messages/de'
@@ -113,7 +114,7 @@ export default function HistoryPage({ treeId, nav }: Props) {
           {tree && <p className="text-[15px] text-ink">{t.history.intro(tree.name)}</p>}
           {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
           {!versions ? (
-            <p className="text-center text-ink-muted">{t.auth.wait}</p>
+            <PageLoading />
           ) : (
             <Card title={t.history.versions}>
               {versions.length === 0 ? (
@@ -145,6 +146,7 @@ export default function HistoryPage({ treeId, nav }: Props) {
                         <Button
                           size="sm"
                           disabled={busy !== null}
+                          loading={busy === v.id}
                           icon={<RotateCcw className="h-4 w-4" />}
                           onClick={() => void restore(v)}
                         >
@@ -236,7 +238,7 @@ function ReplaceCard({ treeId, treeName, onDone }: { treeId: string; treeName: s
         />
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
         <div>
-          <Button type="submit" disabled={busy || !file} icon={<Upload className="h-4 w-4" />}>
+          <Button type="submit" loading={busy} disabled={!file} icon={<Upload className="h-4 w-4" />}>
             {busy ? t.auth.wait : t.transfer.replaceButton}
           </Button>
         </div>

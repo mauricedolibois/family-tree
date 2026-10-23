@@ -81,6 +81,24 @@ export function RoleSelect({
   )
 }
 
+/** Which request a page is waiting for: one key per method, address and body */
+export const actionKey = (method: string, url: string, body: object | null) =>
+  `${method} ${url} ${body ? JSON.stringify(body) : ''}`
+
+/** Remembers the request in flight, so its button can turn and the page show a busy bar */
+export function useBusy() {
+  const [busy, setBusy] = useState<string | null>(null)
+  const track = async <T,>(key: string, work: () => Promise<T>): Promise<T> => {
+    setBusy(key)
+    try {
+      return await work()
+    } finally {
+      setBusy(null)
+    }
+  }
+  return { busy, track }
+}
+
 /** Validity of a new invitation: days, or null for no expiry */
 export function ValidityField({ days, onChange }: { days: number | null; onChange: (days: number | null) => void }) {
   const { t } = useI18n()

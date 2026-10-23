@@ -126,9 +126,27 @@
   }
 }
 
+/* Thin gold bar under the header while a change is on its way */
+.busy-bar {
+  animation: busy-bar 1.1s ease-in-out infinite;
+}
+@keyframes busy-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tour-ring {
     animation: none;
+  }
+  .busy-bar {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
   }
   .ink-draw {
     stroke-dashoffset: 0;

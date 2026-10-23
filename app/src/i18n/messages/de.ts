@@ -723,6 +723,7 @@ export const de = {
     days: 'Tage',
     noExpiry: 'Unbegrenzt',
     createInvite: 'Einladung erstellen',
+    sending: 'Wird verschickt …',
     inviteMailed: 'Die Einladung ist per Mail verschickt. Zur Sicherheit hier der Link:',
     inviteCopy: 'Gib diesen Link weiter. Er funktioniert einmal.',
     openInvites: 'Offene Einladungen',

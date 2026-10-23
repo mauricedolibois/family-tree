@@ -147,7 +147,7 @@ export default function LoginPage({ canRegister, next, setup }: Props) {
         )}
         {info && <FormMessage tone="info">{info}</FormMessage>}
 
-        <Button type="submit" variant="primary" disabled={loading} className="mt-1 w-full">
+        <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
           {loading ? t.auth.wait : t.login.submit}
         </Button>
         <Link

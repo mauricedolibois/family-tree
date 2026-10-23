@@ -65,7 +65,7 @@ export default function ForgotPage({ mail }: Props) {
             autoComplete="email"
           />
           {error && <FormMessage>{error}</FormMessage>}
-          <Button type="submit" variant="primary" disabled={loading} className="w-full">
+          <Button type="submit" variant="primary" loading={loading} className="w-full">
             {loading ? t.auth.wait : t.forgot.submit}
           </Button>
         </form>

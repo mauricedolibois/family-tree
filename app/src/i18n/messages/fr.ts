@@ -721,6 +721,7 @@ export const fr: Messages = {
     days: 'jours',
     noExpiry: 'Sans limite',
     createInvite: 'Créer l’invitation',
+    sending: 'Envoi en cours …',
     inviteMailed: 'L’invitation est partie par e-mail. Voici le lien, au cas où :',
     inviteCopy: 'Transmets ce lien. Il fonctionne une seule fois.',
     openInvites: 'Invitations en attente',

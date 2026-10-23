@@ -17,7 +17,18 @@ import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { PageHeader } from '@/components/app/PageHeader'
 import type { NavContext } from '@/components/app/NavMenu'
-import { Badge, Card, LinkBox, neverExpires, RoleSelect, selectClass, ValidityField } from '@/components/manage/parts'
+import {
+  actionKey,
+  Badge,
+  Card,
+  LinkBox,
+  neverExpires,
+  RoleSelect,
+  selectClass,
+  useBusy,
+  ValidityField,
+} from '@/components/manage/parts'
+import { BusyBar, PageLoading, Spinner } from '@/components/ui/Spinner'
 import { newScope, PersonSearch, ScopeEditor, scopeForRole, scopeReady } from '@/components/manage/ScopeEditor'
 import { lifeYears } from '@/family/format'
 import type { Tree } from '@/family/model'
@@ -121,13 +132,19 @@ export default function MembersPage({ treeId, nav }: Props) {
     ),
   )
 
+  const { busy, track } = useBusy()
   /** Runs a change, reloads the overview and shows what went wrong */
-  const run = async (path: string, body: object | null, method: string) => {
-    setError(null)
-    const { ok, data: d } = await postJson(`${api}${path}`, body, method)
-    if (!ok) setError(statusText(d.error))
-    await load()
-  }
+  const run = (path: string, body: object | null, method: string) =>
+    track(actionKey(method, path, body), async () => {
+      setError(null)
+      const { ok, data: d } = await postJson(`${api}${path}`, body, method)
+      if (!ok) setError(statusText(d.error))
+      await load()
+    })
+  /** Whether this change is the one in flight */
+  const pending = (path: string, body: object | null, method: string) => busy === actionKey(method, path, body)
+  /** Whether any change to this member is in flight */
+  const memberBusy = (id: string) => !!busy?.includes(` /members/${id} `)
 
   return (
     <>
@@ -136,11 +153,12 @@ export default function MembersPage({ treeId, nav }: Props) {
       </Head>
       <div className="page-backdrop min-h-dvh">
         <PageHeader title={t.nav.manageTree(nav.tree?.name ?? '')} nav={nav} current="members" />
+        <BusyBar active={busy !== null} />
 
         <main className="mx-auto flex max-w-3xl flex-col gap-5 p-3 sm:p-5">
           {error && <FormMessage>{error}</FormMessage>}
           {!data ? (
-            <p className="text-center text-ink-muted">{t.auth.wait}</p>
+            <PageLoading />
           ) : (
             <>
               <p className="text-[15px] text-ink">{t.members.intro(data.tree.name)}</p>
@@ -202,6 +220,7 @@ export default function MembersPage({ treeId, nav }: Props) {
                         <Button
                           size="sm"
                           variant="primary"
+                          loading={pending(`/requests/${c.id}`, { kind: 'claim', approve: true }, 'PUT')}
                           onClick={() => run(`/requests/${c.id}`, { kind: 'claim', approve: true }, 'PUT')}
                         >
                           {t.requests.confirm}
@@ -209,6 +228,7 @@ export default function MembersPage({ treeId, nav }: Props) {
                         <Button
                           size="sm"
                           variant="quiet"
+                          loading={pending(`/requests/${c.id}`, { kind: 'claim', approve: false }, 'PUT')}
                           onClick={() => run(`/requests/${c.id}`, { kind: 'claim', approve: false }, 'PUT')}
                         >
                           {t.requests.reject}
@@ -227,6 +247,7 @@ export default function MembersPage({ treeId, nav }: Props) {
                             <Button
                               size="sm"
                               variant="primary"
+                              loading={pending(`/requests/${a.id}`, { kind: 'access', approve: true }, 'PUT')}
                               onClick={() => run(`/requests/${a.id}`, { kind: 'access', approve: true }, 'PUT')}
                             >
                               {t.requests.confirm}
@@ -234,6 +255,7 @@ export default function MembersPage({ treeId, nav }: Props) {
                             <Button
                               size="sm"
                               variant="quiet"
+                              loading={pending(`/requests/${a.id}`, { kind: 'access', approve: false }, 'PUT')}
                               onClick={() => run(`/requests/${a.id}`, { kind: 'access', approve: false }, 'PUT')}
                             >
                               {t.requests.reject}
@@ -275,7 +297,12 @@ export default function MembersPage({ treeId, nav }: Props) {
                               : t.admin.inviteMeta(i.inviter ?? '–', date(i.expiresAt))}
                           </span>
                         </span>
-                        <Button size="sm" variant="quiet" onClick={() => run(`/invites/${i.id}`, null, 'DELETE')}>
+                        <Button
+                          size="sm"
+                          variant="quiet"
+                          loading={pending(`/invites/${i.id}`, null, 'DELETE')}
+                          onClick={() => run(`/invites/${i.id}`, null, 'DELETE')}
+                        >
                           {t.admin.revoke}
                         </Button>
                       </li>
@@ -311,7 +338,7 @@ export default function MembersPage({ treeId, nav }: Props) {
                               tree={tree}
                               label={personLabel(m.personId)}
                               exclude={taken}
-                              disabled={self && !data.meIsAdmin}
+                              disabled={(self && !data.meIsAdmin) || memberBusy(m.id)}
                               onLink={(personId) => run(`/members/${m.id}`, { personId }, 'PUT')}
                             />
                             {m.scope && (
@@ -346,12 +373,12 @@ export default function MembersPage({ treeId, nav }: Props) {
                               className={clsx(selectClass, 'min-w-0 flex-1 sm:w-40 sm:flex-none')}
                               value={m.role}
                               label={t.admin.role}
-                              disabled={self}
+                              disabled={self || memberBusy(m.id)}
                               onChange={(role) => run(`/members/${m.id}`, { role }, 'PUT')}
                             />
                             <button
                               type="button"
-                              disabled={self}
+                              disabled={self || memberBusy(m.id)}
                               aria-label={t.members.remove}
                               title={t.members.remove}
                               onClick={() =>
@@ -360,7 +387,11 @@ export default function MembersPage({ treeId, nav }: Props) {
                               }
                               className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-danger disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-muted"
                             >
-                              <UserMinus className="h-4 w-4" aria-hidden />
+                              {pending(`/members/${m.id}`, null, 'DELETE') ? (
+                                <Spinner />
+                              ) : (
+                                <UserMinus className="h-4 w-4" aria-hidden />
+                              )}
                             </button>
                           </span>
                           {edit && (
@@ -507,11 +538,13 @@ function InviteForm({
   const [days, setDays] = useState<number | null>(null)
   const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setResult(null)
+    setSending(true)
     const { ok, data } = await postJson(`${api}/invites`, {
       email,
       role,
@@ -519,7 +552,7 @@ function InviteForm({
       personId,
       admin,
       days,
-    })
+    }).finally(() => setSending(false))
     if (!ok) return setError(statusText(data.error))
     setResult({ path: String(data.path), mailed: !!data.mailed })
     setEmail('')
@@ -595,9 +628,10 @@ function InviteForm({
             type="submit"
             variant="primary"
             icon={<Plus className="h-4 w-4" />}
+            loading={sending}
             disabled={!personId || (role !== 'moderator' && !scopeReady(scope))}
           >
-            {t.admin.createInvite}
+            {sending ? (mail && email.trim() ? t.admin.sending : t.auth.wait) : t.admin.createInvite}
           </Button>
         </div>
       </form>

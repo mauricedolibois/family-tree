@@ -718,6 +718,7 @@ export const es: Messages = {
     days: 'días',
     noExpiry: 'Sin caducidad',
     createInvite: 'Crear invitación',
+    sending: 'Enviando …',
     inviteMailed: 'La invitación se ha enviado por correo. Por si acaso, aquí está el enlace:',
     inviteCopy: 'Comparte este enlace. Funciona una sola vez.',
     openInvites: 'Invitaciones pendientes',

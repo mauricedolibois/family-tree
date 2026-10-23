@@ -42,10 +42,11 @@ export default function AccountPage({ user, nav }: Props) {
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [notice, setNotice] = useState<Record<string, Notice>>({})
-  const [busy, setBusy] = useState(false)
+  // The section being saved; its button turns, the others wait
+  const [busy, setBusy] = useState<string | null>(null)
 
   const save = async (key: string, body: object, success: string) => {
-    setBusy(true)
+    setBusy(key)
     setNotice((n) => ({ ...n, [key]: null }))
     try {
       const { ok, status } = await postJson('/api/account', body, 'PATCH')
@@ -56,12 +57,13 @@ export default function AccountPage({ user, nav }: Props) {
       setNotice((n) => ({ ...n, [key]: { tone: 'error', text: t.common.offline } }))
       return false
     } finally {
-      setBusy(false)
+      setBusy(null)
     }
   }
 
   const logoutAll = async () => {
-    const { ok } = await postJson('/api/account/logout-all', {})
+    setBusy('sessions')
+    const { ok } = await postJson('/api/account/logout-all', {}).finally(() => setBusy(null))
     setNotice((n) => ({
       ...n,
       sessions: { tone: ok ? 'info' : 'error', text: ok ? t.account.loggedOutElsewhere : t.common.retry },
@@ -100,7 +102,7 @@ export default function AccountPage({ user, nav }: Props) {
                 />
                 <p className="text-sm text-ink-muted">{t.account.languageHint}</p>
                 {show('profile')}
-                <Button type="submit" disabled={busy}>
+                <Button type="submit" loading={busy === 'profile'} disabled={!!busy}>
                   {t.form.save}
                 </Button>
               </form>
@@ -133,7 +135,7 @@ export default function AccountPage({ user, nav }: Props) {
                   autoComplete="current-password"
                 />
                 {show('email')}
-                <Button type="submit" disabled={busy || email.trim() === user.email}>
+                <Button type="submit" loading={busy === 'email'} disabled={!!busy || email.trim() === user.email}>
                   {t.account.changeEmail}
                 </Button>
               </form>
@@ -176,7 +178,7 @@ export default function AccountPage({ user, nav }: Props) {
                   autoComplete="new-password"
                 />
                 {show('password')}
-                <Button type="submit" disabled={busy}>
+                <Button type="submit" loading={busy === 'password'} disabled={!!busy}>
                   {t.account.changePassword}
                 </Button>
               </form>
@@ -185,7 +187,9 @@ export default function AccountPage({ user, nav }: Props) {
             <Section title={t.account.sessions}>
               <p className="text-sm text-ink-muted">{t.account.sessionsHint}</p>
               {show('sessions')}
-              <Button onClick={logoutAll}>{t.account.logoutAll}</Button>
+              <Button onClick={logoutAll} loading={busy === 'sessions'} disabled={!!busy}>
+                {t.account.logoutAll}
+              </Button>
             </Section>
           </div>
         </main>

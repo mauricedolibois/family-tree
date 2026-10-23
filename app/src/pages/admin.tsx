@@ -25,8 +25,11 @@ import {
   RoleSelect,
   selectClass as select,
   sendForm,
+  useBusy,
   ValidityField,
+  actionKey,
 } from '@/components/manage/parts'
+import { BusyBar, PageLoading, Spinner } from '@/components/ui/Spinner'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
@@ -73,6 +76,7 @@ export default function AdminPage({ nav, treeId }: Props) {
   const { t, locale } = useI18n()
   const [data, setData] = useState<Overview | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { busy, track } = useBusy()
   const date = (iso: string) => new Date(iso).toLocaleDateString(INTL_TAG[locale], { dateStyle: 'medium' })
 
   const load = useCallback(async () => {
@@ -86,13 +90,16 @@ export default function AdminPage({ nav, treeId }: Props) {
   }, [load])
 
   /** Runs an admin request, reloads the overview and returns the response */
-  const run = async (url: string, body: object | null, method: string) => {
-    setError(null)
-    const res = await postJson(url, body ?? {}, method)
-    if (!res.ok) setError(t.admin.status[String(res.data.error ?? res.status)] ?? t.common.retry)
-    await load()
-    return res
-  }
+  const run = (url: string, body: object | null, method: string) =>
+    track(actionKey(method, url, body), async () => {
+      setError(null)
+      const res = await postJson(url, body ?? {}, method)
+      if (!res.ok) setError(t.admin.status[String(res.data.error ?? res.status)] ?? t.common.retry)
+      await load()
+      return res
+    })
+  /** Whether this request is the one in flight */
+  const pending: Pending = (url, body, method) => busy === actionKey(method, url, body)
 
   return (
     <>
@@ -101,11 +108,12 @@ export default function AdminPage({ nav, treeId }: Props) {
       </Head>
       <div className="page-backdrop min-h-dvh">
         <PageHeader title={t.admin.title} nav={nav} current="admin" />
+        <BusyBar active={busy !== null} />
 
         <main className="mx-auto flex max-w-4xl flex-col gap-5 p-3 sm:p-5">
           {error && <FormMessage>{error}</FormMessage>}
           {!data ? (
-            <p className="text-center text-ink-muted">{t.auth.wait}</p>
+            <PageLoading />
           ) : (
             <>
               {data.schema && <FormMessage>{t.setup.outdated(data.schema.have, data.schema.need)}</FormMessage>}
@@ -117,11 +125,12 @@ export default function AdminPage({ nav, treeId }: Props) {
                   invites={data.invites.filter((i) => !treeId || i.treeId !== treeId)}
                   date={date}
                   onRevoke={(id) => run(`/api/admin/invites/${id}`, null, 'DELETE')}
+                  revoking={(id) => pending(`/api/admin/invites/${id}`, null, 'DELETE')}
                 />
               )}
-              <TreesCard trees={data.trees} users={data.users} me={data.me} run={run} />
-              <TrashCard trash={data.trash} date={date} run={run} />
-              <UsersCard data={data} run={run} />
+              <TreesCard trees={data.trees} users={data.users} me={data.me} run={run} pending={pending} />
+              <TrashCard trash={data.trash} date={date} run={run} pending={pending} />
+              <UsersCard data={data} run={run} pending={pending} />
               <AdminInviteCard mail={data.mail} onCreated={load} />
               <details className="group rounded-card border border-card-rule bg-card/70">
                 <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[15px] font-semibold text-ink [&::-webkit-details-marker]:hidden">
@@ -150,12 +159,16 @@ function AdminInviteCard({ mail, onCreated }: { mail: boolean; onCreated: () => 
   const [days, setDays] = useState<number | null>(7)
   const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [sending, setSending] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setResult(null)
-    const { ok, data } = await postJson('/api/admin/invites', { email, admin: true, days })
+    setSending(true)
+    const { ok, data } = await postJson('/api/admin/invites', { email, admin: true, days }).finally(() =>
+      setSending(false),
+    )
     if (!ok) return setError(t.admin.status[String(data.error)] ?? t.common.retry)
     setResult({ path: String(data.path), mailed: !!data.mailed })
     setEmail('')
@@ -184,8 +197,8 @@ function AdminInviteCard({ mail, onCreated }: { mail: boolean; onCreated: () => 
           </div>
         )}
         <div className="sm:col-span-2">
-          <Button type="submit" variant="primary" icon={<Plus className="h-4 w-4" />}>
-            {t.admin.createInvite}
+          <Button type="submit" variant="primary" loading={sending} icon={<Plus className="h-4 w-4" />}>
+            {sending ? (mail && email.trim() ? t.admin.sending : t.auth.wait) : t.admin.createInvite}
           </Button>
         </div>
       </form>
@@ -199,11 +212,13 @@ function InvitesCard({
   invites,
   date,
   onRevoke,
+  revoking,
 }: {
   title: string
   invites: Invite[]
   date: (iso: string) => string
   onRevoke: (id: string) => void
+  revoking: (id: string) => boolean
 }) {
   const { t } = useI18n()
   return (
@@ -228,7 +243,7 @@ function InvitesCard({
                     : t.admin.inviteMeta(i.inviter ?? '–', date(i.expiresAt))}
                 </span>
               </span>
-              <Button size="sm" variant="quiet" onClick={() => onRevoke(i.id)}>
+              <Button size="sm" variant="quiet" loading={revoking(i.id)} onClick={() => onRevoke(i.id)}>
                 {t.admin.revoke}
               </Button>
             </li>
@@ -241,7 +256,21 @@ function InvitesCard({
 
 type Run = (url: string, body: object | null, method: string) => Promise<{ ok: boolean; data: Record<string, unknown> }>
 
-function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserView[]; me: string; run: Run }) {
+type Pending = (url: string, body: object | null, method: string) => boolean
+
+function TreesCard({
+  trees,
+  users,
+  me,
+  run,
+  pending,
+}: {
+  trees: Tree[]
+  users: AdminUserView[]
+  me: string
+  run: Run
+  pending: Pending
+}) {
   const { t } = useI18n()
   const [name, setName] = useState('')
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null)
@@ -268,7 +297,11 @@ function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserV
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                 />
-                <Button size="sm" type="submit">
+                <Button
+                  size="sm"
+                  type="submit"
+                  loading={pending(`/api/admin/trees/${tree.id}`, { name: editing.name }, 'PATCH')}
+                >
                   {t.form.save}
                 </Button>
                 <Button size="sm" variant="quiet" onClick={() => setEditing(null)}>
@@ -304,6 +337,7 @@ function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserV
                   <Button
                     size="sm"
                     variant="quiet"
+                    loading={pending(`/api/admin/users/${me}/trees/${tree.id}`, { role: 'moderator' }, 'PUT')}
                     onClick={() => run(`/api/admin/users/${me}/trees/${tree.id}`, { role: 'moderator' }, 'PUT')}
                   >
                     {mine.has(tree.id) ? t.admin.becomeModerator : t.admin.join}
@@ -315,6 +349,7 @@ function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserV
                 <Button
                   size="sm"
                   variant="quiet"
+                  loading={pending(`/api/admin/trees/${tree.id}`, null, 'DELETE')}
                   onClick={() =>
                     window.confirm(t.admin.confirmDeleteTree(tree.name)) &&
                     run(`/api/admin/trees/${tree.id}`, null, 'DELETE')
@@ -342,7 +377,11 @@ function TreesCard({ trees, users, me, run }: { trees: Tree[]; users: AdminUserV
           onChange={(e) => setName(e.target.value)}
           placeholder={t.admin.newTreeName}
         />
-        <Button type="submit" icon={<Plus className="h-4 w-4" />}>
+        <Button
+          type="submit"
+          loading={pending('/api/admin/trees', { name }, 'POST')}
+          icon={<Plus className="h-4 w-4" />}
+        >
           {t.admin.createTree}
         </Button>
       </form>
@@ -405,7 +444,7 @@ function ImportCard({ onDone }: { onDone: () => void }) {
         </div>
         {message && <FormMessage tone={message.tone}>{message.text}</FormMessage>}
         <div>
-          <Button type="submit" variant="primary" disabled={busy || !file} icon={<Upload className="h-4 w-4" />}>
+          <Button type="submit" variant="primary" loading={busy} disabled={!file} icon={<Upload className="h-4 w-4" />}>
             {busy ? t.auth.wait : t.transfer.importButton}
           </Button>
         </div>
@@ -414,7 +453,17 @@ function ImportCard({ onDone }: { onDone: () => void }) {
   )
 }
 
-function TrashCard({ trash, date, run }: { trash: DeletedTree[]; date: (iso: string) => string; run: Run }) {
+function TrashCard({
+  trash,
+  date,
+  run,
+  pending,
+}: {
+  trash: DeletedTree[]
+  date: (iso: string) => string
+  run: Run
+  pending: Pending
+}) {
   const { t } = useI18n()
   if (trash.length === 0) return null
   return (
@@ -427,12 +476,17 @@ function TrashCard({ trash, date, run }: { trash: DeletedTree[]; date: (iso: str
               <span className="block truncate font-text text-[17px] font-semibold text-ink">{tree.name}</span>
               <span className="block text-[13px] text-ink-muted">{t.admin.deletedOn(date(tree.deleted_at))}</span>
             </span>
-            <Button size="sm" onClick={() => run(`/api/admin/trees/${tree.id}`, { restore: true }, 'PATCH')}>
+            <Button
+              size="sm"
+              loading={pending(`/api/admin/trees/${tree.id}`, { restore: true }, 'PATCH')}
+              onClick={() => run(`/api/admin/trees/${tree.id}`, { restore: true }, 'PATCH')}
+            >
               {t.admin.restore}
             </Button>
             <Button
               size="sm"
               variant="quiet"
+              loading={pending(`/api/admin/trees/${tree.id}?permanent=1`, null, 'DELETE')}
               onClick={() =>
                 window.confirm(t.admin.confirmPurge(tree.name)) &&
                 run(`/api/admin/trees/${tree.id}?permanent=1`, null, 'DELETE')
@@ -447,7 +501,7 @@ function TrashCard({ trash, date, run }: { trash: DeletedTree[]; date: (iso: str
   )
 }
 
-function UsersCard({ data, run }: { data: Overview; run: Run }) {
+function UsersCard({ data, run, pending }: { data: Overview; run: Run; pending: Pending }) {
   const { t } = useI18n()
   const [resetLink, setResetLink] = useState<{ user: string; path: string; mailed: boolean } | null>(null)
 
@@ -486,6 +540,7 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                       className={clsx(select, 'w-40')}
                       value={m.role}
                       label={t.admin.role}
+                      disabled={pending(`/api/admin/users/${u.id}/trees/${m.id}`, null, 'DELETE')}
                       onChange={(role) => run(`/api/admin/users/${u.id}/trees/${m.id}`, { role }, 'PUT')}
                     />
                     <button
@@ -493,9 +548,14 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                       aria-label={t.admin.removeFromTree(m.name)}
                       title={t.admin.removeFromTree(m.name)}
                       onClick={() => run(`/api/admin/users/${u.id}/trees/${m.id}`, null, 'DELETE')}
-                      className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-danger"
+                      disabled={pending(`/api/admin/users/${u.id}/trees/${m.id}`, null, 'DELETE')}
+                      className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-danger disabled:cursor-progress"
                     >
-                      <UserMinus className="h-4 w-4" />
+                      {pending(`/api/admin/users/${u.id}/trees/${m.id}`, null, 'DELETE') ? (
+                        <Spinner />
+                      ) : (
+                        <UserMinus className="h-4 w-4" />
+                      )}
                     </button>
                   </li>
                 ))}
@@ -511,6 +571,7 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                 <Button
                   size="sm"
                   variant="quiet"
+                  loading={pending(`/api/admin/users/${u.id}`, { isAdmin: !u.is_admin }, 'PATCH')}
                   onClick={() => run(`/api/admin/users/${u.id}`, { isAdmin: !u.is_admin }, 'PATCH')}
                 >
                   {u.is_admin ? t.admin.revokeAdmin : t.admin.grantAdmin}
@@ -519,6 +580,7 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                   <Button
                     size="sm"
                     variant="quiet"
+                    loading={pending(`/api/admin/users/${u.id}`, { disabled: !u.disabled }, 'PATCH')}
                     onClick={() => run(`/api/admin/users/${u.id}`, { disabled: !u.disabled }, 'PATCH')}
                   >
                     {u.disabled ? t.admin.enable : t.admin.disable}
@@ -528,6 +590,7 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                   size="sm"
                   variant="quiet"
                   icon={<KeyRound className="h-4 w-4" />}
+                  loading={pending(`/api/admin/users/${u.id}/reset`, null, 'POST')}
                   onClick={async () => {
                     const { ok, data: d } = await run(`/api/admin/users/${u.id}/reset`, null, 'POST')
                     if (ok) setResetLink({ user: u.id, path: String(d.path), mailed: !!d.mailed })
@@ -540,6 +603,7 @@ function UsersCard({ data, run }: { data: Overview; run: Run }) {
                     size="sm"
                     variant="danger"
                     icon={<Trash2 className="h-4 w-4" />}
+                    loading={pending(`/api/admin/users/${u.id}`, null, 'DELETE')}
                     onClick={() =>
                       window.confirm(t.admin.confirmDelete(u.name)) && run(`/api/admin/users/${u.id}`, null, 'DELETE')
                     }

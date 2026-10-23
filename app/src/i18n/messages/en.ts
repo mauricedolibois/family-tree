@@ -714,6 +714,7 @@ export const en: Messages = {
     days: 'days',
     noExpiry: 'No expiry',
     createInvite: 'Create invitation',
+    sending: 'Sending …',
     inviteMailed: 'The invitation has been emailed. Here is the link, just in case:',
     inviteCopy: 'Pass this link on. It works once.',
     openInvites: 'Open invitations',

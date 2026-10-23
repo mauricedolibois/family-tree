@@ -93,7 +93,7 @@ export default function RegisterPage() {
             onChange={set('treeName')}
           />
           {error && <FormMessage>{error}</FormMessage>}
-          <Button type="submit" variant="primary" disabled={loading} className="mt-1 w-full">
+          <Button type="submit" variant="primary" loading={loading} className="mt-1 w-full">
             {loading ? t.auth.wait : t.register.submit}
           </Button>
         </form>
