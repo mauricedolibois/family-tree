@@ -24,6 +24,7 @@ import {
   type TreeScope,
 } from '@/family/scope'
 import { useI18n } from '@/i18n/I18nProvider'
+import { TreeLoader } from '@/components/ui/TreeLoader'
 
 export class TreeConflictError extends Error {
   constructor() {
@@ -292,7 +293,7 @@ function LoadingScreen() {
   return (
     <div className="page-backdrop grid h-dvh place-items-center" role="status" aria-live="polite">
       <div className="surface flex flex-col items-center gap-4 rounded-panel border border-frame/50 px-10 py-8 shadow-lifted">
-        <div className="h-10 w-10 animate-spin rounded-full border-[3px] border-primary-tint border-t-primary motion-reduce:animate-none" />
+        <TreeLoader className="h-20 w-20" />
         <p className="font-text text-lg text-ink-muted">{t.family.loading}</p>
       </div>
     </div>

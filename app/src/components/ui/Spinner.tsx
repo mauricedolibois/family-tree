@@ -4,6 +4,7 @@
 
 import clsx from 'clsx'
 import { useI18n } from '@/i18n/I18nProvider'
+import { TreeLoader } from './TreeLoader'
 
 /** Turning ring in the current text colour */
 export function Spinner({ className }: { className?: string }) {
@@ -23,7 +24,7 @@ export function PageLoading() {
   const { t } = useI18n()
   return (
     <div role="status" aria-live="polite" className="flex flex-col items-center gap-3 py-10 text-ink-muted">
-      <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-primary-tint border-t-primary motion-reduce:animate-none" />
+      <TreeLoader className="h-14 w-14" />
       <p className="font-text text-[16px]">{t.auth.wait}</p>
     </div>
   )
