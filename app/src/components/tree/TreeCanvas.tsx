@@ -1,6 +1,7 @@
 // src/components/tree/TreeCanvas.tsx
 // The tree as a zoomable, pannable canvas with the view switcher and relation card on top.
 
+import clsx from 'clsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch'
 import { Maximize, Minus, Plus } from 'lucide-react'
@@ -345,44 +346,62 @@ export function TreeCanvas() {
         </div>
       )}
 
-      {layout && view && (
-        <Minimap
-          layout={layout}
-          view={view}
-          highlight={new Set([selectedId, meId].filter((id): id is string => !!id))}
-          onMove={(x, y) => {
-            const el = box.current
-            const scale = api.current?.instance.state.scale
-            if (el && scale)
-              api.current?.setTransform(el.clientWidth / 2 - x * scale, el.clientHeight / 2 - y * scale, scale, 0)
-          }}
-        />
-      )}
-
-      {/* Zoom */}
-      <div className="surface absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 flex flex-col overflow-hidden rounded-control border border-frame/50 shadow-card">
-        <ZoomButton label={t.tree.zoomIn} onClick={() => api.current?.zoomIn(0.35)}>
-          <Plus className="h-5 w-5" />
-        </ZoomButton>
-        <ZoomButton label={t.tree.zoomOut} onClick={() => api.current?.zoomOut(0.35)}>
-          <Minus className="h-5 w-5" />
-        </ZoomButton>
-        <ZoomButton label={t.tree.fitAll} onClick={() => fitAll()}>
-          <Maximize className="h-[18px] w-[18px]" />
-        </ZoomButton>
+      {/* Map and zoom in one panel: on desktop the map on top and the buttons in a row
+          below it, on phones (no map) the buttons stacked */}
+      <div className="surface absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-10 flex flex-col overflow-hidden rounded-control border border-frame/50 shadow-card">
+        {layout && view && (
+          <Minimap
+            layout={layout}
+            view={view}
+            highlight={new Set([selectedId, meId].filter((id): id is string => !!id))}
+            onMove={(x, y) => {
+              const el = box.current
+              const scale = api.current?.instance.state.scale
+              if (el && scale)
+                api.current?.setTransform(el.clientWidth / 2 - x * scale, el.clientHeight / 2 - y * scale, scale, 0)
+            }}
+          />
+        )}
+        <div className="flex flex-col md:flex-row">
+          <ZoomButton label={t.tree.zoomIn} onClick={() => api.current?.zoomIn(0.35)}>
+            <Plus className="h-5 w-5" />
+          </ZoomButton>
+          {/* In the row: minus, plus, whole tree */}
+          <ZoomButton label={t.tree.zoomOut} onClick={() => api.current?.zoomOut(0.35)} className="md:order-first">
+            <Minus className="h-5 w-5" />
+          </ZoomButton>
+          <ZoomButton label={t.tree.fitAll} onClick={() => fitAll()}>
+            <Maximize className="h-[18px] w-[18px]" />
+          </ZoomButton>
+        </div>
       </div>
     </div>
   )
 }
 
-function ZoomButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+function ZoomButton({
+  label,
+  onClick,
+  className,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  className?: string
+  children: React.ReactNode
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid h-11 w-11 place-items-center border-b border-card-rule/70 text-ink-muted last:border-b-0 hover:bg-accent-soft/60 hover:text-ink"
+      className={clsx(
+        'grid h-11 w-11 place-items-center border-b border-card-rule/70 text-ink-muted last:border-b-0 hover:bg-accent-soft/60 hover:text-ink',
+        // In the row below the map: as wide as the map allows, divided by vertical rules
+        'md:h-10 md:min-w-11 md:flex-1 md:border-b-0 md:border-l md:first:border-l-0',
+        className,
+      )}
     >
       {children}
     </button>

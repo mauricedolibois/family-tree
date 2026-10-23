@@ -1,7 +1,7 @@
 // src/components/tree/Minimap.tsx
 // Small overview of the whole tree on desktop: every card as a dot-sized box and
 // the visible part as a frame. Clicking or dragging in it moves the view there.
-// Shown only while part of the tree is out of view.
+// Shown only while part of the tree is out of view, on top of the zoom buttons.
 
 import { useRef } from 'react'
 import type { TreeLayout } from '@/family/layout/types'
@@ -50,7 +50,7 @@ export function Minimap({
   }
 
   return (
-    <div className="surface absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-3 z-10 hidden overflow-hidden rounded-control border border-frame/50 p-1.5 shadow-card md:block">
+    <div className="hidden border-b border-card-rule/70 p-1.5 md:block">
       <svg
         ref={svg}
         role="img"
