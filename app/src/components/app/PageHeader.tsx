@@ -3,6 +3,10 @@
 // way back to the tree where there is one, and the same menu as the tree. Managing a
 // tree has two tabs, members and history; the administration of the server is a page
 // of its own, so the two are never mixed.
+//
+// Header and tabs stay at the top while the page scrolls, so the way back is always in
+// reach. On phones with a notch the bar reaches under the status bar (viewport-fit=cover):
+// the safe area is padding on the outer element, the row of buttons keeps its full height.
 
 import Link from 'next/link'
 import clsx from 'clsx'
@@ -13,23 +17,29 @@ import { NavMenu, type NavContext, type NavPage } from './NavMenu'
 export function PageHeader({ title, nav, current }: { title: string; nav: NavContext; current: NavPage }) {
   const { t } = useI18n()
   return (
-    <>
-      <header className="header-bar flex h-14 items-center gap-2 px-3 pt-[env(safe-area-inset-top)] text-on-primary sm:gap-3 sm:px-5">
-        {nav.tree && (
-          <Link
-            href={`/tree/${nav.tree.id}`}
-            aria-label={t.nav.toTree}
-            title={t.nav.toTree}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-on-primary/90 hover:bg-on-primary/10"
-          >
-            <ArrowLeft className="h-5 w-5" aria-hidden />
-          </Link>
-        )}
-        <h1 className="min-w-0 flex-1 truncate font-display text-[1.35rem] text-on-primary-accent">{title}</h1>
-        <NavMenu nav={nav} current={current} />
+    <div className="sticky top-0 z-40">
+      <header className="header-bar header-rule pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)] text-on-primary">
+        <div className="flex h-14 items-center gap-1 px-2 sm:gap-3 sm:px-5">
+          {nav.tree ? (
+            <Link
+              href={`/tree/${nav.tree.id}`}
+              aria-label={t.nav.toTree}
+              title={t.nav.toTree}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-on-primary/90 hover:bg-on-primary/10"
+            >
+              <ArrowLeft className="h-5 w-5" aria-hidden />
+            </Link>
+          ) : (
+            <span className="w-1 sm:hidden" aria-hidden />
+          )}
+          <h1 className="min-w-0 flex-1 truncate font-display text-[1.25rem] leading-tight text-on-primary-accent sm:text-[1.35rem]">
+            {title}
+          </h1>
+          <NavMenu nav={nav} current={current} />
+        </div>
       </header>
       <ManageTabs nav={nav} current={current} />
-    </>
+    </div>
   )
 }
 
@@ -44,15 +54,15 @@ function ManageTabs({ nav, current }: { nav: NavContext; current: NavPage }) {
   ]
 
   return (
-    <nav className="border-b border-card-rule bg-card/80">
-      <div className="mx-auto flex max-w-4xl gap-1 overflow-x-auto px-3 sm:px-5">
+    <nav className="border-b border-card-rule bg-card/95 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur supports-[backdrop-filter]:bg-card/85">
+      <div className="mx-auto flex max-w-4xl gap-1 overflow-x-auto px-1 sm:px-5">
         {tabs.map((tab) => (
           <Link
             key={tab.page}
             href={tab.href}
             aria-current={tab.page === current ? 'page' : undefined}
             className={clsx(
-              'shrink-0 whitespace-nowrap border-b-2 px-3 py-2.5 text-[15px]',
+              'shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-[15px] sm:py-2.5',
               tab.page === current
                 ? 'border-accent font-semibold text-ink'
                 : 'border-transparent text-ink-muted hover:text-ink',

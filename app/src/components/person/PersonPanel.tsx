@@ -63,7 +63,7 @@ export function PersonPanel() {
       className={
         'surface panel-enter fixed inset-x-0 bottom-0 z-40 flex flex-col overflow-hidden rounded-t-panel border-t border-frame/60 shadow-sheet transition-[max-height] duration-300 ease-settle ' +
         (expanded ? 'max-h-[88dvh] ' : 'max-h-[46dvh] ') +
-        'md:absolute md:inset-x-auto md:bottom-3 md:right-3 md:top-3 md:max-h-none md:w-[420px] md:rounded-panel md:border md:shadow-lifted'
+        'md:absolute md:inset-x-auto md:bottom-[max(0.75rem,env(safe-area-inset-bottom))] md:right-[max(0.75rem,env(safe-area-inset-right))] md:top-3 md:max-h-none md:w-[420px] md:rounded-panel md:border md:shadow-lifted'
       }
     >
       {/* Frame around the info sheet (gold rule in the classic theme, none in modern) */}

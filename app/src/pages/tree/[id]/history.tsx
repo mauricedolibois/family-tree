@@ -131,27 +131,30 @@ export default function HistoryPage({ treeId, nav }: Props) {
                     ].filter(Boolean)
                     return (
                       <li key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
-                        <span className="min-w-0 flex-1">
+                        {/* Wide enough to read; on phones the buttons move below */}
+                        <span className="min-w-0 flex-[1_1_14rem]">
                           <span className="block text-[15px] text-ink">{what ?? t.history.kind[v.kind]}</span>
                           <span className="block text-[13px] text-ink-muted">{meta.join(' · ')}</span>
                         </span>
-                        <a
-                          href={`${api}/${v.id}/download`}
-                          title={t.history.download}
-                          aria-label={t.history.download}
-                          className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
-                        >
-                          <Download className="h-4 w-4" aria-hidden />
-                        </a>
-                        <Button
-                          size="sm"
-                          disabled={busy !== null}
-                          loading={busy === v.id}
-                          icon={<RotateCcw className="h-4 w-4" />}
-                          onClick={() => void restore(v)}
-                        >
-                          {busy === v.id ? t.auth.wait : t.history.restore}
-                        </Button>
+                        <span className="flex items-center gap-2">
+                          <a
+                            href={`${api}/${v.id}/download`}
+                            title={t.history.download}
+                            aria-label={t.history.download}
+                            className="grid h-9 w-9 place-items-center rounded-full text-ink-muted hover:bg-canvas-raised hover:text-ink"
+                          >
+                            <Download className="h-4 w-4" aria-hidden />
+                          </a>
+                          <Button
+                            size="sm"
+                            disabled={busy !== null}
+                            loading={busy === v.id}
+                            icon={<RotateCcw className="h-4 w-4" />}
+                            onClick={() => void restore(v)}
+                          >
+                            {busy === v.id ? t.auth.wait : t.history.restore}
+                          </Button>
+                        </span>
                       </li>
                     )
                   })}
@@ -232,7 +235,7 @@ function ReplaceCard({ treeId, treeName, onDone }: { treeId: string; treeName: s
         <input
           type="file"
           accept=".zip,.json,application/zip,application/json"
-          className="text-sm text-ink"
+          className="w-full min-w-0 text-sm text-ink"
           aria-label={t.transfer.file}
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />

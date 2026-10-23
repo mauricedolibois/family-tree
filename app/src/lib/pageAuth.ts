@@ -1,9 +1,12 @@
 // src/lib/pageAuth.ts
 // Sign-in checks for getServerSideProps.
 
+import type { IncomingMessage } from 'http'
 import type { GetServerSidePropsContext, Redirect } from 'next'
-import { canManage, currentUser, type Access } from './auth'
+import { parseCookie } from 'cookie'
+import { canManage, currentUser, treeAccess, type Access } from './auth'
 import { treesOf, type UserRow } from './accounts'
+import { treeIdParam } from './ids'
 import type { NavContext } from '@/components/app/NavMenu'
 
 /** Only same-site paths, so `next` cannot send people to another site after signing in */
@@ -24,6 +27,20 @@ export async function requirePageUser(
 }
 
 export const LAST_TREE_COOKIE = 'tree'
+
+/**
+ * The tree the user last opened (cookie set by the tree page), if they still have
+ * access: pages without a tree of their own (account, administration) lead back to it.
+ */
+export async function lastTree(
+  user: UserRow,
+  req: Pick<IncomingMessage, 'headers'>,
+): Promise<{ id: string; access: Access } | undefined> {
+  const header = req.headers.cookie
+  const treeId = treeIdParam(header ? parseCookie(header)[LAST_TREE_COOKIE] : undefined)
+  const access = treeId ? await treeAccess(user, treeId) : null
+  return treeId && access ? { id: treeId, access } : undefined
+}
 
 /** What the menu on a page may offer the user; with a tree for pages that belong to one */
 export async function navContext(user: UserRow, tree?: { id: string; access: Access }): Promise<NavContext> {

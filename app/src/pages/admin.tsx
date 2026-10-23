@@ -12,7 +12,7 @@ import { ChevronRight, KeyRound, Plus, Trash2, Upload, UserMinus } from 'lucide-
 import type { AdminUserView } from '@/lib/accounts'
 import { treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
-import { navContext, requirePageUser } from '@/lib/pageAuth'
+import { lastTree, navContext, requirePageUser } from '@/lib/pageAuth'
 import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { PageHeader } from '@/components/app/PageHeader'
@@ -42,9 +42,15 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   if (!auth.user.is_admin) return { notFound: true }
   const treeId = treeIdParam(ctx.query.tree)
   const access = treeId ? await treeAccess(auth.user, treeId) : null
-  const tree = treeId && access ? { id: treeId, access } : undefined
+  // Without ?tree= (opened from the start page or a bookmark) the last opened tree is the way back
+  const tree = treeId && access ? { id: treeId, access } : await lastTree(auth.user, ctx.req)
   return {
-    props: { nav: await navContext(auth.user, tree), locale: localeFromRequest(ctx.req), treeId: tree?.id ?? null },
+    props: {
+      nav: await navContext(auth.user, tree),
+      locale: localeFromRequest(ctx.req),
+      // Only a tree the admin came from moves its invitations to its members tab
+      treeId: treeId && access ? treeId : null,
+    },
   }
 }
 
@@ -282,10 +288,10 @@ function TreesCard({
     <Card title={t.admin.treesTitle}>
       <ul className="mb-3 flex flex-col divide-y divide-card-rule">
         {trees.map((tree) => (
-          <li key={tree.id} className="flex flex-wrap items-center gap-2 py-2">
+          <li key={tree.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2">
             {editing?.id === tree.id ? (
               <form
-                className="flex flex-1 gap-2"
+                className="flex flex-1 flex-wrap gap-2"
                 onSubmit={async (e) => {
                   e.preventDefault()
                   await run(`/api/admin/trees/${tree.id}`, { name: editing.name }, 'PATCH')
@@ -293,7 +299,7 @@ function TreesCard({
                 }}
               >
                 <input
-                  className="field h-9 flex-1 text-sm"
+                  className="field h-9 min-w-0 flex-[1_1_12rem] text-sm"
                   value={editing.name}
                   onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                 />
@@ -310,21 +316,24 @@ function TreesCard({
               </form>
             ) : (
               <>
-                {/* Admins see a tree's contents only as members, like everyone else */}
-                {mine.has(tree.id) ? (
-                  <Link
-                    href={`/tree/${tree.id}`}
-                    className="min-w-0 flex-1 truncate font-text text-[17px] font-semibold text-ink underline-offset-4 hover:underline"
-                  >
-                    {tree.name}
-                  </Link>
-                ) : (
-                  <span className="min-w-0 flex-1 truncate font-text text-[17px] font-semibold text-ink">
-                    {tree.name}{' '}
-                    <span className="font-sans text-[13px] font-normal text-ink-muted">({t.admin.notMember})</span>
+                {/* On phones the name gets the whole width and the actions a row below */}
+                <span className="min-w-0 basis-full sm:flex-1 sm:basis-0">
+                  {/* Admins see a tree's contents only as members, like everyone else */}
+                  {mine.has(tree.id) ? (
+                    <Link
+                      href={`/tree/${tree.id}`}
+                      className="block truncate font-text text-[17px] font-semibold text-ink underline-offset-4 hover:underline"
+                    >
+                      {tree.name}
+                    </Link>
+                  ) : (
+                    <span className="block truncate font-text text-[17px] font-semibold text-ink">{tree.name}</span>
+                  )}
+                  <span className="block text-[13px] text-ink-muted">
+                    {t.admin.memberCount(members(tree.id))}
+                    {!mine.has(tree.id) && ` · ${t.admin.notMember}`}
                   </span>
-                )}
-                <span className="text-[13px] text-ink-muted">{t.admin.memberCount(members(tree.id))}</span>
+                </span>
                 {/* Managing a tree happens in the tree, as its moderator: one step from here */}
                 {myRole.get(tree.id) === 'moderator' ? (
                   <Link
@@ -363,7 +372,7 @@ function TreesCard({
         ))}
       </ul>
       <form
-        className="flex gap-2"
+        className="flex flex-wrap gap-2"
         onSubmit={async (e) => {
           e.preventDefault()
           if (!name.trim()) return
@@ -372,7 +381,7 @@ function TreesCard({
         }}
       >
         <input
-          className="field h-10 flex-1"
+          className="field h-10 min-w-0 flex-[1_1_12rem]"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t.admin.newTreeName}
@@ -426,17 +435,18 @@ function ImportCard({ onDone }: { onDone: () => void }) {
     <Card title={t.transfer.importTitle}>
       <form onSubmit={submit} className="flex flex-col gap-3">
         <p className="text-sm text-ink-muted">{t.transfer.importHint}</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1">
+        {/* grid-cols-1: the file field's own width must not widen the column on phones */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="flex min-w-0 flex-col gap-1">
             <span className="field-label">{t.transfer.name}</span>
             <input className="field h-10" value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
-          <label className="flex flex-col gap-1">
+          <label className="flex min-w-0 flex-col gap-1">
             <span className="field-label">{t.transfer.file}</span>
             <input
               type="file"
               accept=".zip,.json,application/zip,application/json"
-              className="text-sm text-ink"
+              className="w-full min-w-0 text-sm text-ink"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               required
             />
@@ -472,7 +482,7 @@ function TrashCard({
       <ul className="flex flex-col divide-y divide-card-rule">
         {trash.map((tree) => (
           <li key={tree.id} className="flex flex-wrap items-center gap-2 py-2">
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0 basis-full sm:flex-1 sm:basis-0">
               <span className="block truncate font-text text-[17px] font-semibold text-ink">{tree.name}</span>
               <span className="block text-[13px] text-ink-muted">{t.admin.deletedOn(date(tree.deleted_at))}</span>
             </span>
@@ -518,7 +528,7 @@ function UsersCard({ data, run, pending }: { data: Overview; run: Run; pending: 
             >
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <span className="font-text text-[17px] font-semibold text-ink">{u.name}</span>
-                <span className="text-sm text-ink-muted">{u.email}</span>
+                <span className="min-w-0 break-words text-sm text-ink-muted">{u.email}</span>
                 {u.is_admin && <Badge>{t.roles.admin}</Badge>}
                 {!u.verified && <Badge>{t.admin.unverified}</Badge>}
                 {u.disabled && <Badge>{t.admin.disabled}</Badge>}
@@ -528,16 +538,17 @@ function UsersCard({ data, run, pending }: { data: Overview; run: Run; pending: 
               <p className="mt-2 text-[13px] font-medium text-ink-muted">
                 {u.trees.length ? t.admin.memberOf : t.admin.inNoTree}
               </p>
-              <ul className="mt-1 flex flex-col gap-1.5">
+              <ul className="mt-1 flex flex-col gap-3 sm:gap-1.5">
                 {u.trees.map((m) => (
-                  <li key={m.id} className="flex items-center gap-2 text-[15px]">
-                    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-ink">
+                  <li key={m.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">
+                    {/* On phones the tree's name gets its own row, the role and the button the next */}
+                    <span className="flex min-w-0 basis-full items-center gap-1.5 text-ink sm:flex-1 sm:basis-0">
                       <span className="truncate">{m.name}</span>
                       {/* Set on the tree's members page, where the tree can be seen */}
                       {m.limited && <Badge>{t.members.access.badge}</Badge>}
                     </span>
                     <RoleSelect
-                      className={clsx(select, 'w-40')}
+                      className={clsx(select, 'min-w-0 flex-1 sm:w-40 sm:flex-none')}
                       value={m.role}
                       label={t.admin.role}
                       disabled={pending(`/api/admin/users/${u.id}/trees/${m.id}`, null, 'DELETE')}
@@ -644,7 +655,7 @@ function AddToTree({ trees, onAdd }: { trees: Tree[]; onAdd: (treeId: string, ro
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 rounded-control border border-dashed border-card-rule p-2">
       <select
-        className={clsx(select, 'min-w-0 flex-1')}
+        className={clsx(select, 'min-w-0 basis-full sm:flex-1 sm:basis-0')}
         value={treeId}
         onChange={(e) => setPicked(e.target.value)}
         aria-label={t.admin.tree}
@@ -658,7 +669,12 @@ function AddToTree({ trees, onAdd }: { trees: Tree[]; onAdd: (treeId: string, ro
           </option>
         ))}
       </select>
-      <RoleSelect className={clsx(select, 'w-40')} value={role} label={t.admin.role} onChange={setRole} />
+      <RoleSelect
+        className={clsx(select, 'min-w-0 flex-1 sm:w-40 sm:flex-none')}
+        value={role}
+        label={t.admin.role}
+        onChange={setRole}
+      />
       <Button
         size="sm"
         disabled={!treeId}

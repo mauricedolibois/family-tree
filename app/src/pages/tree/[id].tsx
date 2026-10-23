@@ -111,7 +111,7 @@ export default function TreePage({ treeId, familyName, editable, viewer, preview
 function PreviewBanner({ treeId, name }: { treeId: string; name: string }) {
   const { t } = useI18n()
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-frame/60 bg-accent-soft px-4 py-2 text-[15px] text-ink">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-frame/60 bg-accent-soft py-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] text-[15px] text-ink">
       <Eye className="h-4 w-4 shrink-0 text-accent-deep" />
       <span className="min-w-0 flex-1">
         <span className="font-semibold">{t.family.previewAs(name)}</span>{' '}

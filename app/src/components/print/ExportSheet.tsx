@@ -153,18 +153,21 @@ function ExportDialog() {
     <div className="page-backdrop fixed inset-0 z-[80] flex flex-col overflow-hidden bg-canvas print:static print:block print:overflow-visible print:bg-none">
       <style>{`@page { size: ${geo.w}mm ${geo.h}mm; margin: 0 }`}</style>
 
-      <header className="header-bar flex h-14 shrink-0 items-center gap-2 px-3 pt-[env(safe-area-inset-top)] text-on-primary print:hidden">
-        <button
-          type="button"
-          onClick={close}
-          className="flex h-10 items-center gap-1.5 rounded-full px-3 text-[15px] text-on-primary/90 hover:bg-on-primary/10"
-        >
-          <ArrowLeft className="h-4 w-4" /> {t.print.back}
-        </button>
-        <h1 className="font-display text-[1.35rem] text-on-primary-accent">{t.print.title}</h1>
+      {/* The safe area pads the bar, so the row keeps its height under a phone's notch */}
+      <header className="header-bar shrink-0 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)] text-on-primary print:hidden">
+        <div className="flex h-14 items-center gap-2 px-3">
+          <button
+            type="button"
+            onClick={close}
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[15px] text-on-primary/90 hover:bg-on-primary/10"
+          >
+            <ArrowLeft className="h-4 w-4" /> {t.print.back}
+          </button>
+          <h1 className="min-w-0 truncate font-display text-[1.35rem] text-on-primary-accent">{t.print.title}</h1>
+        </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto md:flex-row md:overflow-hidden print:block print:overflow-visible">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto pb-[env(safe-area-inset-bottom)] md:flex-row md:overflow-hidden print:block print:overflow-visible print:pb-0">
         {/* Settings */}
         <aside className="shrink-0 p-3 md:w-[380px] md:overflow-auto md:p-4 print:hidden">
           <div className="surface flex flex-col gap-4 rounded-card border border-frame/60 p-4 shadow-card">

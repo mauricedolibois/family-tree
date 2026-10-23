@@ -66,7 +66,8 @@ export function NavMenu({ nav, current, children }: { nav: NavContext; current: 
           role="menu"
           // Closes when an entry is chosen; entries that stay on the page close it themselves
           onClick={() => setOpen(false)}
-          className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-card border border-card-rule bg-card p-1 text-ink shadow-lifted"
+          // On small phones the menu with its pickers can be taller than the screen: it scrolls itself
+          className="absolute right-0 top-12 z-50 max-h-[calc(100dvh-4.5rem-env(safe-area-inset-top))] w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto overscroll-contain rounded-card border border-card-rule bg-card p-1 text-ink shadow-lifted"
         >
           {children}
           {children && <hr className="my-1 border-card-rule" />}

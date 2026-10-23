@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Head from 'next/head'
 import type { GetServerSideProps } from 'next'
 import { toPublicUser, type PublicUser } from '@/lib/accounts'
-import { navContext, requirePageUser } from '@/lib/pageAuth'
+import { lastTree, navContext, requirePageUser } from '@/lib/pageAuth'
 import { Button } from '@/components/ui/Button'
 import { Field, FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { PageHeader } from '@/components/app/PageHeader'
@@ -18,8 +18,14 @@ type Props = { user: PublicUser; nav: NavContext; locale: Locale }
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
   const auth = await requirePageUser(ctx)
   if (auth.redirect) return { redirect: auth.redirect }
+  // The tree the user came from, so the header leads back to it
+  const tree = await lastTree(auth.user, ctx.req)
   return {
-    props: { user: toPublicUser(auth.user), nav: await navContext(auth.user), locale: localeFromRequest(ctx.req) },
+    props: {
+      user: toPublicUser(auth.user),
+      nav: await navContext(auth.user, tree),
+      locale: localeFromRequest(ctx.req),
+    },
   }
 }
 

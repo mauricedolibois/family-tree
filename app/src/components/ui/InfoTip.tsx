@@ -17,10 +17,13 @@ export function InfoTip({ label, children, wide }: { label: string; children: Re
   const id = useId()
   const open = hover || pinned
 
-  // Measured unshifted on opening, then moved left to keep a gutter to the screen's edge
+  // Measured unshifted on opening, then moved left to keep a gutter to the screen's edge.
+  // The page's width, not innerWidth: on phones the unshifted note widens the page for a
+  // moment, and innerWidth grows with it, so the note would stay partly off screen.
   useLayoutEffect(() => {
     if (!open || !note.current) return setShift(0)
-    setShift(Math.max(0, note.current.getBoundingClientRect().right - (window.innerWidth - 16)))
+    const screen = Math.min(window.innerWidth, document.documentElement.clientWidth)
+    setShift(Math.max(0, note.current.getBoundingClientRect().right - (screen - 16)))
   }, [open])
 
   useEffect(() => {
@@ -63,7 +66,8 @@ export function InfoTip({ label, children, wide }: { label: string; children: Re
           ref={note}
           id={id}
           role="note"
-          style={{ transform: shift ? `translateX(-${shift}px)` : undefined }}
+          // Moved with left rather than a transform, so the page stops counting the unshifted width
+          style={{ left: shift ? `calc(-0.5rem - ${shift}px)` : undefined }}
           className={clsx(
             'surface absolute -left-2 top-full z-40 mt-1 rounded-control border border-frame/60 p-3 text-left text-sm font-normal normal-case tracking-normal text-ink shadow-lifted',
             wide ? 'w-[min(26rem,calc(100vw-2rem))]' : 'w-[min(18rem,calc(100vw-2rem))]',

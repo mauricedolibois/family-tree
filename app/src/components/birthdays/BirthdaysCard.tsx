@@ -53,7 +53,7 @@ export function BirthdaysCard() {
   return (
     <section
       aria-label={t.birthdays.title}
-      className="surface pointer-events-auto flex max-h-[calc(100dvh-150px)] w-full flex-col rounded-card border border-frame/60 shadow-card md:w-[380px]"
+      className="surface pointer-events-auto flex max-h-[calc(100dvh-150px-env(safe-area-inset-top))] w-full flex-col rounded-card border border-frame/60 shadow-card md:w-[380px]"
     >
       <header className="flex shrink-0 items-center justify-between gap-2 px-4 pb-1 pt-3">
         {subscribe ? (

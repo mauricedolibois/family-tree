@@ -214,25 +214,28 @@ export default function MembersPage({ treeId, nav }: Props) {
                   <ul className="flex flex-col divide-y divide-card-rule">
                     {requests.claims.map((c) => (
                       <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                        <span className="min-w-0 flex-1 text-[15px] text-ink">
+                        {/* Wide enough to read; on phones the buttons move below */}
+                        <span className="min-w-0 flex-[1_1_14rem] text-[15px] text-ink">
                           {t.requests.claimRow(c.userName, c.personName)}
                         </span>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          loading={pending(`/requests/${c.id}`, { kind: 'claim', approve: true }, 'PUT')}
-                          onClick={() => run(`/requests/${c.id}`, { kind: 'claim', approve: true }, 'PUT')}
-                        >
-                          {t.requests.confirm}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="quiet"
-                          loading={pending(`/requests/${c.id}`, { kind: 'claim', approve: false }, 'PUT')}
-                          onClick={() => run(`/requests/${c.id}`, { kind: 'claim', approve: false }, 'PUT')}
-                        >
-                          {t.requests.reject}
-                        </Button>
+                        <span className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            loading={pending(`/requests/${c.id}`, { kind: 'claim', approve: true }, 'PUT')}
+                            onClick={() => run(`/requests/${c.id}`, { kind: 'claim', approve: true }, 'PUT')}
+                          >
+                            {t.requests.confirm}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="quiet"
+                            loading={pending(`/requests/${c.id}`, { kind: 'claim', approve: false }, 'PUT')}
+                            onClick={() => run(`/requests/${c.id}`, { kind: 'claim', approve: false }, 'PUT')}
+                          >
+                            {t.requests.reject}
+                          </Button>
+                        </span>
                       </li>
                     ))}
                     {requests.access.map((a) => {
@@ -322,7 +325,8 @@ export default function MembersPage({ treeId, nav }: Props) {
                         <li
                           key={m.id}
                           id={`member-${m.id}`}
-                          className="flex scroll-mt-4 flex-wrap items-center gap-x-3 gap-y-2 py-2.5"
+                          // Scrolled to from the card above: clear of the header and tabs, which stay on top
+                          className="flex scroll-mt-[calc(env(safe-area-inset-top)+7.5rem)] flex-wrap items-center gap-x-3 gap-y-2 py-2.5"
                         >
                           {/* On phones the details get the whole width and the controls a row below */}
                           <span className="w-full min-w-0 sm:w-auto sm:flex-1">

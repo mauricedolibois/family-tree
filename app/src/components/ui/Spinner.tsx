@@ -34,7 +34,11 @@ export function PageLoading() {
 export function BusyBar({ active }: { active: boolean }) {
   if (!active) return null
   return (
-    <div role="progressbar" aria-busy className="fixed inset-x-0 top-0 z-[60] h-[3px] overflow-hidden">
+    <div
+      role="progressbar"
+      aria-busy
+      className="fixed inset-x-0 top-[env(safe-area-inset-top)] z-[60] h-[3px] overflow-hidden"
+    >
       <div className="busy-bar h-full w-2/5 rounded-full bg-accent" />
     </div>
   )

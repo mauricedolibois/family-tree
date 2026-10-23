@@ -36,7 +36,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={{ notify }}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 top-16 z-[70] flex justify-center px-3">
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+4rem)] z-[70] flex justify-center px-3"
+      >
         {toast && (
           <div
             key={toast.id}

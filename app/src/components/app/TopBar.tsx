@@ -26,7 +26,7 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
   const [mobileSearch, setMobileSearch] = useState(false)
 
   return (
-    <header className="header-bar header-rule relative z-50 shrink-0 pt-[env(safe-area-inset-top)] text-on-primary">
+    <header className="header-bar header-rule relative z-50 shrink-0 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)] text-on-primary">
       <div className="flex h-14 items-center gap-2 px-3 sm:gap-4 sm:px-5">
         {mobileSearch ? (
           <div className="flex flex-1 items-center gap-2 md:hidden">
@@ -44,7 +44,10 @@ export function TopBar({ viewer }: { viewer: Viewer }) {
           </div>
         ) : (
           <h1 className="min-w-0 flex-1 truncate font-display text-[1.6rem] leading-none">
-            <span className="mr-2 text-[1.05rem] italic text-on-primary-accent/60">{t.app.title}</span>
+            {/* On the narrowest phones the family's name needs the room */}
+            <span className="mr-2 text-[1.05rem] italic text-on-primary-accent/60 max-[379px]:hidden">
+              {t.app.title}
+            </span>
             <span className="title-text">{familyName}</span>
           </h1>
         )}

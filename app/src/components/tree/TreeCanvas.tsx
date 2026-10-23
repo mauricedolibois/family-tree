@@ -320,7 +320,7 @@ export function TreeCanvas() {
       <div
         ref={overlay}
         data-tour="overlay"
-        className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col items-start gap-2 md:right-auto"
+        className="pointer-events-none absolute left-[max(0.75rem,env(safe-area-inset-left))] right-[max(0.75rem,env(safe-area-inset-right))] top-3 z-20 flex flex-col items-start gap-2 md:right-auto"
       >
         <ViewModes count={count} scopeOpen={scopeOpen} onToggleScope={() => setScopeOpen((v) => !v)} />
         {relation && <RelationCard connection={connection} compact={!!selectedId} />}
@@ -348,7 +348,7 @@ export function TreeCanvas() {
 
       {/* Map and zoom in one panel: on desktop the map on top and the buttons in a row
           below it, on phones (no map) the buttons stacked */}
-      <div className="surface absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-10 flex flex-col overflow-hidden rounded-control border border-frame/50 shadow-card">
+      <div className="surface absolute bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(0.75rem,env(safe-area-inset-right))] z-10 flex flex-col overflow-hidden rounded-control border border-frame/50 shadow-card">
         {layout && view && (
           <Minimap
             layout={layout}
