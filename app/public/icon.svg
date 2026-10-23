@@ -1,19 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Theme "classic": dark green linen binding, gold leaf frame and a family tree in gold -->
-  <defs>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#F0D68C"/>
-      <stop offset="1" stop-color="#BA8E34"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="13" fill="#1E3428"/>
-  <rect x="4.5" y="4.5" width="55" height="55" rx="9.5" fill="none" stroke="#BA8E34" stroke-width="2"/>
-  <g fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M32 50V22M32 38L19 27M32 38L45 27M23 50h18"/>
+  <!-- Theme "classic": a seal on the dark green binding, gold ring and an oak in gold leaf -->
+  <circle cx="32" cy="32" r="31" fill="#1E3428"/>
+  <circle cx="32" cy="32" r="28.2" fill="none" stroke="#BA8E34" stroke-width="1.2"/>
+  <g fill="#D4AE58">
+    <circle cx="32" cy="17" r="7"/>
+    <circle cx="25" cy="19" r="6.5"/>
+    <circle cx="39" cy="19" r="6.5"/>
+    <circle cx="19.5" cy="25" r="6"/>
+    <circle cx="44.5" cy="25" r="6"/>
+    <circle cx="25.5" cy="28" r="6.5"/>
+    <circle cx="38.5" cy="28" r="6.5"/>
+    <circle cx="32" cy="24" r="8"/>
+    <path d="M30.2 31 C30.4 37 30 42 28.6 45.2 C27.6 47.2 25.8 48 23.5 48.6 H40.5 C38.2 48 36.4 47.2 35.4 45.2 C34 42 33.6 37 33.8 31 Z"/>
   </g>
-  <g fill="url(#gold)">
-    <circle cx="32" cy="18" r="6"/>
-    <circle cx="17" cy="25" r="6"/>
-    <circle cx="47" cy="25" r="6"/>
+  <g fill="none" stroke="#1E3428" stroke-width="1.1" stroke-linecap="round">
+    <path d="M32 33 C31.6 29 29.5 26.5 25.5 24.5"/>
+    <path d="M32.2 31 C33 27.5 35.5 25 39.5 23.5"/>
   </g>
+  <path d="M21 50 H43" stroke="#BA8E34" stroke-width="1.2" stroke-linecap="round"/>
 </svg>
