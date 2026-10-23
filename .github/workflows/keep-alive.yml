@@ -1,54 +1,58 @@
 name: Keep Supabase Alive
-# Hält das kostenlose Supabase-Projekt wach und sichert täglich alle Stammbäume.
+# Keeps the free Supabase cloud project awake and backs up every tree daily.
+# Only needed while the app runs on Vercel with Supabase cloud; on an own server
+# the daily backup runs via cron instead (see README, "Deployment").
 
 on:
   schedule:
-    # Läuft jeden Tag um 12:00 UTC
-    - cron: '0 12 * * *'
-  workflow_dispatch: # Ermöglicht manuelles Auslösen
+    # Every day at 12:00 UTC
+    - cron: "0 12 * * *"
+  workflow_dispatch: # Allows a manual run
 
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    defaults:
+      run:
+        working-directory: app
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: "24"
 
-      - name: Install Dependencies
-        run: npm ci
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
 
-      - name: Run Keep-Alive Script
+      - name: Run keep-alive script
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/keep-alive.mjs
 
-      - name: Tägliche Sicherung der Stammbäume
+      - name: Daily backup of all trees
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/daily-backup.mjs
 
-  # GitHub schaltet geplante Workflows in öffentlichen Repos nach 60 Tagen
-  # ohne Commit automatisch ab (so ist es im April 2026 passiert, danach hat
-  # Supabase pausiert). Dieser Job schaltet den Workflow bei jedem Lauf per
-  # API wieder ein und setzt damit die 60-Tage-Frist zurück. Er läuft auch,
-  # wenn der Supabase-Job oben fehlschlägt.
+  # GitHub disables scheduled workflows in public repos after 60 days without a
+  # commit (that happened in April 2026, and Supabase paused afterwards). This job
+  # re-enables the workflow on every run via the API, which resets the 60 days.
+  # It also runs when the Supabase job above fails.
   keep-workflow-enabled:
     runs-on: ubuntu-latest
     permissions:
       actions: write
 
     steps:
-      - name: Workflow aktiv halten
+      - name: Keep workflow enabled
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keep-alive.yml/enable"

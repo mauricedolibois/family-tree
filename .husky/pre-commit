@@ -1,3 +1,0 @@
-#!/bin/sh
-# Pre-commit hooks disabled - commit without checks
-exit 0

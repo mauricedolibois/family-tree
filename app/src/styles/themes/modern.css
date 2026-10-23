@@ -1,0 +1,187 @@
+/*
+ * Theme "modern": clean and calm
+ *
+ * Neutral greys, white surfaces, one blue accent and a single sans-serif. No
+ * paper grain, no ornaments: lines and spacing carry the structure. Dark is a
+ * real dark mode, cards included.
+ *
+ * Same variables and slots as every theme; docs/themes.md lists them.
+ */
+
+:root[data-theme='modern'] {
+  --primary: 24 24 27; /* #18181B header bars, primary buttons */
+  --primary-hover: 39 39 42; /* #27272A */
+  --primary-deep: 9 9 11; /* #09090B */
+  --primary-tint: 228 228 231; /* #E4E4E7 */
+  --on-primary: 250 250 250;
+  --on-primary-accent: 255 255 255;
+  --on-accent: 255 255 255;
+  --on-tint: 24 24 27;
+  --on-portrait: 82 82 91;
+  --link: 29 78 216; /* #1D4ED8 */
+
+  --canvas: 244 244 245; /* #F4F4F5 */
+  --canvas-raised: 250 250 250;
+  --card: 255 255 255;
+  --card-edge: 244 244 245;
+  --card-rule: 212 212 216; /* #D4D4D8 */
+  --card-past: 244 244 245;
+
+  --ink: 24 24 27; /* #18181B */
+  --ink-muted: 82 82 91; /* #52525B */
+  --ink-faint: 113 113 122; /* #71717A */
+
+  --frame: 212 212 216;
+  --line: 161 161 170; /* #A1A1AA */
+
+  --accent: 37 99 235; /* #2563EB */
+  --accent-light: 147 197 253; /* #93C5FD */
+  --accent-soft: 219 234 254; /* #DBEAFE */
+  --accent-deep: 29 78 216; /* #1D4ED8 */
+
+  --portrait: 228 228 231;
+
+  --danger: 220 38 38; /* #DC2626 */
+  --danger-soft: 254 226 226;
+
+  --shadow: 24 24 27;
+  --shadow-strong: 9 9 11;
+
+  --font-display: 'Inter Variable', system-ui, sans-serif;
+  --font-text: 'Inter Variable', system-ui, sans-serif;
+  --font-ui: 'Inter Variable', system-ui, sans-serif;
+
+  --radius-card: 12px;
+  --radius-panel: 16px;
+  --radius-control: 8px;
+
+  --vignette: 0 0 0;
+  --vignette-strength: 0;
+  --backdrop-glow: none;
+  --grain: none;
+
+  color-scheme: light;
+}
+
+:root[data-theme='modern'][data-mode='dark'] {
+  --primary: 63 63 70; /* #3F3F46 */
+  --primary-hover: 82 82 91;
+  --primary-deep: 0 0 0;
+  --primary-tint: 39 39 42;
+  --on-accent: 9 9 11;
+  --on-tint: 228 228 231;
+  --on-portrait: 212 212 216;
+  --link: 96 165 250;
+  --canvas: 9 9 11; /* #09090B */
+  --canvas-raised: 24 24 27;
+  --card: 24 24 27; /* #18181B */
+  --card-edge: 24 24 27;
+  --card-rule: 63 63 70; /* #3F3F46 */
+  --frame: 63 63 70;
+  --card-past: 31 31 35;
+  --ink: 244 244 245;
+  --ink-muted: 161 161 170;
+  --ink-faint: 113 113 122;
+  --line: 113 113 122;
+  --accent: 96 165 250; /* #60A5FA */
+  --accent-light: 147 197 253;
+  --accent-soft: 30 41 59; /* #1E293B */
+  --accent-deep: 147 197 253;
+  --portrait: 39 39 42;
+  --danger: 248 113 113;
+  --danger-soft: 69 10 10;
+  --shadow: 0 0 0;
+  --shadow-strong: 0 0 0;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='modern'][data-mode='system'] {
+    --primary: 63 63 70;
+    --primary-hover: 82 82 91;
+    --primary-deep: 0 0 0;
+    --primary-tint: 39 39 42;
+    --on-accent: 9 9 11;
+    --on-tint: 228 228 231;
+    --on-portrait: 212 212 216;
+    --link: 96 165 250;
+    --canvas: 9 9 11;
+    --canvas-raised: 24 24 27;
+    --card: 24 24 27;
+    --card-edge: 24 24 27;
+    --card-rule: 63 63 70;
+    --frame: 63 63 70;
+    --card-past: 31 31 35;
+    --ink: 244 244 245;
+    --ink-muted: 161 161 170;
+    --ink-faint: 113 113 122;
+    --line: 113 113 122;
+    --accent: 96 165 250;
+    --accent-light: 147 197 253;
+    --accent-soft: 30 41 59;
+    --accent-deep: 147 197 253;
+    --portrait: 39 39 42;
+    --danger: 248 113 113;
+    --danger-soft: 69 10 10;
+    --shadow: 0 0 0;
+    --shadow-strong: 0 0 0;
+    color-scheme: dark;
+  }
+}
+
+/* ---------- Slots ---------- */
+
+@layer components {
+  /* Titles on header bars: plain, slightly tighter */
+  :where([data-theme='modern']) .title-text {
+    color: rgb(var(--on-primary));
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  :where([data-theme='modern']) .surface {
+    background-color: rgb(var(--card));
+  }
+  :where([data-theme='modern']) .person-card {
+    background-image: none;
+  }
+  :where([data-theme='modern']) .selected-glow {
+    box-shadow:
+      0 0 0 2px rgb(var(--accent)),
+      0 8px 24px -10px rgb(var(--shadow-strong) / 0.35);
+  }
+  :where([data-theme='modern']) .portrait-frame {
+    box-shadow: 0 0 0 1px rgb(var(--card-rule));
+  }
+  :where([data-theme='modern']) .section-heading {
+    @apply flex items-center gap-3 text-sm font-semibold uppercase tracking-wide text-ink-muted;
+  }
+  :where([data-theme='modern']) .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgb(var(--card-rule));
+  }
+  /* Ornaments, gold sparkles and decorative script are part of the classic look */
+  :where([data-theme='modern']) .ornament,
+  :where([data-theme='modern']) .sparkle {
+    display: none;
+  }
+}
+
+:where([data-theme='modern']) .page-backdrop {
+  background-color: rgb(var(--canvas));
+}
+:where([data-theme='modern']) .header-bar {
+  background-color: rgb(var(--primary));
+}
+/* The sign-in pages: darkest shade, so the card stands out in light and dark mode */
+:where([data-theme='modern']) .cover {
+  background-color: rgb(var(--primary-deep));
+}
+:where([data-theme='modern']) .header-rule {
+  box-shadow: 0 1px 0 rgb(var(--card-rule) / 0.4);
+}
+:where([data-theme='modern']) .framed {
+  position: relative;
+  border: 1px solid rgb(var(--frame) / 0.5);
+  border-radius: var(--radius-card);
+}

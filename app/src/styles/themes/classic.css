@@ -1,0 +1,244 @@
+/*
+ * Theme "classic": parchment and ink
+ *
+ * An old family library: parchment, iron gall ink, a dark green linen binding and
+ * gold leaf. Light: parchment on a reading desk. Dark: the same parchment cards on
+ * dark wood by candlelight.
+ *
+ * Every theme sets the same variables and styles the same slots; docs/themes.md
+ * lists them. Colours are RGB triplets so Tailwind can add opacity (bg-primary/10).
+ */
+
+:root[data-theme='classic'] {
+  /* Binding: header bars, primary buttons */
+  --primary: 30 52 40; /* #1E3428 */
+  --primary-hover: 41 70 54; /* #294636 */
+  --primary-deep: 18 31 24; /* #121F18 */
+  --primary-tint: 222 228 212; /* #DEE4D4 */
+  --on-primary: 250 244 228; /* text on the binding */
+  --on-primary-accent: 245 230 190; /* gold lettering on the binding */
+  --on-accent: 18 31 24; /* text on gold */
+  --on-tint: 30 52 40; /* badges on the light green tint */
+  --on-portrait: 30 52 40; /* initials */
+  --link: 30 52 40;
+
+  /* Parchment: surfaces */
+  --canvas: 234 222 194; /* #EADEC2 page background */
+  --canvas-raised: 245 237 216; /* #F5EDD8 */
+  --card: 250 244 228; /* #FAF4E4 */
+  --card-edge: 233 218 184; /* #E9DAB8 aged card edge */
+  --card-rule: 196 172 128; /* #C4AC80 */
+  --card-past: 240 231 208; /* deceased people */
+
+  /* Ink: text */
+  --ink: 43 30 20; /* #2B1E14 */
+  --ink-muted: 105 86 66; /* #695642 */
+  --ink-faint: 138 119 96; /* #8A7760 */
+
+  /* Sepia lines in the tree */
+  /* Gold rules around cards and frames */
+  --frame: 186 142 52;
+  --line: 128 102 66; /* #806642 */
+
+  /* Gold leaf: accent */
+  --accent: 186 142 52; /* #BA8E34 */
+  --accent-light: 240 214 140; /* #F0D68C */
+  --accent-soft: 245 230 190; /* #F5E6BE */
+  --accent-deep: 118 84 22; /* #765416 */
+
+  /* Background behind initials */
+  --portrait: 226 210 174; /* #E2D2AE */
+
+  --danger: 140 45 36; /* #8C2D24 */
+  --danger-soft: 246 225 216;
+
+  --shadow: 30 52 40;
+  --shadow-strong: 18 31 24;
+
+  --font-display: 'IM Fell English', 'EB Garamond Variable', Georgia, serif;
+  --font-text: 'EB Garamond Variable', Georgia, serif;
+  --font-ui: 'Atkinson Hyperlegible Next', system-ui, sans-serif;
+
+  --radius-card: 12px;
+  --radius-panel: 20px;
+  --radius-control: 10px;
+
+  /* Parchment vignette and paper grain */
+  --vignette: 110 78 36;
+  --vignette-strength: 0.22;
+  --backdrop-glow: none;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.12 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  color-scheme: light;
+}
+
+/* Candlelight: dark desk, the parchment cards stay light */
+:root[data-theme='classic'][data-mode='dark'] {
+  --canvas: 24 28 22; /* #181C16 */
+  --line: 196 160 92; /* golden-brown ink */
+  --vignette: 0 0 0;
+  --vignette-strength: 0.55;
+  --backdrop-glow: radial-gradient(60% 50% at 50% 42%, rgb(255 190 110 / 0.07), transparent 70%);
+  --primary-tint: 52 70 56;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='classic'][data-mode='system'] {
+    --canvas: 24 28 22;
+    --line: 196 160 92;
+    --vignette: 0 0 0;
+    --vignette-strength: 0.55;
+    --backdrop-glow: radial-gradient(60% 50% at 50% 42%, rgb(255 190 110 / 0.07), transparent 70%);
+    --primary-tint: 52 70 56;
+    color-scheme: dark;
+  }
+}
+
+/* ---------- Slots ---------- */
+
+@layer components {
+  /* ---------- Gold-leaf lettering ---------- */
+  :where([data-theme='classic']) .title-text {
+    background: linear-gradient(
+      176deg,
+      rgb(var(--accent-light)) 8%,
+      rgb(var(--accent)) 52%,
+      rgb(var(--accent-deep)) 96%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.04);
+    /* The gradient only paints inside the box: give accents (Á, É) and descenders room
+       without changing the layout */
+    padding-block: 0.15em;
+    margin-block: -0.15em;
+  }
+
+  /* ---------- Parchment surface with darkened edges ---------- */
+  :where([data-theme='classic']) .surface {
+    background-color: rgb(var(--card));
+    background-image:
+      radial-gradient(130% 120% at 50% 40%, transparent 55%, rgb(var(--card-edge) / 0.9) 100%), var(--grain);
+  }
+
+  /* ---------- Cards styled like old bookplates ---------- */
+  :where([data-theme='classic']) .person-card {
+    --plate-rule: rgb(var(--card-rule) / 0.75);
+    --corner: rgb(var(--accent) / 0.85);
+    background-image: radial-gradient(120% 140% at 50% 45%, transparent 50%, rgb(var(--card-edge)) 100%);
+  }
+  /* inner ornamental rule */
+  :where([data-theme='classic']) .person-card::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid var(--plate-rule);
+    border-radius: 9px;
+    pointer-events: none;
+    transition: border-color 0.3s;
+  }
+  /* gold corner brackets */
+  :where([data-theme='classic']) .person-card::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--corner), var(--corner)) top left / 9px 1.5px,
+      linear-gradient(var(--corner), var(--corner)) top left / 1.5px 9px,
+      linear-gradient(var(--corner), var(--corner)) top right / 9px 1.5px,
+      linear-gradient(var(--corner), var(--corner)) top right / 1.5px 9px,
+      linear-gradient(var(--corner), var(--corner)) bottom left / 9px 1.5px,
+      linear-gradient(var(--corner), var(--corner)) bottom left / 1.5px 9px,
+      linear-gradient(var(--corner), var(--corner)) bottom right / 9px 1.5px,
+      linear-gradient(var(--corner), var(--corner)) bottom right / 1.5px 9px;
+    background-repeat: no-repeat;
+  }
+
+  /* Selected person: warm candle glow */
+  :where([data-theme='classic']) .selected-glow {
+    box-shadow:
+      0 0 0 1px rgb(var(--accent)),
+      0 0 18px 3px rgb(var(--accent) / 0.45),
+      0 12px 30px -10px rgb(var(--primary-deep) / 0.5);
+    animation: candle 3.2s ease-in-out infinite;
+  }
+
+  /* Portrait in a gold frame */
+  :where([data-theme='classic']) .portrait-frame {
+    box-shadow:
+      0 0 0 1.5px rgb(var(--card)),
+      0 0 0 2.5px rgb(var(--accent) / 0.8),
+      0 0 0 4px rgb(var(--card)),
+      0 0 0 4.75px rgb(var(--accent) / 0.45);
+  }
+
+  /* Section title with ornamental rules on both sides */
+  :where([data-theme='classic']) .section-heading {
+    @apply flex items-center gap-3 font-display text-lg text-ink;
+  }
+  :where([data-theme='classic']) .section-heading::before,
+  :where([data-theme='classic']) .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--accent) / 0.7), transparent);
+  }
+}
+
+/* ---------- Page background: reading desk with vignette (candle glow at night) ---------- */
+:where([data-theme='classic']) .page-backdrop {
+  background-image:
+    var(--backdrop-glow),
+    radial-gradient(120% 90% at 50% 45%, transparent 45%, rgb(var(--vignette) / var(--vignette-strength)) 100%),
+    var(--grain);
+}
+
+/* ---------- Header bars and the sign-in cover: book cloth with gold embossing ---------- */
+:where([data-theme='classic']) .header-bar {
+  background-color: rgb(var(--primary));
+  background-image:
+    radial-gradient(90% 70% at 50% 35%, rgb(255 230 170 / 0.08), transparent 65%),
+    radial-gradient(130% 100% at 50% 50%, transparent 55%, rgb(0 0 0 / 0.45) 100%),
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.07) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 4px);
+}
+:where([data-theme='classic']) .header-rule {
+  box-shadow:
+    0 1px 0 rgb(var(--accent) / 0.7),
+    0 3px 0 rgb(var(--primary-deep)),
+    0 4px 0 rgb(var(--accent) / 0.35);
+}
+:where([data-theme='classic']) .sheet-frame {
+  border: 1px solid rgb(var(--frame) / 0.35);
+}
+:where([data-theme='classic']) .framed {
+  position: relative;
+  border: 1.5px solid rgb(var(--accent) / 0.8);
+  border-radius: 14px;
+}
+:where([data-theme='classic']) .framed::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgb(var(--accent) / 0.45);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+@keyframes candle {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgb(var(--accent)),
+      0 0 16px 2px rgb(var(--accent) / 0.4),
+      0 12px 30px -10px rgb(var(--primary-deep) / 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgb(var(--accent)),
+      0 0 24px 6px rgb(var(--accent) / 0.5),
+      0 12px 30px -10px rgb(var(--primary-deep) / 0.5);
+  }
+}
