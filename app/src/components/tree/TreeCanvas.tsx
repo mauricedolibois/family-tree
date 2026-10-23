@@ -273,7 +273,9 @@ export function TreeCanvas() {
         maxScale={MAX_SCALE}
         limitToBounds={false}
         doubleClick={{ disabled: true }}
-        wheel={{ step: 0.12 }}
+        // Smooth zoom multiplies the step by the wheel's deltaY (about 100 per notch):
+        // 0.001 is about 0.1 per notch, as with smoothStep in react-zoom-pan-pinch 3
+        wheel={{ step: 0.001 }}
         panning={{ velocityDisabled: false }}
         onTransform={(_, state) => trackView(state)}
       >
