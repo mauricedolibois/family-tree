@@ -49,7 +49,29 @@ export const MAIL_LOCALES: readonly Locale[] = ['de', 'en']
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
-const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+// Theme "classic" with what mail programs have: serif fonts, the dark green binding,
+// parchment and gold leaf. Web fonts are left out, many programs block them.
+const SERIF = "'EB Garamond',Garamond,Georgia,'Times New Roman',serif"
+const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+const C = {
+  binding: '#1E3428',
+  lettering: '#F5E6BE',
+  gold: '#BA8E34',
+  goldDeep: '#765416',
+  desk: '#EADEC2',
+  parchment: '#FAF4E4',
+  rule: '#C4AC80',
+  ink: '#2B1E14',
+  inkMuted: '#695642',
+  inkFaint: '#8A7760',
+}
+
+/** Gold rule with a lozenge in the middle, between the languages */
+const ORNAMENT = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+<td style="border-bottom:1px solid ${C.rule};width:45%">&nbsp;</td>
+<td align="center" style="padding:0 10px;color:${C.gold};font-size:12px;line-height:12px;white-space:nowrap">&#9670;</td>
+<td style="border-bottom:1px solid ${C.rule};width:45%">&nbsp;</td>
+</tr></table>`
 
 /** Subject, plain text and HTML, German first and English below */
 export function renderMail({ kind, path, name, tree }: Omit<MailInput, 'to'>, base: string) {
@@ -68,36 +90,42 @@ export function renderMail({ kind, path, name, tree }: Omit<MailInput, 'to'>, ba
 
   // Tables and inline styles, because many mail programs ignore anything else
   const section = (p: (typeof parts)[number], first: boolean) => `
-<tr><td lang="${p.lang}" style="padding:${first ? '32px' : '28px'} 32px 0 32px;${
-    first ? '' : 'border-top:1px solid #e4e4e7;'
-  }">
-<p style="margin:0 0 12px;font-size:16px;line-height:24px;color:#18181b">${escapeHtml(p.greeting)}</p>
-<p style="margin:0 0 20px;font-size:16px;line-height:24px;color:#3f3f46">${escapeHtml(p.body)}</p>
-<a href="${escapeHtml(
-    link,
-  )}" style="display:inline-block;background:#1E3428;color:#ffffff;font-size:15px;font-weight:600;line-height:20px;padding:12px 20px;border-radius:8px;text-decoration:none">${escapeHtml(
-    p.button,
-  )}</a>
-<div style="height:28px"></div>
+<tr><td lang="${p.lang}" style="padding:${first ? '30px' : '0'} 36px 30px 36px">
+${first ? '' : `${ORNAMENT}<div style="height:26px"></div>`}
+<p style="margin:0 0 12px;font-family:${SERIF};font-size:19px;line-height:27px;color:${C.ink}">${escapeHtml(p.greeting)}</p>
+<p style="margin:0 0 24px;font-family:${SERIF};font-size:18px;line-height:27px;color:${C.inkMuted}">${escapeHtml(p.body)}</p>
+<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:${C.binding};border:1px solid ${C.gold};border-radius:6px">
+<a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 24px;font-family:${SERIF};font-size:17px;font-weight:600;line-height:22px;letter-spacing:0.02em;color:${C.lettering};text-decoration:none">${escapeHtml(p.button)}</a>
+</td></tr></table>
 </td></tr>`
+  const titles = MAIL_LOCALES.map((lang) => MESSAGES[lang].app.title).join(' · ')
   const html = `<!doctype html>
 <html lang="${
     parts[0].lang
   }"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
 <title>${escapeHtml(subject)}</title></head>
-<body style="margin:0;padding:0;background:#f4f4f5">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;font-family:${FONT}">
-<tr><td align="center" style="padding:32px 16px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e4e4e7;border-radius:12px">
+<body style="margin:0;padding:0;background:${C.desk}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.desk}">
+<tr><td align="center" style="padding:32px 14px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${C.parchment};border:1px solid ${C.gold};border-radius:10px;border-collapse:separate;overflow:hidden">
+<tr><td align="center" style="background:${C.binding};padding:22px 24px 20px 24px;border-bottom:2px solid ${C.gold}">
+<p style="margin:0;font-family:${SERIF};font-size:12px;line-height:16px;letter-spacing:0.22em;text-transform:uppercase;color:${C.gold}">&#10086;&nbsp; ${escapeHtml(titles)} &nbsp;&#10086;</p>
+${
+  tree
+    ? `<p style="margin:8px 0 0;font-family:${SERIF};font-size:26px;line-height:32px;color:${C.lettering}">${escapeHtml(tree)}</p>`
+    : ''
+}
+</td></tr>
 ${parts.map((p, i) => section(p, i === 0)).join('')}
-<tr><td style="padding:20px 32px 28px 32px;border-top:1px solid #e4e4e7">
-<p style="margin:0 0 12px;font-size:13px;line-height:20px;color:#71717a;word-break:break-all"><a href="${escapeHtml(
+<tr><td style="padding:18px 36px 26px 36px;border-top:1px solid ${C.rule};background:${C.desk}">
+<p style="margin:0 0 10px;font-family:${SANS};font-size:12px;line-height:18px;color:${C.inkFaint};word-break:break-all"><a href="${escapeHtml(
     link,
-  )}" style="color:#71717a">${escapeHtml(link)}</a></p>
+  )}" style="color:${C.goldDeep}">${escapeHtml(link)}</a></p>
 ${parts
   .map(
     (p) =>
-      `<p lang="${p.lang}" style="margin:0;font-size:13px;line-height:20px;color:#a1a1aa">${escapeHtml(p.footer)}</p>`,
+      `<p lang="${p.lang}" style="margin:0;font-family:${SANS};font-size:12px;line-height:18px;color:${C.inkFaint}">${escapeHtml(p.footer)}</p>`,
   )
   .join('\n')}
 </td></tr>
