@@ -712,6 +712,7 @@ export const en: Messages = {
     makeAdmin: 'Admin rights as well',
     validFor: 'Valid for',
     days: 'days',
+    noExpiry: 'No expiry',
     createInvite: 'Create invitation',
     inviteMailed: 'The invitation has been emailed. Here is the link, just in case:',
     inviteCopy: 'Pass this link on. It works once.',
@@ -719,6 +720,7 @@ export const en: Messages = {
     noInvites: 'No open invitations.',
     anyone: 'anyone',
     inviteMeta: (inviter, date) => `by ${inviter}, valid until ${date}`,
+    inviteMetaNoExpiry: (inviter) => `by ${inviter}, no expiry`,
     revoke: 'Revoke',
     deleteTree: 'Delete',
     confirmDeleteTree: (name) =>

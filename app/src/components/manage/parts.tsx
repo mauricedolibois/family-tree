@@ -81,6 +81,35 @@ export function RoleSelect({
   )
 }
 
+/** Validity of a new invitation: days, or null for no expiry */
+export function ValidityField({ days, onChange }: { days: number | null; onChange: (days: number | null) => void }) {
+  const { t } = useI18n()
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 self-end text-[15px] text-ink">
+      <label className="flex items-center gap-2">
+        {t.admin.validFor}
+        <input
+          type="number"
+          min={1}
+          max={30}
+          className="field h-9 w-20 py-0 text-sm disabled:opacity-50"
+          value={days ?? 7}
+          disabled={days === null}
+          onChange={(e) => onChange(Number(e.target.value))}
+        />
+        {t.admin.days}
+      </label>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={days === null} onChange={(e) => onChange(e.target.checked ? null : 7)} />
+        {t.admin.noExpiry}
+      </label>
+    </div>
+  )
+}
+
+/** Invitations without an end are stored with the year 9999 (lib/invites.ts) */
+export const neverExpires = (iso: string) => new Date(iso).getUTCFullYear() >= 9999
+
 /** Sends a form with a file (multipart); same answer shape as postJson */
 export async function sendForm(url: string, form: FormData) {
   const res = await fetch(url, { method: 'POST', body: form })

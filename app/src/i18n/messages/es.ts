@@ -716,6 +716,7 @@ export const es: Messages = {
     makeAdmin: 'También derechos de admin',
     validFor: 'Válida durante',
     days: 'días',
+    noExpiry: 'Sin caducidad',
     createInvite: 'Crear invitación',
     inviteMailed: 'La invitación se ha enviado por correo. Por si acaso, aquí está el enlace:',
     inviteCopy: 'Comparte este enlace. Funciona una sola vez.',
@@ -723,6 +724,7 @@ export const es: Messages = {
     noInvites: 'No hay invitaciones pendientes.',
     anyone: 'cualquier persona',
     inviteMeta: (inviter, date) => `de ${inviter}, válida hasta el ${date}`,
+    inviteMetaNoExpiry: (inviter) => `de ${inviter}, sin caducidad`,
     revoke: 'Revocar',
     deleteTree: 'Eliminar',
     confirmDeleteTree: (name) =>

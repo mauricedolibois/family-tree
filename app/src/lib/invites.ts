@@ -15,8 +15,12 @@ export function inviteEmail(value: unknown): string | null | undefined {
   return looksLikeEmail(email) ? email : undefined
 }
 
-/** Validity in days, 1 to 30 */
-export const inviteDays = (value: unknown) => Math.min(Math.max(Math.round(Number(value) || DEFAULT_DAYS), 1), MAX_DAYS)
+// Stored for invitations without an end; the pages show "no expiry" from the year 9999 on
+const NO_EXPIRY = new Date('9999-12-31T23:59:59Z')
+
+/** Validity in days, 1 to 30; null means no expiry */
+export const inviteDays = (value: unknown): number | null =>
+  value === null ? null : Math.min(Math.max(Math.round(Number(value) || DEFAULT_DAYS), 1), MAX_DAYS)
 
 /**
  * Creates the invitation and mails it when an address is given and mail works.
@@ -32,7 +36,8 @@ export async function issueInvite(input: {
   /** Who the invited person is in the tree; linked to their account on accepting */
   personId?: string | null
   makeAdmin: boolean
-  days: number
+  /** null: valid until used or revoked */
+  days: number | null
 }): Promise<{ id: string; path: string; mailed: boolean }> {
   const token = newToken()
   const invite = await createInvite({
@@ -44,7 +49,7 @@ export async function issueInvite(input: {
     personId: input.tree ? (input.personId ?? null) : null,
     makeAdmin: input.makeAdmin,
     createdBy: input.inviter.id,
-    expiresAt: new Date(Date.now() + input.days * 24 * 60 * 60 * 1000),
+    expiresAt: input.days === null ? NO_EXPIRY : new Date(Date.now() + input.days * 24 * 60 * 60 * 1000),
   })
   const path = `/invite/${token}`
   const mailed = input.email

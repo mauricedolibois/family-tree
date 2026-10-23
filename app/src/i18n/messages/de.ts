@@ -721,6 +721,7 @@ export const de = {
     makeAdmin: 'Auch Admin-Rechte',
     validFor: 'Gültig',
     days: 'Tage',
+    noExpiry: 'Unbegrenzt',
     createInvite: 'Einladung erstellen',
     inviteMailed: 'Die Einladung ist per Mail verschickt. Zur Sicherheit hier der Link:',
     inviteCopy: 'Gib diesen Link weiter. Er funktioniert einmal.',
@@ -728,6 +729,7 @@ export const de = {
     noInvites: 'Keine offenen Einladungen.',
     anyone: 'beliebige Person',
     inviteMeta: (inviter: string, date: string) => `von ${inviter}, gültig bis ${date}`,
+    inviteMetaNoExpiry: (inviter: string) => `von ${inviter}, unbegrenzt gültig`,
     revoke: 'Widerrufen',
     deleteTree: 'Löschen',
     confirmDeleteTree: (name: string) =>

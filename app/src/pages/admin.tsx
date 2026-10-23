@@ -17,7 +17,16 @@ import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { PageHeader } from '@/components/app/PageHeader'
 import type { NavContext } from '@/components/app/NavMenu'
-import { Badge, Card, LinkBox, RoleSelect, selectClass as select, sendForm } from '@/components/manage/parts'
+import {
+  Badge,
+  Card,
+  LinkBox,
+  neverExpires,
+  RoleSelect,
+  selectClass as select,
+  sendForm,
+  ValidityField,
+} from '@/components/manage/parts'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
@@ -138,7 +147,7 @@ export default function AdminPage({ nav, treeId }: Props) {
 function AdminInviteCard({ mail, onCreated }: { mail: boolean; onCreated: () => void }) {
   const { t } = useI18n()
   const [email, setEmail] = useState('')
-  const [days, setDays] = useState(7)
+  const [days, setDays] = useState<number | null>(7)
   const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -168,18 +177,7 @@ function AdminInviteCard({ mail, onCreated }: { mail: boolean; onCreated: () => 
           />
           <span className="text-sm text-ink-faint">{mail ? t.admin.inviteEmailHintMail : t.admin.inviteEmailHint}</span>
         </label>
-        <label className="flex items-center gap-2 text-[15px] text-ink">
-          {t.admin.validFor}
-          <input
-            type="number"
-            min={1}
-            max={30}
-            className="field h-9 w-20 py-0 text-sm"
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-          />
-          {t.admin.days}
-        </label>
+        <ValidityField days={days} onChange={setDays} />
         {error && (
           <div className="sm:col-span-2">
             <FormMessage>{error}</FormMessage>
@@ -225,7 +223,9 @@ function InvitesCard({
                   .filter(Boolean)
                   .join(' · ')}
                 <span className="block text-[13px] text-ink-muted">
-                  {t.admin.inviteMeta(i.inviter ?? '–', date(i.expiresAt))}
+                  {neverExpires(i.expiresAt)
+                    ? t.admin.inviteMetaNoExpiry(i.inviter ?? '–')
+                    : t.admin.inviteMeta(i.inviter ?? '–', date(i.expiresAt))}
                 </span>
               </span>
               <Button size="sm" variant="quiet" onClick={() => onRevoke(i.id)}>

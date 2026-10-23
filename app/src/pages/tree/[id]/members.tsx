@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { PageHeader } from '@/components/app/PageHeader'
 import type { NavContext } from '@/components/app/NavMenu'
-import { Badge, Card, LinkBox, RoleSelect, selectClass } from '@/components/manage/parts'
+import { Badge, Card, LinkBox, neverExpires, RoleSelect, selectClass, ValidityField } from '@/components/manage/parts'
 import { newScope, PersonSearch, ScopeEditor, scopeForRole, scopeReady } from '@/components/manage/ScopeEditor'
 import { lifeYears } from '@/family/format'
 import type { Tree } from '@/family/model'
@@ -270,7 +270,9 @@ export default function MembersPage({ treeId, nav }: Props) {
                             <span className="block text-[13px] text-ink-muted">{scopeText(i.scope, i.role)}</span>
                           )}
                           <span className="block text-[13px] text-ink-muted">
-                            {t.admin.inviteMeta(i.inviter ?? '–', date(i.expiresAt))}
+                            {neverExpires(i.expiresAt)
+                              ? t.admin.inviteMetaNoExpiry(i.inviter ?? '–')
+                              : t.admin.inviteMeta(i.inviter ?? '–', date(i.expiresAt))}
                           </span>
                         </span>
                         <Button size="sm" variant="quiet" onClick={() => run(`/invites/${i.id}`, null, 'DELETE')}>
@@ -502,7 +504,7 @@ function InviteForm({
     setScope(id ? newScope(id) : null)
   }
   const [admin, setAdmin] = useState(false)
-  const [days, setDays] = useState(7)
+  const [days, setDays] = useState<number | null>(null)
   const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -570,18 +572,7 @@ function InviteForm({
           <span className="field-label">{t.admin.role}</span>
           <RoleSelect value={role} onChange={setRole} />
         </label>
-        <label className="flex items-center gap-2 self-end text-[15px] text-ink">
-          {t.admin.validFor}
-          <input
-            type="number"
-            min={1}
-            max={30}
-            className="field h-9 w-20 py-0 text-sm"
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-          />
-          {t.admin.days}
-        </label>
+        <ValidityField days={days} onChange={setDays} />
         {canGrantAdmin && (
           <label className="flex items-center gap-2 text-[15px] text-ink sm:col-span-2">
             <input type="checkbox" checked={admin} onChange={(e) => setAdmin(e.target.checked)} />

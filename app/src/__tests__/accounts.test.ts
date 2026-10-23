@@ -161,4 +161,8 @@ describe('invitation input', () => {
   it('validity is 1 to 30 days, 7 by default', () => {
     expect([undefined, 'x', 0, -5, 3.6, 30, 400].map(inviteDays)).toEqual([7, 7, 7, 1, 4, 30, 30])
   })
+
+  it('null means no expiry', () => {
+    expect(inviteDays(null)).toBeNull()
+  })
 })
