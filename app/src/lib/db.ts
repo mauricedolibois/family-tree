@@ -184,3 +184,54 @@ export async function getTreeByCalendarToken(token: string): Promise<{ id: strin
   if (error) throw error
   return data
 }
+
+// A member whose part hides the rest has a link of their own (memberships.calendar_token):
+// the tree's link holds every birthday. The feed is cut to what they see when it is fetched.
+
+/** The member's own calendar token; created on first use */
+export async function getMemberCalendarToken(userId: string, treeId: string): Promise<string> {
+  const read = async () => {
+    const { data, error } = await getSupaAdmin()
+      .from('memberships')
+      .select('calendar_token')
+      .eq('user_id', userId)
+      .eq('tree_id', treeId)
+      .single()
+    if (error) throw error
+    return data.calendar_token as string | null
+  }
+  const existing = await read()
+  if (existing) return existing
+  // Only set if none exists yet; with two concurrent calls the first one wins
+  const { error } = await getSupaAdmin()
+    .from('memberships')
+    .update({ calendar_token: newCalendarToken() })
+    .eq('user_id', userId)
+    .eq('tree_id', treeId)
+    .is('calendar_token', null)
+  if (error) throw error
+  return (await read())!
+}
+
+/** New token for the member; only their own old link stops working */
+export async function renewMemberCalendarToken(userId: string, treeId: string): Promise<string> {
+  const token = newCalendarToken()
+  const { error } = await getSupaAdmin()
+    .from('memberships')
+    .update({ calendar_token: token })
+    .eq('user_id', userId)
+    .eq('tree_id', treeId)
+  if (error) throw error
+  return token
+}
+
+/** Whose link it is; whether they may still see the tree is up to the caller */
+export async function getMemberByCalendarToken(token: string): Promise<{ userId: string; treeId: string } | null> {
+  const { data, error } = await getSupaAdmin()
+    .from('memberships')
+    .select('user_id,tree_id')
+    .eq('calendar_token', token)
+    .maybeSingle()
+  if (error) throw error
+  return data ? { userId: data.user_id as string, treeId: data.tree_id as string } : null
+}

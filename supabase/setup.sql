@@ -1,4 +1,4 @@
--- Family tree database, version 8: everything a new installation needs.
+-- Family tree database, version 9: everything a new installation needs.
 --
 -- Run the whole file once in the Supabase SQL editor (or with psql) on a database
 -- without family tree tables. Existing installations do not use this file; they
@@ -90,6 +90,10 @@ create table public.memberships (
   -- person of their own. One account per person and tree.
   person_id text,
   person_confirmed_by text,
+  -- Secret of the member's own birthday calendar, for members whose part hides the
+  -- rest (the tree's calendar holds every birthday). Its feed shows what the member
+  -- sees when it is fetched.
+  calendar_token text unique,
   primary key (user_id, tree_id),
   constraint memberships_scope_role check (scope is null or role in ('viewer', 'editor')),
   constraint memberships_person_confirmed_by check (person_confirmed_by in ('invite', 'moderator', 'relative')),
@@ -178,7 +182,7 @@ create table public.app_meta (
   key text primary key,
   value text not null
 );
-insert into public.app_meta (key, value) values ('schema_version', '8');
+insert into public.app_meta (key, value) values ('schema_version', '9');
 
 -- ── Access ───────────────────────────────────────────────────────────────────
 

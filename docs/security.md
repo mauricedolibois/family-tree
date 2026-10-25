@@ -18,7 +18,7 @@ ids cannot be probed.
 | `GET /api/trees/<id>` tree contents | 401 | ✓ | ✓ | ✓ | 404 | by role |
 | `PUT /api/trees/<id>` save | 401 | 403 | ✓ | ✓ | 404 | by role |
 | `GET /api/trees/<id>/calendar` subscription link | 401 | ✓ | ✓ | ✓ | 404 | by role |
-| `POST /api/trees/<id>/calendar` new link | 401 | 403 | ✓ | ✓ | 404 | by role |
+| `POST /api/trees/<id>/calendar` new link | 401 | 403 (own link of a part: ✓) | ✓ | ✓ | 404 | by role |
 | `POST /api/trees/<id>/media` upload | 401 | 403 | ✓ | ✓ | 404 | by role |
 | `GET /api/media/<id>/<file>` photo or document | 404 | ✓ | ✓ | ✓ | 404 | by role |
 | `GET /api/trees/<id>/download` ZIP with photos | 401 | ✓ | ✓ | ✓ | 404 | by role |
@@ -31,7 +31,7 @@ ids cannot be probed.
 | `POST /api/trees/<id>/import` replace from file | 401 | 403 | 403 | ✓ | 404 | by role |
 | `POST /api/trees/import` new tree from file | 401 | 403 | 403 | 403 | 403 | ✓ (becomes moderator) |
 | `/api/admin/…` accounts, trees, trash, invitations | 401 | 403 | 403 | 403 | 403 | ✓ |
-| `GET /api/kalender/<token>.ics` calendar feed | by secret token (192 bit), no sign-in |
+| `GET /api/kalender/<token>.ics` calendar feed | by secret token (192 bit), no sign-in; a member's own token only while the membership exists, the account is enabled and the tree not deleted |
 | `/api/invite/<token>` | by secret token (256 bit), attempts throttled |
 | `/api/auth/…` sign-in, registration, reset, verification | open, throttled per address and IP; reset and verification by secret token |
 | `GET /api/health` | open, says nothing but "ok" |
@@ -45,7 +45,7 @@ Members limited to **a part of the tree** (`scope` on the membership, see
 | `PUT /api/trees/<id>` (editors) | merged by `mergeScopedSave`: only the part changes; people with details only keep their links and stay, view-only people and the lines' people stay, otherwise 403 | same |
 | `GET /api/media/<id>/<file>` | only files of people in the part and own fresh uploads, otherwise 404 | everything |
 | `GET /api/trees/<id>/download` | only the part | everything |
-| `/api/trees/<id>/calendar` | 403 (the feed holds the whole tree) | link yes, renewing no |
+| `/api/trees/<id>/calendar` | their own link (`memberships.calendar_token`), feed cut with `viewFor` when fetched; renewing it only ends their own link | the tree's link, renewing no |
 
 Media of other trees are copied into exports and imports only from trees one sees
 completely (`mayReadAllMedia`).
@@ -106,6 +106,6 @@ Further limits:
   the point of being a member, not a gap.
 - A part of a tree limits contents, not facts one can infer: a member sees that
   their start person has a spouse, that someone at the edge has relatives beyond
-  the part (not who), and kinship labels only cover the people in their part. A
-  calendar link they got before being limited keeps working until it is renewed.
+  the part (not who), and kinship labels only cover the people in their part. The
+  tree's calendar link they got before being limited keeps working until it is renewed.
 - The Supabase secrets themselves (`supabase.md`, step 4).

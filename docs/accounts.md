@@ -74,8 +74,10 @@ existed (a start person with side lines) are read as one such line.
 Per member the moderator chooses:
 
 - **rest hidden** (always for viewers): the member gets only their part, in the
-  tree, in the download and for photos; the birthday calendar is not offered,
-  because its feed holds every birthday of the tree;
+  tree, in the download, for photos and in the birthday calendar: instead of the
+  tree's calendar link they get one of their own, whose feed holds only the
+  people they see when it is fetched (a changed part shows at the next refresh);
+  they can renew it without affecting anyone else;
 - **rest visible** (editors only): the member sees everything but changes only
   their part.
 
@@ -126,8 +128,8 @@ comes from the stored tree, so links to the hidden rest stay intact. Changes
 outside the part are refused with a message. Moderators always have the whole
 tree; making someone a moderator removes their part. If the start person (the
 first line's person) is deleted, a member with the rest hidden sees nothing until a
-moderator sets a new part. Limiting someone does not invalidate a calendar link
-they already have: renew the link (birthday list → calendar) if that matters.
+moderator sets a new part. Limiting someone does not invalidate the tree's calendar link
+they already have (only new links are their own): renew the link (birthday list → calendar) if that matters.
 
 ## Mail
 
