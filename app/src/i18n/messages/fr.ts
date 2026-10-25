@@ -6,7 +6,6 @@ export const fr: Messages = {
   app: {
     title: 'Arbre généalogique',
     familyTitle: (family) => `Arbre généalogique ${family}`,
-    familyFallback: 'Famille',
     description: 'Notre arbre généalogique',
   },
   calendar: {
@@ -37,8 +36,14 @@ export const fr: Messages = {
     password: 'Mot de passe',
     showPassword: 'Afficher le mot de passe',
     hidePassword: 'Masquer le mot de passe',
-    minLength: 'Au moins 8 caractères.',
-    tooShort: 'Le mot de passe doit comporter au moins 8 caractères.',
+    minLength: (n: number) =>
+      `Au moins ${n} caractères. Facile à retenir et sûr : quelques mots que toi seul associerais.`,
+    passwordProblem: {
+      short: (n: number) => `Le mot de passe doit comporter au moins ${n} caractères.`,
+      long: 'Le mot de passe est trop long (72 caractères au maximum).',
+      common: 'Ce mot de passe est trop facile à deviner. Prends plutôt quelques mots que toi seul associerais.',
+      personal: 'Le mot de passe contient ton nom ou ton adresse e-mail. Choisis-en un autre.',
+    },
     wait: 'Un instant …',
   },
   topBar: {
@@ -152,6 +157,7 @@ export const fr: Messages = {
     addSpouse: 'Ajouter un conjoint',
     addChild: 'Ajouter un enfant',
     locked: 'Verrouillé',
+    outsidePart: 'D’autres proches seraient hors de la partie que tu peux modifier. Un modérateur peut l’élargir.',
     lockedHint: (name) => `Tu peux seulement voir ${name}, pas le modifier.`,
     detailsOnlyHint: (name) =>
       `Pour ${name}, tu peux modifier les infos et les photos, mais pas ajouter de proches ni supprimer quoi que ce soit – le reste de la famille reste intact.`,
@@ -528,6 +534,26 @@ export const fr: Messages = {
   members: {
     title: 'Membres',
     intro: (tree) => `Qui fait partie de l’arbre « ${tree} » ? Invite ici de nouvelles personnes et gère les membres.`,
+    presets: {
+      title: 'Que peut faire cette personne ?',
+      recommended: 'Recommandé',
+      someone: 'Cette personne',
+      view: { title: 'Voir tout l’arbre', text: () => 'Tout voir, ne rien modifier. Pour la famille proche.' },
+      edit: { title: 'Entretenir tout l’arbre', text: () => 'Tout voir et modifier, ajouter des photos.' },
+      own: {
+        title: 'Compléter sa propre famille',
+        text: (name: string) =>
+          `Pour la belle-famille : ${name} voit tout l’arbre et ajoute sa propre famille d’origine – parents, grands-parents, frères et sœurs avec leurs familles. Le reste de la famille reste inchangé.`,
+      },
+      line: {
+        title: 'Voir seulement sa propre lignée',
+        text: (name: string) =>
+          `${name} ne voit que ses ancêtres, ses descendants, ses frères et sœurs, personne d’autre.`,
+      },
+      moderator: { title: 'Modérateur', text: () => 'Tout modifier, inviter et gérer les membres.' },
+      custom: { title: 'Personnalisé', text: () => 'Choisis toi-même le rôle et la partie partagée.' },
+      adjust: 'Touche une personne dans l’aperçu pour ajuster le partage.',
+    },
     rolesHelp:
       'Lecture seule : consulter l’arbre. Peut modifier : aussi modifier les personnes et ajouter des photos. Modérateur : en plus inviter et gérer les membres.',
     noMembers: 'Personne n’en fait encore partie, à part les admins.',
@@ -557,7 +583,6 @@ export const fr: Messages = {
       viewerHint: 'Qui peut seulement consulter ne voit que cette partie.',
       spouseHint:
         'Les conjoints des personnes des lignées sont visibles mais non modifiables. On ne peut ajouter de nouvelles personnes qu’à l’intérieur des lignées : enfants et parents oui, frères et sœurs seulement avec la ligne collatérale « Fratrie ».',
-      help: 'Pratique pour la belle-famille : elle ajoute sa propre famille (parents, frères et sœurs) sans modifier le reste – et, si tu veux, sans le voir.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
           ? `Ne voit que les lignées de ${name}`
@@ -640,6 +665,8 @@ export const fr: Messages = {
       notShared: (n) => (n === 1 ? '1 personne n’est pas partagée.' : `${n} personnes ne sont pas partagées.`),
       tapHint: 'Touche une personne : changer son niveau, ajouter sa lignée ou limiter l’accès à cet endroit.',
       fit: 'Afficher tout l’arbre',
+      fullscreen: 'Plein écran',
+      exitFullscreen: 'Quitter le plein écran',
       status: {
         editable: 'Modifier',
         locked: 'Voir seulement',
@@ -706,6 +733,8 @@ export const fr: Messages = {
     join: 'Rejoindre',
     becomeModerator: 'Devenir modérateur',
     manage: 'Gérer',
+    exampleSecret:
+      'Supabase utilise encore le JWT_SECRET de son fichier d’exemple. Quiconque atteint Supabase peut lire toute la base de données, et sans SESSION_SECRET propre n’importe qui peut falsifier des connexions. Définis de nouveaux secrets (docs/supabase.md, étape 4).',
     noMail: 'Ce site n’envoie pas d’e-mails : transmets toi-même les invitations et les liens de réinitialisation.',
     copy: 'Copier',
     inviteTitle: 'Inviter',

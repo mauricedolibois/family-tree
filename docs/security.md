@@ -31,6 +31,8 @@ ids cannot be probed.
 | `POST /api/trees/<id>/import` replace from file | 401 | 403 | 403 | ✓ | 404 | by role |
 | `POST /api/trees/import` new tree from file | 401 | 403 | 403 | 403 | 403 | ✓ (becomes moderator) |
 | `/api/admin/…` accounts, trees, trash, invitations | 401 | 403 | 403 | 403 | 403 | ✓ |
+| `GET /api/trees` trees one can open | 401 | signed in: only trees with a membership, none from the trash |
+| `/api/account` own account, `POST /api/account/logout-all` | 401 | signed in: only one's own account; a new email or password needs the current password |
 | `GET /api/kalender/<token>.ics` calendar feed | by secret token (192 bit), no sign-in; a member's own token only while the membership exists, the account is enabled and the tree not deleted |
 | `/api/invite/<token>` | by secret token (256 bit), attempts throttled |
 | `/api/auth/…` sign-in, registration, reset, verification | open, throttled per address and IP; reset and verification by secret token |

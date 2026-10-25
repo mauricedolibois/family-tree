@@ -423,11 +423,10 @@ describe('line scope', () => {
     )
   })
 
-  it('with siblings: half-sister and aunt, but no cousin', () => {
+  it('with siblings: half-sister and aunt with her husband, but no cousin', () => {
     const v = view({ up: null, down: null, side: 1 })
-    expect(v).toEqual(expect.arrayContaining(['lena', 'ida']))
+    expect(v).toEqual(expect.arrayContaining(['lena', 'ida', 'jonas']))
     expect(v).not.toContain('mia')
-    expect(v).not.toContain('jonas')
   })
 
   it('with cousins: the cousin and her father are added', () => {

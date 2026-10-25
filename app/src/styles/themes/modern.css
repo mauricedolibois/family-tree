@@ -19,6 +19,9 @@
   --on-tint: 24 24 27;
   --on-portrait: 82 82 91;
   --link: 29 78 216; /* #1D4ED8 */
+  /* Sign-in pages: in light mode the page's grey with dark text */
+  --cover: 244 244 245;
+  --on-cover: 24 24 27;
 
   --canvas: 244 244 245; /* #F4F4F5 */
   --canvas-raised: 250 250 250;
@@ -65,6 +68,8 @@
 
 :root[data-theme='modern'][data-mode='dark'] {
   --primary: 63 63 70; /* #3F3F46 */
+  --cover: 0 0 0;
+  --on-cover: 250 250 250;
   --primary-hover: 82 82 91;
   --primary-deep: 0 0 0;
   --primary-tint: 39 39 42;
@@ -97,6 +102,8 @@
 @media (prefers-color-scheme: dark) {
   :root[data-theme='modern'][data-mode='system'] {
     --primary: 63 63 70;
+    --cover: 0 0 0;
+    --on-cover: 250 250 250;
     --primary-hover: 82 82 91;
     --primary-deep: 0 0 0;
     --primary-tint: 39 39 42;
@@ -173,9 +180,16 @@
 :where([data-theme='modern']) .header-bar {
   background-color: rgb(var(--primary));
 }
-/* The sign-in pages: darkest shade, so the card stands out in light and dark mode */
+/* The sign-in pages: light in light mode, the darkest shade in dark mode. Text on the
+   page follows the cover; the form card keeps the usual light text on its buttons */
 :where([data-theme='modern']) .cover {
-  background-color: rgb(var(--primary-deep));
+  --on-primary: var(--on-cover);
+  --on-primary-accent: var(--on-cover);
+  background-color: rgb(var(--cover));
+}
+:where([data-theme='modern']) .cover .surface {
+  --on-primary: 250 250 250;
+  --on-primary-accent: 255 255 255;
 }
 :where([data-theme='modern']) .header-rule {
   box-shadow: 0 1px 0 rgb(var(--card-rule) / 0.4);

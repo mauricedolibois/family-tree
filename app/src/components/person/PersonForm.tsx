@@ -106,7 +106,7 @@ export function PersonForm({ person, onDone }: { person: Person; onDone: () => v
       if (stepParent && alsoParent) next = addExistingParent(next, person.id, stepParent.id)
       const undo = await commit(next)
       // Removed files stay in storage so older backups keep their images.
-      // The daily backup job (scripts/daily-backup.mjs) cleans them up.
+      // The daily job (lib/dailyJob.ts) cleans them up.
       notify({ message: t.form.saved, undo })
       onDone()
     } catch (err) {

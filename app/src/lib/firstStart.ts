@@ -6,6 +6,7 @@
 import { countUsers, createInvite } from './accounts'
 import { appUrl } from './features'
 import { schemaStatus } from './schema'
+import { serviceKeyFromExample } from './supabaseServer'
 import { hashToken, newToken } from './tokens'
 import { logError } from './log'
 
@@ -33,6 +34,13 @@ export async function setupNotice(): Promise<SetupNotice> {
 }
 
 export async function onServerStart(): Promise<void> {
+  if (serviceKeyFromExample()) {
+    console.warn(
+      "[setup] SUPABASE_SERVICE_ROLE_KEY is signed with the JWT_SECRET from Supabase's example .env: anyone who " +
+        'reaches Supabase can read the whole database, and without SESSION_SECRET anyone can forge sign-ins. ' +
+        'Set new secrets (docs/supabase.md, step 4; supabase/check-secrets.sh).',
+    )
+  }
   try {
     const status = await schemaStatus()
     if (status.state === 'missing') {

@@ -7,5 +7,12 @@ export async function register() {
     const { onServerStart } = await import('./lib/firstStart')
     // Not awaited: a slow database must not delay the start
     void onServerStart()
+    // Only in production: a development server must not clean up its database at night.
+    // Not on Vercel: serverless functions sleep between requests, so the timer would
+    // not fire reliably; there GitHub Actions runs scripts/daily-backup.mjs instead.
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+      const { scheduleDailyJob } = await import('./lib/dailyJob')
+      scheduleDailyJob()
+    }
   }
 }

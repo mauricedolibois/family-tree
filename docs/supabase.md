@@ -63,8 +63,23 @@ docker exec family-tree-app wget -qO- http://host.docker.internal:8000/rest/v1/ 
 
 Supabase's `.env` must not contain the values from its example file. With the
 example `JWT_SECRET` anyone can create a service key and read everything, and the
-example `DASHBOARD_PASSWORD` opens Studio. Supabase ships a generator for new
-values (`utils/generate-keys.sh` in its docker folder); afterwards put the new
-`SERVICE_ROLE_KEY` into the app's `prod.env` as `SUPABASE_SERVICE_ROLE_KEY`.
-Changing the key also changes the session key if `SESSION_SECRET` is not set, which
-signs everyone out once.
+example `DASHBOARD_PASSWORD` opens Studio. Without its own `SESSION_SECRET` the app
+derives its session key from the service key, so with the example secret anyone
+could also forge sign-ins to the app.
+
+Check it as the Linux user that runs Supabase:
+
+```bash
+supabase/check-secrets.sh ~/supabase/docker/.env
+```
+
+It compares every secret with the values Supabase's example files have shipped
+(and with the `.env.example` next to the `.env`), checks that `ANON_KEY` and
+`SERVICE_ROLE_KEY` are not signed with the example secret, and prints only the
+names of what must change. The app checks its own key too: with a key signed with
+the example secret it warns in its log and on the admin page.
+
+Supabase ships a generator for new values (`utils/generate-keys.sh` in its docker
+folder); afterwards put the new `SERVICE_ROLE_KEY` into the app's `prod.env` as
+`SUPABASE_SERVICE_ROLE_KEY`. Changing the key also changes the session key if
+`SESSION_SECRET` is not set, which signs everyone out once.

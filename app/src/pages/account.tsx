@@ -10,6 +10,7 @@ import { Field, FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { PageHeader } from '@/components/app/PageHeader'
 import type { NavContext } from '@/components/app/NavMenu'
 import { useI18n } from '@/i18n/I18nProvider'
+import { MIN_PASSWORD_LENGTH, passwordError } from '@/lib/passwordRules'
 import type { Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
 
@@ -152,8 +153,8 @@ export default function AccountPage({ user, nav }: Props) {
                 className="flex flex-col gap-3"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  if (next.length < 8)
-                    return setNotice((n) => ({ ...n, password: { tone: 'error', text: t.auth.tooShort } }))
+                  const problem = passwordError(next, [user.name, user.email], t)
+                  if (problem) return setNotice((n) => ({ ...n, password: { tone: 'error', text: problem } }))
                   void save(
                     'password',
                     { currentPassword: current, newPassword: next },
@@ -178,7 +179,7 @@ export default function AccountPage({ user, nav }: Props) {
                   id="new"
                   type="password"
                   label={t.reset.newPassword}
-                  hint={t.auth.minLength}
+                  hint={t.auth.minLength(MIN_PASSWORD_LENGTH)}
                   value={next}
                   onChange={(e) => setNext(e.target.value)}
                   autoComplete="new-password"

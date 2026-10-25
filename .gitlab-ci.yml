@@ -114,13 +114,24 @@ deploy:
     - if: '$CI_COMMIT_BRANCH == "main"'
   before_script:
     - apt-get -yq update
-    - apt-get -yqq install ssh
+    - apt-get -yqq install openssh-client
     - install -m 600 -D /dev/null ~/.ssh/id_ed25519
     - echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_ed25519
-    - ssh-keyscan -p $SSH_PORT -H $SSH_HOST > ~/.ssh/known_hosts
+    # The server's host keys come from the CI variable SSH_KNOWN_HOSTS, so a forged
+    # server is refused. Without it they are fetched on every run, which trusts
+    # whoever answers (see README, "Deployment").
+    - |
+      if [ -n "${SSH_KNOWN_HOSTS:-}" ]; then
+        printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+      else
+        echo "WARNING: SSH_KNOWN_HOSTS is not set, trusting the host key fetched now"
+        ssh-keyscan -p $SSH_PORT -H $SSH_HOST > ~/.ssh/known_hosts
+      fi
   script:
     - scp -i ~/.ssh/id_ed25519 -P $SSH_PORT docker-compose.yml $SSH_USER@$SSH_HOST:~/family-tree/docker-compose.yml
     - scp -i ~/.ssh/id_ed25519 -P $SSH_PORT deploy_tools/deploy_prod.sh $SSH_USER@$SSH_HOST:~/deploy_prod.sh
-    - ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT $SSH_USER@$SSH_HOST "bash ~/deploy_prod.sh ${CI_REGISTRY} ${CI_DEPLOY_USER} ${CI_DEPLOY_PASSWORD}"
+    # The registry password goes through stdin: in the command line every user on the
+    # server could read it in the process list
+    - printf '%s\n' "$CI_DEPLOY_PASSWORD" | ssh -i ~/.ssh/id_ed25519 -p $SSH_PORT $SSH_USER@$SSH_HOST "bash ~/deploy_prod.sh ${CI_REGISTRY} ${CI_DEPLOY_USER}"
   after_script:
     - rm -rf ~/.ssh

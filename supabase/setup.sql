@@ -34,7 +34,7 @@ create table public.trees (
 );
 
 -- Earlier versions of a tree. The app takes one before every change, before an
--- import replaces the tree and once a day (scripts/daily-backup.mjs prunes old
+-- import replaces the tree and once a day (app/src/lib/dailyJob.ts prunes old
 -- ones by kind); admins add manual ones.
 create table public.tree_backups (
   id bigint generated always as identity primary key,
