@@ -26,8 +26,24 @@ sheet), or by admins on `/admin` for admin rights alone:
   them), or for admin rights without a tree (`/admin`);
 - into a tree always **for a person in the tree** ("Who is this person in
   the family tree?"): accepting links the new account to that person without
-  asking, the part of the tree starts with their blood line, and the introduction
-  starts with "That's you" instead of asking who they are;
+  asking, and the introduction starts with "That's you" instead of asking who
+  they are;
+- with **what the person may do**, chosen as one of these (each sets the role and
+  the part of the tree):
+
+  | Choice | Role | Part |
+  | --- | --- | --- |
+  | See the whole tree | viewer | whole tree |
+  | Help keep the whole tree | editor | whole tree |
+  | Add their own family | editor | their blood line with all side lines (their whole family of origin) and their descendants; the rest of the tree visible, not changeable |
+  | See only their own line | viewer | their blood line with siblings, the rest hidden |
+  | Moderator | moderator | whole tree |
+  | Custom | as chosen | role and part editor (below) |
+
+  "Add their own family" is meant for people who married in, and is marked as
+  recommended when the person's own blood family in the tree is smaller than their
+  spouse's. With a part, the form shows its preview; tapping a person there turns
+  the choice into "Custom" with that change;
 - optionally bound to an email address (then only that address can use it, and it
   counts as verified);
 - valid for 1 to 30 days and usable once; open invitations can be revoked.
@@ -66,8 +82,11 @@ on the members page (slider button next to the member) or from a person's info
 sheet ("Access …"). A part is made of **blood lines**: a person with their
 ancestors and descendants, each with its own number of generations up and down
 and, if chosen, side lines (siblings, cousins, all blood relatives with their
-families). A new part starts with the line of the invited person and their
-siblings, so someone who married in can add their own brothers and sisters. A part starts with
+families). Spouses belong to a line, in side lines too, so someone who married in
+can add their sister's husband; a spouse with their own family in the tree gets
+their details only (see the levels below), so nobody reaches that family through
+them. A new custom part starts with the line of the invited person and their
+siblings. A part starts with
 one line and grows by adding the line of another person. Parts set before lines
 existed (a start person with side lines) are read as one such line.
 
@@ -94,7 +113,9 @@ Every person of the part has one of **three levels**:
 The people the lines start from always have full rights. A couple can still get
 a new child when one of the two may not be changed. In the info sheet the member
 sees why they may change only the details, the "add" buttons are greyed out, and
-they can **ask for access**: a moderator then sees "Lisa asks for access to
+they can **ask for access**. "Add" buttons for relatives who would fall outside
+the part are greyed out the same way, with a note that a moderator can extend the
+part (and "ask for access" where that helps, for children): a moderator then sees "Lisa asks for access to
 Thomas and descendants" with what would change, and confirms or rejects it.
 
 Further tools in the editor:
@@ -184,7 +205,12 @@ dropped.
 
 ## Sessions and security
 
-- Passwords: at least 8 characters, bcrypt with cost 12.
+- Passwords: bcrypt with cost 12. New ones (registration, invitation, reset, change)
+  need at least 10 characters and at most 72 bytes, may not be one of the 1000 most
+  used long passwords, a common word with digits or symbols around it
+  ("Sommer2024!"), a repetition or a keyboard run, nor the person's name or email
+  address (`app/src/lib/passwordRules.ts`). Forms and server check the same rules;
+  existing passwords keep working.
 - Sign-in is throttled per address and per IP; "forgot password" and invitation
   attempts are throttled too.
 - The session cookie is signed and carries a per-user epoch. Changing the password,

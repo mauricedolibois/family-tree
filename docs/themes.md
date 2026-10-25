@@ -36,7 +36,7 @@ fills the same roles, the way every language fills the same text keys:
   | `surface`                    | Cards, panels, dialogs                                                     |
   | `page-backdrop`              | Page background behind the tree and admin pages                            |
   | `header-bar` / `header-rule` | Header bars and the sign-in cover / the rule under the tree's header       |
-  | `cover`                      | The sign-in cover on top of `header-bar`, where a theme wants it different |
+  | `cover`                      | The sign-in cover on top of `header-bar`; may also redefine `on-primary`   |
   | `title-text`                 | The big title lettering                                                    |
   | `framed`                     | Framed boxes (sign-in cover, tour)                                         |
   | `sheet-frame`                | Inner frame of the person info sheet; themes may leave it out              |

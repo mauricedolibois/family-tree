@@ -8,6 +8,7 @@ import { registrationOpen } from '@/lib/features'
 import { Button } from '@/components/ui/Button'
 import { AuthLayout, Field, FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { useI18n } from '@/i18n/I18nProvider'
+import { MIN_PASSWORD_LENGTH, passwordError } from '@/lib/passwordRules'
 import { localeFromRequest } from '@/i18n/server'
 import type { Locale } from '@/i18n/locales'
 
@@ -30,7 +31,8 @@ export default function RegisterPage() {
     e.preventDefault()
     setError(null)
     if (!form.name.trim() || !form.email.trim() || !form.treeName.trim()) return setError(t.register.missingFields)
-    if (form.password.length < 8) return setError(t.auth.tooShort)
+    const problem = passwordError(form.password, [form.name, form.email], t)
+    if (problem) return setError(problem)
     setLoading(true)
     try {
       const { ok, status, data } = await postJson('/api/auth/register', form)
@@ -80,7 +82,7 @@ export default function RegisterPage() {
             id="password"
             type="password"
             label={t.auth.password}
-            hint={t.auth.minLength}
+            hint={t.auth.minLength(MIN_PASSWORD_LENGTH)}
             value={form.password}
             onChange={set('password')}
             autoComplete="new-password"

@@ -6,6 +6,7 @@ import type { GetServerSideProps } from 'next'
 import { Button } from '@/components/ui/Button'
 import { AuthLayout, Field, FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { useI18n } from '@/i18n/I18nProvider'
+import { MIN_PASSWORD_LENGTH, passwordError } from '@/lib/passwordRules'
 import { localeFromRequest } from '@/i18n/server'
 import type { Locale } from '@/i18n/locales'
 
@@ -73,7 +74,8 @@ export default function InvitePage({ token }: Props) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || !form.email.trim()) return setError(t.register.missingFields)
-    if (form.password.length < 8) return setError(t.auth.tooShort)
+    const problem = passwordError(form.password, [form.name, form.email], t)
+    if (problem) return setError(problem)
     void accept(form)
   }
 
@@ -136,7 +138,7 @@ export default function InvitePage({ token }: Props) {
                 id="password"
                 type="password"
                 label={t.auth.password}
-                hint={t.auth.minLength}
+                hint={t.auth.minLength(MIN_PASSWORD_LENGTH)}
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 autoComplete="new-password"

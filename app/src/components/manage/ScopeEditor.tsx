@@ -32,12 +32,39 @@ export const newScope = (person?: string): TreeScope => ({
   hideRest: true,
 })
 
+/**
+ * For someone who married in: their whole family of origin (all blood relatives
+ * with their families) and their own descendants to edit, the rest of the tree
+ * visible but unchanged
+ */
+export const ownFamilyScope = (person: string): TreeScope => ({
+  lines: [{ person, up: null, down: null, side: 3 }],
+  stops: [],
+  unlock: [],
+  lock: [],
+  hideRest: false,
+})
+
 /** Viewers see nothing but their part: a part with the rest visible would change nothing for them */
 export const scopeForRole = (scope: TreeScope | null, role: Role): TreeScope | null =>
   role === 'moderator' ? null : scope && role === 'viewer' ? { ...scope, hideRest: true } : scope
 
 /** A part is ready to send once it has a line */
 export const scopeReady = (scope: TreeScope | null) => !scope || scope.lines.length > 0
+
+/** What tapping in the preview does to a part */
+export function scopeActions(value: TreeScope | null, onChange: (scope: TreeScope) => void): ScopeActions {
+  const set = (patch: Partial<TreeScope>) => value && onChange({ ...value, ...patch })
+  const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
+  const put = (list: string[], id: string, on: boolean) => [...list.filter((x) => x !== id), ...(on ? [id] : [])]
+  return {
+    addLine: (person) => value && onChange(withLine(value, person)),
+    removeLine: (person) => value && set({ lines: value.lines.filter((l) => l.person !== person) }),
+    toggleStop: (person) => value && set({ stops: toggle(value.stops, person) }),
+    setExceptions: (person, { lock, unlock }) =>
+      value && set({ lock: put(value.lock, person, lock), unlock: put(value.unlock, person, unlock) }),
+  }
+}
 
 export function ScopeEditor({
   tree,
@@ -60,15 +87,7 @@ export function ScopeEditor({
   const set = (patch: Partial<TreeScope>) => value && onChange({ ...value, ...patch })
   const setLine = (i: number, patch: Partial<BloodLine>) =>
     value && set({ lines: value.lines.map((l, j) => (j === i ? { ...l, ...patch } : l)) })
-  const toggle = (list: string[], id: string) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
-  const put = (list: string[], id: string, on: boolean) => [...list.filter((x) => x !== id), ...(on ? [id] : [])]
-  const actions: ScopeActions = {
-    addLine: (person) => value && onChange(withLine(value, person)),
-    removeLine: (person) => value && set({ lines: value.lines.filter((l) => l.person !== person) }),
-    toggleStop: (person) => value && set({ stops: toggle(value.stops, person) }),
-    setExceptions: (person, { lock, unlock }) =>
-      value && set({ lock: put(value.lock, person, lock), unlock: put(value.unlock, person, unlock) }),
-  }
+  const actions = scopeActions(value, onChange)
   const name = (id: string) => tree?.members[id]?.name ?? '?'
   const shown = scopeForRole(value, role)
 

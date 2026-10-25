@@ -90,6 +90,19 @@ export function isCloseRelative(tree: Tree, confirmer: string, claimed: string):
   return close.includes(confirmer)
 }
 
+/**
+ * Whether someone seems to have married into the tree: their own blood family
+ * (ancestors with all their descendants, without their own children) is smaller
+ * than their spouse's. Only a hint for the invitation form.
+ */
+export function seemsMarriedIn(tree: Tree, id: string): boolean {
+  const ix = buildIndex(tree)
+  const sp = spouseOf(ix, id)
+  if (!sp) return false
+  const family = (x: string) => bloodLineOf(ix, x, { up: null, down: 0, side: 3 }).blood.size
+  return family(id) < family(sp)
+}
+
 /** Response header with the member's scope (URI-encoded JSON), absent for the whole tree */
 export const TREE_SCOPE_HEADER = 'x-tree-scope'
 

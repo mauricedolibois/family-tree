@@ -6,7 +6,6 @@ export const es: Messages = {
   app: {
     title: 'Árbol genealógico',
     familyTitle: (family) => `Árbol genealógico ${family}`,
-    familyFallback: 'Familia',
     description: 'Nuestro árbol genealógico',
   },
   calendar: {
@@ -37,8 +36,14 @@ export const es: Messages = {
     password: 'Contraseña',
     showPassword: 'Mostrar contraseña',
     hidePassword: 'Ocultar contraseña',
-    minLength: 'Al menos 8 caracteres.',
-    tooShort: 'La contraseña necesita al menos 8 caracteres.',
+    minLength: (n: number) =>
+      `Al menos ${n} caracteres. Fácil de recordar y segura: unas palabras que solo tú juntarías.`,
+    passwordProblem: {
+      short: (n: number) => `La contraseña necesita al menos ${n} caracteres.`,
+      long: 'La contraseña es demasiado larga (72 caracteres como máximo).',
+      common: 'Esta contraseña es demasiado fácil de adivinar. Mejor usa unas palabras que solo tú juntarías.',
+      personal: 'La contraseña contiene tu nombre o tu correo electrónico. Elige otra, por favor.',
+    },
     wait: 'Un momento …',
   },
   topBar: {
@@ -150,6 +155,7 @@ export const es: Messages = {
     addSpouse: 'Añadir cónyuge',
     addChild: 'Añadir hijo o hija',
     locked: 'Bloqueado',
+    outsidePart: 'Otros parientes quedarían fuera de la parte que puedes editar. Un moderador puede ampliarla.',
     lockedHint: (name) => `Solo puedes ver a ${name}, no cambiarlo.`,
     detailsOnlyHint: (name) =>
       `Puedes cambiar los datos y las fotos de ${name}, pero no añadir familiares ni borrar nada; así el resto de la familia queda intacto.`,
@@ -522,6 +528,25 @@ export const es: Messages = {
   members: {
     title: 'Miembros',
     intro: (tree) => `¿Quién forma parte del árbol «${tree}»? Aquí invitas a gente nueva y gestionas los miembros.`,
+    presets: {
+      title: '¿Qué puede hacer esta persona?',
+      recommended: 'Recomendado',
+      someone: 'Esta persona',
+      view: { title: 'Ver todo el árbol', text: () => 'Verlo todo sin cambiar nada. Para la familia cercana.' },
+      edit: { title: 'Cuidar todo el árbol', text: () => 'Verlo y cambiarlo todo, subir fotos.' },
+      own: {
+        title: 'Añadir su propia familia',
+        text: (name: string) =>
+          `Para la familia política: ${name} ve todo el árbol y añade su propia familia de origen: padres, abuelos, hermanos con sus familias. El resto de la familia queda como está.`,
+      },
+      line: {
+        title: 'Ver solo su propia línea',
+        text: (name: string) => `${name} solo ve sus antepasados, descendientes y hermanos, nadie más.`,
+      },
+      moderator: { title: 'Moderador', text: () => 'Cambiarlo todo, invitar y gestionar miembros.' },
+      custom: { title: 'Personalizado', text: () => 'Elige tú el rol y la parte compartida.' },
+      adjust: 'Toca a una persona en la vista previa para ajustar lo que se comparte.',
+    },
     rolesHelp:
       'Solo ver: leer el árbol. Puede editar: además cambiar personas y subir fotos. Moderador: además invitar y gestionar los miembros.',
     noMembers: 'Aparte de los administradores, todavía no forma parte nadie.',
@@ -552,7 +577,6 @@ export const es: Messages = {
       viewerHint: 'Quien solo puede ver, ve únicamente esta parte.',
       spouseHint:
         'Los cónyuges de las personas de las líneas se ven, pero no se pueden editar. Solo se pueden añadir personas dentro de las líneas: hijos y padres sí, hermanos solo con la línea colateral «Hermanos».',
-      help: 'Práctico para la familia política: añaden su propia familia (padres, hermanos) sin cambiar el resto y, si quieres, sin verlo.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
           ? `Solo ve las líneas de sangre de ${name}`
@@ -635,6 +659,8 @@ export const es: Messages = {
       notShared: (n) => (n === 1 ? '1 persona no está compartida.' : `${n} personas no están compartidas.`),
       tapHint: 'Toca una persona: cambiar su nivel, añadir su línea de sangre o limitar el acceso ahí.',
       fit: 'Mostrar todo el árbol',
+      fullscreen: 'Pantalla completa',
+      exitFullscreen: 'Salir de pantalla completa',
       status: {
         editable: 'Editar',
         locked: 'Solo ver',
@@ -701,6 +727,8 @@ export const es: Messages = {
     join: 'Unirse',
     becomeModerator: 'Hacerse moderador',
     manage: 'Gestionar',
+    exampleSecret:
+      'Supabase sigue usando el JWT_SECRET de su archivo de ejemplo. Quien llegue a Supabase puede leer toda la base de datos, y sin un SESSION_SECRET propio cualquiera puede falsificar inicios de sesión. Pon secretos nuevos (docs/supabase.md, paso 4).',
     noMail: 'Este sitio no envía correos: transmite tú las invitaciones y los enlaces para restablecer contraseñas.',
     copy: 'Copiar',
     inviteTitle: 'Invitar',

@@ -4,6 +4,7 @@ import type { GetServerSideProps } from 'next'
 import { Button } from '@/components/ui/Button'
 import { AuthLayout, Field, FormMessage, postJson } from '@/components/auth/AuthLayout'
 import { useI18n } from '@/i18n/I18nProvider'
+import { MIN_PASSWORD_LENGTH, passwordError } from '@/lib/passwordRules'
 import { localeFromRequest } from '@/i18n/server'
 import type { Locale } from '@/i18n/locales'
 
@@ -32,7 +33,8 @@ export default function ResetPage({ token }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (password.length < 8) return setError(t.auth.tooShort)
+    const problem = passwordError(password, [email], t)
+    if (problem) return setError(problem)
     if (password !== repeat) return setError(t.reset.mismatch)
     setLoading(true)
     try {
@@ -65,7 +67,7 @@ export default function ResetPage({ token }: Props) {
             id="password"
             type="password"
             label={t.reset.newPassword}
-            hint={t.auth.minLength}
+            hint={t.auth.minLength(MIN_PASSWORD_LENGTH)}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"

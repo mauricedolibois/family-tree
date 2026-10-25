@@ -7,5 +7,10 @@ export async function register() {
     const { onServerStart } = await import('./lib/firstStart')
     // Not awaited: a slow database must not delay the start
     void onServerStart()
+    // Only in production: a development server must not clean up its database at night
+    if (process.env.NODE_ENV === 'production') {
+      const { scheduleDailyJob } = await import('./lib/dailyJob')
+      scheduleDailyJob()
+    }
   }
 }

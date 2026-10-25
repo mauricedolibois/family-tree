@@ -7,7 +7,6 @@ export const de = {
   app: {
     title: 'Stammbaum',
     familyTitle: (family: string) => `Stammbaum ${family}`,
-    familyFallback: 'Familie',
     description: 'Unser Stammbaum',
   },
   calendar: {
@@ -40,8 +39,14 @@ export const de = {
     password: 'Passwort',
     showPassword: 'Passwort anzeigen',
     hidePassword: 'Passwort verbergen',
-    minLength: 'Mindestens 8 Zeichen.',
-    tooShort: 'Das Passwort braucht mindestens 8 Zeichen.',
+    minLength: (n: number) =>
+      `Mindestens ${n} Zeichen. Gut merkbar und sicher: ein paar Wörter, die nur du zusammenbringst.`,
+    passwordProblem: {
+      short: (n: number) => `Das Passwort braucht mindestens ${n} Zeichen.`,
+      long: 'Das Passwort ist zu lang (höchstens 72 Zeichen).',
+      common: 'Dieses Passwort ist zu leicht zu erraten. Nimm lieber ein paar Wörter, die nur du zusammenbringst.',
+      personal: 'Das Passwort enthält deinen Namen oder deine E-Mail-Adresse. Bitte wähle ein anderes.',
+    },
     wait: 'Einen Moment …',
   },
   topBar: {
@@ -154,6 +159,8 @@ export const de = {
     addSpouse: 'Ehepartner hinzufügen',
     addChild: 'Kind hinzufügen',
     locked: 'Gesperrt',
+    outsidePart:
+      'Weitere Verwandte lägen außerhalb des Teils, den du bearbeiten darfst. Ein Moderator kann ihn erweitern.',
     lockedHint: (name: string) => `Du kannst ${name} nur ansehen, nicht ändern.`,
     detailsOnlyHint: (name: string) =>
       `Bei ${name} kannst du Angaben und Fotos ändern, aber keine Verwandten hinzufügen und nichts löschen – so bleibt die übrige Familie unberührt.`,
@@ -528,6 +535,25 @@ export const de = {
     title: 'Mitglieder',
     intro: (tree: string) =>
       `Wer gehört zum Stammbaum „${tree}“? Hier lädst du neue Leute ein und verwaltest die Mitglieder.`,
+    presets: {
+      title: 'Was soll die Person dürfen?',
+      recommended: 'Empfohlen',
+      someone: 'Die Person',
+      view: { title: 'Ganzen Stammbaum ansehen', text: () => 'Alles sehen, nichts ändern. Für die engere Familie.' },
+      edit: { title: 'Ganzen Stammbaum mitpflegen', text: () => 'Alles sehen und ändern, Fotos hochladen.' },
+      own: {
+        title: 'Eigene Familie ergänzen',
+        text: (name: string) =>
+          `Für Eingeheiratete: ${name} sieht den ganzen Stammbaum und trägt die eigene Herkunftsfamilie ein – Eltern, Großeltern, Geschwister mit ihren Familien. Die übrige Familie bleibt, wie sie ist.`,
+      },
+      line: {
+        title: 'Nur die eigene Linie ansehen',
+        text: (name: string) => `${name} sieht nur die eigenen Vorfahren, Nachkommen und Geschwister, sonst niemanden.`,
+      },
+      moderator: { title: 'Moderator', text: () => 'Alles ändern, dazu einladen und Mitglieder verwalten.' },
+      custom: { title: 'Individuell', text: () => 'Rolle und freigegebenen Teil selbst festlegen.' },
+      adjust: 'Tippe in der Vorschau auf eine Person, um die Freigabe anzupassen.',
+    },
     rolesHelp:
       'Nur ansehen: Stammbaum lesen. Darf bearbeiten: auch Personen ändern und Fotos hochladen. Moderator: zusätzlich einladen und Mitglieder verwalten.',
     noMembers: 'Außer den Admins gehört noch niemand dazu.',
@@ -558,7 +584,6 @@ export const de = {
       viewerHint: 'Wer nur ansehen darf, sieht nur diesen Teil.',
       spouseHint:
         'Ehepartner der Linien-Personen sind zu sehen, aber nicht bearbeitbar. Neue Personen lassen sich nur innerhalb der Linien anlegen: Kinder und Eltern ja, Geschwister nur mit der Seitenlinie „Geschwister“.',
-      help: 'Praktisch für Angeheiratete: Sie ergänzen ihre eigene Familie (Eltern, Geschwister), ohne den Rest zu ändern – und auf Wunsch ohne ihn zu sehen.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
           ? `Sieht nur die Blutlinien von ${name}`
@@ -640,6 +665,8 @@ export const de = {
       notShared: (n: number) => (n === 1 ? '1 Person ist nicht freigegeben.' : `${n} Personen sind nicht freigegeben.`),
       tapHint: 'Tippe auf eine Person: Stufe ändern, Blutlinie hinzufügen oder die Freigabe dort begrenzen.',
       fit: 'Ganzen Baum zeigen',
+      fullscreen: 'Vollbild',
+      exitFullscreen: 'Vollbild beenden',
       status: {
         editable: 'Bearbeiten',
         locked: 'Nur ansehen',
@@ -706,6 +733,8 @@ export const de = {
     join: 'Beitreten',
     becomeModerator: 'Moderator werden',
     manage: 'Verwalten',
+    exampleSecret:
+      'Supabase läuft noch mit dem JWT_SECRET aus seiner Beispieldatei. Wer Supabase erreicht, kann damit die ganze Datenbank lesen, und ohne eigenes SESSION_SECRET kann jeder Anmeldungen fälschen. Bitte neue Secrets setzen (docs/supabase.md, Schritt 4).',
     noMail: 'Diese Seite verschickt keine Mails: Einladungen und Links zum Zurücksetzen gibst du selbst weiter.',
     copy: 'Kopieren',
     inviteTitle: 'Einladen',

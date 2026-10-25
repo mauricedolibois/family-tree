@@ -60,6 +60,13 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
   const spouse = spouseOf(index, person.id)
   const siblings = useMemo(() => sortByBirth(siblingsOf(index, person.id), index.byId), [index, person.id])
   const kids = useMemo(() => sortByBirth(childrenOf(index, person.id), index.byId), [index, person.id])
+  // Someone of the member's part on whom a relative could be added, but only outside the part
+  const blocked = (relation: Relation) => canEdit && !limited && !!scope && !canAddRelative(person.id, relation)
+  const outside = {
+    parent: parents.length < 2 && blocked('PARENT'),
+    spouse: !spouse && blocked('SPOUSE'),
+    child: blocked('CHILD'),
+  }
   const isAdopted = (childId: string) => [person.id, spouse].some((p) => p && index.adopted.get(p)?.has(childId))
 
   const p = person.profile ?? {}
@@ -258,6 +265,21 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
       {/* Family */}
       <section className="flex flex-col gap-4">
         <h3 className="section-heading">{t.person.family}</h3>
+        {!limited && (outside.parent || outside.spouse || outside.child) && (
+          <p className="-mt-2 text-sm text-ink-muted">
+            {t.person.outsidePart}{' '}
+            {/* Asking for access gives the person and their descendants: that helps with children only */}
+            {outside.child &&
+              !previewAs &&
+              (accessAsked ? (
+                <span className="italic">{t.requests.accessPending}</span>
+              ) : (
+                <button type="button" onClick={askAccess} className="text-accent-deep underline">
+                  {t.requests.askAccess}
+                </button>
+              ))}
+          </p>
+        )}
         {limited && (
           <p className="-mt-2 text-sm text-ink-muted">
             {locked ? t.person.lockedHint(person.name) : t.person.detailsOnlyHint(person.name)}{' '}
@@ -279,7 +301,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addParent, run: () => onAdd('PARENT') }
               : undefined
           }
-          lockedAdd={limited && parents.length < 2 ? t.person.addParent : undefined}
+          lockedAdd={(limited && parents.length < 2) || outside.parent ? t.person.addParent : undefined}
         />
         <Relatives
           title={t.person.spouse}
@@ -290,7 +312,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addSpouse, run: () => onAdd('SPOUSE') }
               : undefined
           }
-          lockedAdd={limited && !spouse ? t.person.addSpouse : undefined}
+          lockedAdd={(limited && !spouse) || outside.spouse ? t.person.addSpouse : undefined}
         />
         <Relatives
           title={t.person.children}
@@ -302,7 +324,7 @@ export function PersonDetails({ person, onEdit, onAdd }: Props) {
               ? { label: t.person.addChild, run: () => onAdd('CHILD'), tour: 'add-child' }
               : undefined
           }
-          lockedAdd={limited ? t.person.addChild : undefined}
+          lockedAdd={limited || outside.child ? t.person.addChild : undefined}
         />
         {siblings.length > 0 && <Relatives title={t.person.siblings} ids={siblings} onOpen={focusOn} />}
       </section>

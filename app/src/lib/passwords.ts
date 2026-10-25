@@ -1,14 +1,13 @@
 // src/lib/passwords.ts
 
 import bcrypt from 'bcryptjs'
+import { passwordProblem } from './passwordRules'
 
-export const MIN_PASSWORD_LENGTH = 8
-/** bcrypt only looks at the first 72 bytes; longer passwords would give a false sense of strength */
-export const MAX_PASSWORD_BYTES = 72
 export const MAX_NAME_LENGTH = 80
 
-export const validPassword = (pw: unknown): pw is string =>
-  typeof pw === 'string' && pw.length >= MIN_PASSWORD_LENGTH && Buffer.byteLength(pw, 'utf8') <= MAX_PASSWORD_BYTES
+/** A new password that follows the rules (passwordRules.ts); `personal`: the person's name and email */
+export const validPassword = (pw: unknown, personal: Array<string | null | undefined> = []): pw is string =>
+  typeof pw === 'string' && passwordProblem(pw, personal) === null
 
 export const hashPassword = (pw: string) => bcrypt.hash(pw, 12)
 

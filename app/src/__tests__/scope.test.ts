@@ -219,12 +219,34 @@ describe('saving with a scope', () => {
   it('tells beforehand which relatives can be added', () => {
     const view = viewFor(base, scope)
     expect(canAddInPart(view, scope, 'S', 'CHILD')).toBe(false)
-    // like "only this line": side lines without their spouses
-    expect(canAddInPart(view, scope, 'S', 'SPOUSE')).toBe(false)
+    // spouses belong to the line, in side lines too: X can add her sister's husband
+    expect(canAddInPart(view, scope, 'S', 'SPOUSE')).toBe(true)
     expect(canAddInPart(view, { ...scope, down: null }, 'X', 'CHILD')).toBe(true)
     expect(canAddInPart(view, scope, 'P1', 'PARENT')).toBe(false)
     expect(canAddInPart(view, { ...scope, up: null }, 'P1', 'PARENT')).toBe(true)
     expect(canAddInPart(view, scope, 'Y', 'CHILD')).toBe(false) // outside the part
+  })
+
+  it("lets someone who married in add their sibling's spouse; one with own family gets the details only", () => {
+    const married = copy(base)
+    married.members.S = { ...married.members.S, spouseId: 'SH' }
+    married.members.SH = person('SH', { gender: 'MALE', spouseId: 'S' })
+    const wide: Legacy = { person: 'X', up: null, down: null, side: 1, hideRest: true }
+    // saving the new husband is accepted
+    const sent = copy(viewFor(base, wide))
+    sent.members.S = { ...sent.members.S, spouseId: 'SH' }
+    sent.members.SH = person('SH', { gender: 'MALE', spouseId: 'S' })
+    expect(mergeScopedSave(base, sent, wide).ok).toBe(true)
+    let sets = scopeSets(married, wide)
+    expect(sets.editable.has('SH') && !sets.detailsOnly.has('SH')).toBe(true)
+    // SH's parents are in the tree, outside X's part: his details only
+    married.members.SP = person('SP', { childrenIds: ['SH'] })
+    married.members.SH = { ...married.members.SH, parentIds: ['SP'] }
+    sets = scopeSets(married, wide)
+    expect(sets.detailsOnly.has('SH')).toBe(true)
+    expect(sets.visible.has('SP')).toBe(false)
+    // and X still cannot reach his family through him
+    expect(canAddInPart(viewFor(married, wide), wide, 'SH', 'PARENT')).toBe(false)
   })
 
   it('takes the details of someone at the edge, but neither deletes nor changes those only to see', () => {
@@ -529,5 +551,22 @@ describe('requests', () => {
     expect(added.lines.map((l) => l.person)).toEqual(['lisa', 'karl'])
     expect(added.stops).toEqual([])
     expect(S.withLine(added, 'karl')).toBe(added)
+  })
+})
+
+describe('married in', () => {
+  it("is someone whose own blood family is smaller than their spouse's", () => {
+    // X: herself, P1, P2 and S; Y: himself, G and H
+    expect(S.seemsMarriedIn(base, 'Y')).toBe(true)
+    expect(S.seemsMarriedIn(base, 'X')).toBe(false)
+    // a brother of Y: both families the same size, neither married in
+    const even = copy(base)
+    even.members.G.childrenIds = ['Y', 'B']
+    even.members.H.childrenIds = ['Y', 'B']
+    even.members.B = person('B', { parentIds: ['G', 'H'] })
+    expect(S.seemsMarriedIn(even, 'Y')).toBe(false)
+    expect(S.seemsMarriedIn(even, 'X')).toBe(false)
+    // without a spouse, nobody married in
+    expect(S.seemsMarriedIn(base, 'S')).toBe(false)
   })
 })

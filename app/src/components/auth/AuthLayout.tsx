@@ -29,7 +29,7 @@ export function AuthLayout({
         <div className="w-full max-w-[26rem]">
           <div className="framed px-6 pb-7 pt-9 text-center sm:px-10">
             <p className="ornament font-display text-[1.05rem] italic text-accent/80">{t.auth.kicker}</p>
-            <h1 className="title-text mt-1 font-display text-[3.4rem] leading-none">{t.app.title}</h1>
+            <h1 className="title-text mt-1 font-display text-[min(3.4rem,12.5vw)] leading-none">{t.app.title}</h1>
             <Flourish className="mx-auto mt-3 max-w-[14rem]" />
             {intro && (
               <p className="mx-auto mt-3 max-w-[20rem] text-balance font-text text-[17px] text-on-primary/70">

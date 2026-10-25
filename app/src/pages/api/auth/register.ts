@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const treeName = cleanName(body.treeName)
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   if (!name || !treeName || !looksLikeEmail(email)) return res.status(400).json({ error: 'missing fields' })
-  if (!validPassword(body.password)) return res.status(400).json({ error: 'invalid password' })
+  if (!validPassword(body.password, [name, email])) return res.status(400).json({ error: 'invalid password' })
 
   const ipKey = `ip:${clientIp(req)}`
   const locale = localeFromRequest(req)

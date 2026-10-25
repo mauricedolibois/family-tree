@@ -30,7 +30,7 @@ RUN apk upgrade --no-cache \
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-# For the daily backup cron job (see README)
+# keep-alive.mjs for free Supabase cloud projects (see README)
 COPY --from=builder /app/scripts ./scripts
 RUN mkdir -p .next/cache && chown node:node .next/cache
 

@@ -1,5 +1,6 @@
 // src/lib/supabaseServer.ts
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createHmac, timingSafeEqual } from 'crypto'
 
 let cachedAdmin: SupabaseClient | null = null
 
@@ -25,4 +26,20 @@ export function getSupaAdmin(): SupabaseClient {
     auth: { persistSession: false },
   })
   return cachedAdmin
+}
+
+/** JWT_SECRET of Supabase's example .env; keys signed with it can be made by anyone */
+const EXAMPLE_JWT_SECRET = 'your-super-secret-jwt-token-with-at-least-32-characters-long'
+
+/**
+ * Whether the service role key is signed with the example JWT_SECRET. Then Supabase
+ * still runs with that secret: anyone can make a key and read the whole database,
+ * and sessions are forgeable when SESSION_SECRET is derived from the key.
+ */
+export function serviceKeyFromExample(key = process.env.SUPABASE_SERVICE_ROLE_KEY): boolean {
+  const [head, body, sig] = key?.split('.') ?? []
+  if (!head || !body || !sig) return false
+  const expected = createHmac('sha256', EXAMPLE_JWT_SECRET).update(`${head}.${body}`).digest()
+  const given = Buffer.from(sig, 'base64url')
+  return given.length === expected.length && timingSafeEqual(given, expected)
 }
