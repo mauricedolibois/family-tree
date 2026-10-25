@@ -2,12 +2,12 @@
 // What a part of the tree gives a member, before it is saved (family/scope.ts): a
 // small tree with every person's level (edit, details only, view), and a list that
 // says why. Tapping a person offers to change their level, to add their blood line
-// or to end the part there.
+// or to end the part there. Big trees open in full screen.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch'
-import { Eye, Flag, GitBranch, Lock, Maximize, Minus, PenLine, Pencil, Plus, X } from 'lucide-react'
+import { Expand, Eye, Flag, Focus, GitBranch, Lock, Minus, PenLine, Pencil, Plus, Shrink, X } from 'lucide-react'
 import { lifeYears } from '@/family/format'
 import type { Tree } from '@/family/model'
 import {
@@ -23,10 +23,13 @@ import {
 import { Connectors } from '@/components/tree/Connectors'
 import { PersonCard, type CardState } from '@/components/tree/PersonCard'
 import { useTreeLayout } from '@/components/tree/useTreeLayout'
+import { BUTTON_FACTOR, useWheelZoom, zoomBy } from '@/components/tree/zoom'
 import { Button } from '@/components/ui/Button'
-import { Segmented } from '@/components/ui/Choice'
 import { InfoTip } from '@/components/ui/InfoTip'
 import { useI18n } from '@/i18n/I18nProvider'
+
+/** How far the preview zooms out and in */
+const LIMITS = { min: 0.05, max: 1.6 }
 
 /** Names shown in a sentence before "and n more" */
 const NAMES_SHOWN = 4
@@ -98,11 +101,88 @@ export function ScopePreview({ tree, scope, actions }: { tree: Tree; scope: Tree
   const p = t.members.preview
   const described = useMemo(() => describeScope(tree, scope), [tree, scope])
   const [selected, setSelected] = useState<string | null>(null)
+  const [full, setFull] = useState(false)
   const count = (...s: ScopeStatus[]) => [...described.values()].filter((e) => s.includes(e.status)).length
   const levels = [...described.values()].filter((e) => e.status === 'editable' || e.status === 'locked').map(levelOf)
   const at = (level: Level) => levels.filter((l) => l === level).length
   const sees = count('editable', 'locked', ...(scope.hideRest ? [] : (['readonly'] as const)))
   const notShared = count('hidden', 'readonly')
+
+  // Full screen: Escape leaves it, and the page behind does not scroll
+  useEffect(() => {
+    if (!full) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFull(false)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = overflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [full])
+
+  const summary = (
+    <p className="text-[15px] text-ink">
+      {p.sentence(sees, at('edit'), at('details'), at('view'))}{' '}
+      {notShared > 0 && <span className="text-ink-muted">{p.notShared(notShared)}</span>}
+    </p>
+  )
+  const miniTree = (
+    <MiniTree
+      tree={tree}
+      scope={scope}
+      described={described}
+      selected={selected}
+      onSelect={setSelected}
+      full={full}
+      onFull={setFull}
+    />
+  )
+  const details =
+    selected && described.get(selected) ? (
+      <Selected
+        tree={tree}
+        scope={scope}
+        id={selected}
+        entry={described.get(selected)!}
+        actions={actions}
+        onClose={() => setSelected(null)}
+      />
+    ) : (
+      <p className="text-sm text-ink-muted">{p.tapHint}</p>
+    )
+
+  if (full) {
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={p.title}
+        className="page-backdrop fixed inset-0 z-[80] flex flex-col bg-canvas"
+      >
+        <div className="flex items-start gap-3 border-b border-card-rule px-3 py-2 sm:px-5">
+          <div className="min-w-0 flex-1">
+            <h3 className="section-heading flex items-center gap-1">
+              {p.title}
+              <RightsHelp />
+            </h3>
+            {summary}
+          </div>
+          <Button size="sm" icon={<Shrink className="h-4 w-4" />} onClick={() => setFull(false)}>
+            {p.exitFullscreen}
+          </Button>
+        </div>
+        {/* The tree takes the room; the tapped person beside it, or below it on phones */}
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="min-h-0 flex-1 p-2 sm:p-3">{miniTree}</div>
+          <div className="flex max-h-[45%] flex-col gap-3 overflow-y-auto border-t border-card-rule p-3 lg:max-h-none lg:w-96 lg:border-l lg:border-t-0">
+            {details}
+            <Legend />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <section className="flex min-w-0 flex-col gap-3 rounded-control border border-card-rule bg-canvas-raised/40 p-3">
@@ -111,31 +191,19 @@ export function ScopePreview({ tree, scope, actions }: { tree: Tree; scope: Tree
           {p.title}
           <RightsHelp />
         </h3>
-        <p className="mt-1 text-[15px] text-ink">
-          {p.sentence(sees, at('edit'), at('details'), at('view'))}{' '}
-          {notShared > 0 && <span className="text-ink-muted">{p.notShared(notShared)}</span>}
-        </p>
+        <div className="mt-1">{summary}</div>
       </div>
-      <MiniTree tree={tree} scope={scope} described={described} selected={selected} onSelect={setSelected} />
+      {miniTree}
       <Legend />
-      {selected && described.get(selected) && (
-        <Selected
-          tree={tree}
-          scope={scope}
-          id={selected}
-          entry={described.get(selected)!}
-          actions={actions}
-          onClose={() => setSelected(null)}
-        />
-      )}
-      {!selected && <p className="text-sm text-ink-muted">{p.tapHint}</p>}
+      {details}
       <PeopleList tree={tree} scope={scope} described={described} onSelect={setSelected} />
     </section>
   )
 }
 
-const cardState = (status: ScopeStatus, selected: boolean): CardState =>
-  selected ? 'selected' : status === 'editable' || status === 'locked' ? 'line' : 'dimmed'
+// Selection gets its own mark (CardMarks): the selected look is the accent colour,
+// the same as a line's frame, and a selected person looked like a line of their own
+const cardState = (status: ScopeStatus): CardState => (status === 'editable' || status === 'locked' ? 'line' : 'dimmed')
 
 function MiniTree({
   tree,
@@ -143,12 +211,16 @@ function MiniTree({
   described,
   selected,
   onSelect,
+  full,
+  onFull,
 }: {
   tree: Tree
   scope: TreeScope
   described: Map<string, ScopeEntry>
   selected: string | null
   onSelect: (id: string | null) => void
+  full: boolean
+  onFull: (full: boolean) => void
 }) {
   const { t } = useI18n()
   const p = t.members.preview
@@ -156,6 +228,8 @@ function MiniTree({
   const { layout } = useTreeLayout(tree, start || null)
   const api = useRef<ReactZoomPanPinchContentRef | null>(null)
   const box = useRef<HTMLDivElement | null>(null)
+  // In full screen the wheel zooms; on the page it scrolls the page past the preview
+  useWheelZoom(api, LIMITS, full)
   const owners = linePeople(scope)
   const stops = new Set(scope.stops)
   const part = useMemo(
@@ -185,14 +259,20 @@ function MiniTree({
   }, [layout]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div ref={box} className="page-backdrop relative h-[22rem] overflow-hidden rounded-control border border-card-rule">
+    <div
+      ref={box}
+      className={clsx(
+        'page-backdrop relative overflow-hidden rounded-control border border-card-rule',
+        full ? 'h-full' : 'h-[22rem]',
+      )}
+    >
       <TransformWrapper
         ref={api}
-        minScale={0.05}
-        maxScale={1.6}
+        minScale={LIMITS.min}
+        maxScale={LIMITS.max}
         limitToBounds={false}
         doubleClick={{ disabled: true }}
-        // The page scrolls past the preview; zoom with the buttons or by pinching
+        // Zoomed by the buttons, by pinching, and in full screen by the wheel (useWheelZoom)
         wheel={{ disabled: true }}
       >
         <TransformComponent wrapperClass="!h-full !w-full" contentClass="">
@@ -216,7 +296,8 @@ function MiniTree({
                       <PersonCard
                         person={person}
                         box={c}
-                        state={cardState(entry.status, c.id === selected)}
+                        state={cardState(entry.status)}
+                        pressed={c.id === selected}
                         isMe={false}
                         onSelect={(id) => onSelect(id === selected ? null : id)}
                       />
@@ -227,6 +308,7 @@ function MiniTree({
                         detailsOnly={!!entry.detailsOnly}
                         line={owners.has(c.id)}
                         stop={stops.has(c.id)}
+                        selected={c.id === selected}
                       />
                     </div>
                   )
@@ -241,9 +323,20 @@ function MiniTree({
       )}
       <div className="surface absolute bottom-2 right-2 flex overflow-hidden rounded-control border border-frame/50 shadow-card">
         {[
-          { label: t.tree.zoomIn, icon: <Plus className="h-4 w-4" />, run: () => api.current?.zoomIn(0.35) },
-          { label: t.tree.zoomOut, icon: <Minus className="h-4 w-4" />, run: () => api.current?.zoomOut(0.35) },
-          { label: p.fit, icon: <Maximize className="h-4 w-4" />, run: () => fit(300) },
+          {
+            label: t.tree.zoomIn,
+            icon: <Plus className="h-4 w-4" />,
+            run: () => zoomBy(api, BUTTON_FACTOR, LIMITS, undefined, 200),
+          },
+          {
+            label: t.tree.zoomOut,
+            icon: <Minus className="h-4 w-4" />,
+            run: () => zoomBy(api, 1 / BUTTON_FACTOR, LIMITS, undefined, 200),
+          },
+          { label: p.fit, icon: <Focus className="h-4 w-4" />, run: () => fit(300) },
+          full
+            ? { label: p.exitFullscreen, icon: <Shrink className="h-4 w-4" />, run: () => onFull(false) }
+            : { label: p.fullscreen, icon: <Expand className="h-4 w-4" />, run: () => onFull(true) },
         ].map((b) => (
           <button
             key={b.label}
@@ -269,6 +362,7 @@ function CardMarks({
   detailsOnly,
   line,
   stop,
+  selected,
 }: {
   box: { x: number; y: number; w: number; h: number }
   locked: boolean
@@ -276,10 +370,11 @@ function CardMarks({
   detailsOnly: boolean
   line: boolean
   stop: boolean
+  selected: boolean
 }) {
   const { t } = useI18n()
   const p = t.members.preview
-  if (!locked && !readonly && !detailsOnly && !line && !stop) return null
+  if (!locked && !readonly && !detailsOnly && !line && !stop && !selected) return null
   const badge = 'flex items-center gap-1 rounded-full px-2.5 py-1 text-[15px] font-semibold shadow-card'
   return (
     <div
@@ -291,6 +386,9 @@ function CardMarks({
       )}
       style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
     >
+      {selected && (
+        <div className="absolute -inset-2 rounded-[calc(var(--radius-card)+0.5rem)] border-2 border-ink shadow-lifted" />
+      )}
       <div className="absolute -top-5 right-2 flex gap-1">
         {line && (
           <span className={clsx(badge, 'bg-accent text-on-accent')}>
@@ -458,25 +556,33 @@ function Selected({
             <p className="text-sm text-ink-muted">{p.lineFull}</p>
           ) : (
             <>
-              <Segmented
-                label={p.levelLabel}
-                value={levelOf(entry)}
-                dense
-                options={choices.map((level) => {
+              <div role="radiogroup" aria-label={p.levelLabel} className="flex flex-col gap-1">
+                <span className="field-label">{p.levelLabel}</span>
+                {/* One row per level: three options with "(default)" do not fit side by side in a narrow column */}
+                {choices.map((level) => {
                   const Icon = LEVEL_ICON[level]
-                  return {
-                    value: level,
-                    label: (
-                      <>
-                        <Icon className="h-4 w-4 shrink-0" />
-                        {t.members.rights.levels[level].title}
-                        {level === natural.level && <span className="text-[13px] opacity-75">{p.standard}</span>}
-                      </>
-                    ),
-                  }
+                  const on = levelOf(entry) === level
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => choose(level)}
+                      className={clsx(
+                        'flex min-h-9 items-center gap-2 rounded-control border px-2.5 py-1.5 text-left text-sm transition-colors',
+                        on
+                          ? 'border-primary bg-primary font-medium text-on-primary-accent'
+                          : 'border-card-rule text-ink hover:border-accent',
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="flex-1">{t.members.rights.levels[level].title}</span>
+                      {level === natural.level && <span className="text-[13px] opacity-75">{p.standard}</span>}
+                    </button>
+                  )
                 })}
-                onChange={choose}
-              />
+              </div>
               <p className="text-[13px] text-ink-muted">
                 {t.members.rights.levels[levelOf(entry)].text}
                 {edge && ` ${p.edgeFull}`}

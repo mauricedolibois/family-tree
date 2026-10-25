@@ -161,8 +161,9 @@ export function bloodLineOf(
 }
 
 /**
- * People shown in the "line of …" view: the blood line (bloodLineOf) and spouses,
- * so that couples stay complete.
+ * People shown in the "line of …" view: the blood line (bloodLineOf) and the
+ * spouses of everyone in it, so that couples stay complete, in side lines too (a
+ * sister with her husband).
  */
 export function lineageView(
   ix: TreeIndex,
@@ -170,10 +171,10 @@ export function lineageView(
   scope: LineScope = DEFAULT_LINE_SCOPE,
   stop?: ReadonlySet<string>,
 ): Set<string> {
-  const { blood, descendants } = bloodLineOf(ix, id, scope, stop)
+  const { blood } = bloodLineOf(ix, id, scope, stop)
   const set = new Set(blood)
-  // Spouses: the person's own, those of descendants, and the other parent of any shown child
-  for (const x of [id, ...descendants]) {
+  // Spouses of everyone in the line, and the other parent of any shown child
+  for (const x of blood) {
     const sp = spouseOf(ix, x)
     if (sp) set.add(sp)
   }

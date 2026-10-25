@@ -39,12 +39,12 @@ describe('account input', () => {
       expect(looksLikeEmail(bad)).toBe(false)
   })
 
-  it('passwords: at least 8 characters, at most 72 bytes', () => {
-    expect(validPassword('1234567')).toBe(false)
-    expect(validPassword('12345678')).toBe(true)
-    expect(validPassword('ä'.repeat(36))).toBe(true)
-    expect(validPassword('ä'.repeat(37))).toBe(false)
-    expect(validPassword(12345678)).toBe(false)
+  it('passwords follow the rules for new passwords (passwordRules.test.ts)', () => {
+    expect(validPassword('Kuchen am Sonntag')).toBe(true)
+    expect(validPassword('kurz')).toBe(false)
+    expect(validPassword('Sommer2024!')).toBe(false)
+    expect(validPassword('Reiser1975!', ['Lars Reiser', 'lars@example.org'])).toBe(false)
+    expect(validPassword(12345678901)).toBe(false)
   })
 
   it('names are trimmed and limited', () => {

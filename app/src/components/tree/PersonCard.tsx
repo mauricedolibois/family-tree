@@ -18,9 +18,11 @@ type Props = {
   state: CardState
   isMe: boolean
   onSelect: (id: string) => void
+  /** Selected without the selected look (the scope preview marks selection itself) */
+  pressed?: boolean
 }
 
-export const PersonCard = memo(function PersonCard({ person, box, state, isMe, onSelect }: Props) {
+export const PersonCard = memo(function PersonCard({ person, box, state, isMe, onSelect, pressed }: Props) {
   const { given, surname } = splitName(person.name)
   const { t } = useI18n()
   const years = lifeYears(person)
@@ -32,7 +34,7 @@ export const PersonCard = memo(function PersonCard({ person, box, state, isMe, o
       type="button"
       data-person={person.id}
       onClick={() => onSelect(person.id)}
-      aria-pressed={state === 'selected'}
+      aria-pressed={pressed ?? state === 'selected'}
       aria-label={[person.name, years].filter(Boolean).join(', ')}
       className={clsx(
         'person-card absolute flex items-center gap-3 rounded-card border px-2.5 text-left',

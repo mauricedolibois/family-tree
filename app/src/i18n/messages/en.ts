@@ -6,7 +6,6 @@ export const en: Messages = {
   app: {
     title: 'Family tree',
     familyTitle: (family) => `${family} family tree`,
-    familyFallback: 'Family',
     description: 'Our family tree',
   },
   calendar: {
@@ -37,8 +36,14 @@ export const en: Messages = {
     password: 'Password',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
-    minLength: 'At least 8 characters.',
-    tooShort: 'The password needs at least 8 characters.',
+    minLength: (n: number) =>
+      `At least ${n} characters. Easy to remember and safe: a few words only you would put together.`,
+    passwordProblem: {
+      short: (n: number) => `The password needs at least ${n} characters.`,
+      long: 'The password is too long (72 characters at most).',
+      common: 'This password is too easy to guess. Better take a few words only you would put together.',
+      personal: 'The password contains your name or email address. Please choose another one.',
+    },
     wait: 'One moment …',
   },
   topBar: {
@@ -149,6 +154,7 @@ export const en: Messages = {
     addSpouse: 'Add spouse',
     addChild: 'Add child',
     locked: 'Locked',
+    outsidePart: 'Further relatives would be outside the part you may edit. A moderator can extend it.',
     lockedHint: (name) => `You can only view ${name}, not change them.`,
     detailsOnlyHint: (name) =>
       `You can change the details and photos of ${name}, but not add relatives or delete anything – so the rest of the family stays untouched.`,
@@ -521,6 +527,26 @@ export const en: Messages = {
   members: {
     title: 'Members',
     intro: (tree) => `Who belongs to the ${tree} family tree? Invite new people and manage the members here.`,
+    presets: {
+      title: 'What may this person do?',
+      recommended: 'Recommended',
+      someone: 'This person',
+      view: { title: 'See the whole tree', text: () => 'See everything, change nothing. For close family.' },
+      edit: { title: 'Help keep the whole tree', text: () => 'See and change everything, upload photos.' },
+      own: {
+        title: 'Add their own family',
+        text: (name: string) =>
+          `For in-laws: ${name} sees the whole tree and adds their own family of origin – parents, grandparents, brothers and sisters with their families. The rest of the family stays as it is.`,
+      },
+      line: {
+        title: 'See only their own line',
+        text: (name: string) =>
+          `${name} sees only their own ancestors, descendants, brothers and sisters, nobody else.`,
+      },
+      moderator: { title: 'Moderator', text: () => 'Change everything, invite people and manage members.' },
+      custom: { title: 'Custom', text: () => 'Choose the role and the shared part yourself.' },
+      adjust: 'Tap a person in the preview to adjust what is shared.',
+    },
     rolesHelp:
       'View only: read the tree. Can edit: also change people and upload photos. Moderator: also invite people and manage members.',
     noMembers: 'Nobody belongs to it yet apart from the admins.',
@@ -551,7 +577,6 @@ export const en: Messages = {
       viewerHint: 'Members who may only view see just this part.',
       spouseHint:
         'Spouses of the lines’ people are shown but not editable. New people can only be added within the lines: children and parents yes, siblings only with the side line “Siblings”.',
-      help: 'Handy for in-laws: they add their own family (parents, siblings) without changing the rest – and, if you like, without seeing it.',
       summary: (name: string, hidden: boolean, editor: boolean) =>
         hidden
           ? `Sees only the blood lines of ${name}`
@@ -633,6 +658,8 @@ export const en: Messages = {
       notShared: (n) => (n === 1 ? '1 person is not shared.' : `${n} people are not shared.`),
       tapHint: 'Tap a person: change their level, add their blood line, or limit the access there.',
       fit: 'Show the whole tree',
+      fullscreen: 'Full screen',
+      exitFullscreen: 'Exit full screen',
       status: {
         editable: 'Edit',
         locked: 'View only',
@@ -699,6 +726,8 @@ export const en: Messages = {
     join: 'Join',
     becomeModerator: 'Become moderator',
     manage: 'Manage',
+    exampleSecret:
+      'Supabase still runs with the JWT_SECRET from its example file. Anyone who reaches Supabase can read the whole database with it, and without a SESSION_SECRET of its own anyone can forge sign-ins. Please set new secrets (docs/supabase.md, step 4).',
     noMail: 'This site does not send emails: pass invitations and reset links on yourself.',
     copy: 'Copy',
     inviteTitle: 'Invite',

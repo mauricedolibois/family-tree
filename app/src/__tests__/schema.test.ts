@@ -3,16 +3,18 @@
  */
 
 // A tiny stand-in for the Supabase client: answers for app_meta, the old families
-// table and users, records invites
+// table and users, records invites; and whether the service key is the example one
 const MISSING = { code: 'PGRST205', message: 'Could not find the table' }
-const answers: { meta: { data: unknown; error: unknown }; legacy: boolean; users: number } = {
+const answers: { meta: { data: unknown; error: unknown }; legacy: boolean; users: number; exampleKey: boolean } = {
   meta: { data: null, error: null },
   legacy: false,
   users: 0,
+  exampleKey: false,
 }
 const invites: Array<Record<string, unknown>> = []
 
 jest.mock('@/lib/supabaseServer', () => ({
+  serviceKeyFromExample: () => answers.exampleKey,
   getSupaAdmin: () => ({
     from: (table: string) => {
       if (table === 'app_meta') {
@@ -48,6 +50,7 @@ beforeEach(() => {
   invites.length = 0
   answers.users = 0
   answers.legacy = false
+  answers.exampleKey = false
   jest.spyOn(console, 'log').mockImplementation(() => {})
   jest.spyOn(console, 'warn').mockImplementation(() => {})
   jest.spyOn(console, 'error').mockImplementation(() => {})
@@ -119,6 +122,16 @@ describe('onServerStart', () => {
     await onServerStart()
     expect(invites).toHaveLength(0)
     expect((console.warn as jest.Mock).mock.calls.flat().join(' ')).toContain('supabase/migrations')
+  })
+
+  it("warns about a service key signed with Supabase's example secret", async () => {
+    answers.meta = version(String(REQUIRED_SCHEMA))
+    answers.users = 2
+    await onServerStart()
+    expect(console.warn).not.toHaveBeenCalled()
+    answers.exampleKey = true
+    await onServerStart()
+    expect((console.warn as jest.Mock).mock.calls.flat().join(' ')).toContain('check-secrets.sh')
   })
 
   it('asks for setup.sql on an empty database', async () => {

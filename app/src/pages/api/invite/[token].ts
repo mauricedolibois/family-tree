@@ -98,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const name = cleanName(body.name)
     const email = invite.email ?? (typeof body.email === 'string' ? body.email.trim() : '')
     if (!name || !looksLikeEmail(email)) return res.status(400).json({ error: 'missing fields' })
-    if (!validPassword(body.password)) return res.status(400).json({ error: 'invalid password' })
+    if (!validPassword(body.password, [name, email])) return res.status(400).json({ error: 'invalid password' })
     if (await findUserByEmail(email)) return res.status(409).json({ error: 'email taken' })
 
     // An invite bound to an address was addressed by an admin, so the address counts as checked

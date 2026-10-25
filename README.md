@@ -40,7 +40,7 @@ It comes in two designs, classic (parchment) and modern, each light, dark or aut
 - Access by **blood line**: members can be limited to one or more blood lines; three levels per person (edit, details only, view only; details only where further family lines hang on), with a preview tree, help with examples, "view as" and requests for more access ([docs/accounts.md](docs/accounts.md)).
 - Signed session cookies (HMAC) that can be ended everywhere at once, and throttling against password guessing.
 - The server validates every tree before saving, and only saves if nobody changed the tree on another device in the meantime.
-- Automatic backups: before **every** change (with a note about what changed, e.g. "edited: Karl Niehren") and daily via cron on the server (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
+- Automatic backups: before **every** change (with a note about what changed, e.g. "edited: Karl Niehren") and daily, by the app itself on an own server or by GitHub Actions on Vercel (see [Deployment](#deployment)). Pre-change backups are kept for 90 days, daily ones for a year, manual ones forever.
 - Emergency tools in the Supabase SQL editor (schema `admin`, not reachable through the API):
 
   ```sql
@@ -53,7 +53,7 @@ It comes in two designs, classic (parchment) and modern, each light, dark or aut
 
   Replace `NUMBER` with the `id` from the list. The placeholder is there on purpose so the lines cannot be run unchanged by accident. Without `true` the function only shows a preview and changes nothing.
 
-- Photos and documents are not deleted right away when someone removes them: the daily backup only deletes a file once neither the current tree nor any backup refers to it (and it is older than a week), so restored versions keep their images. If a file is missing anyway, the app shows initials or "Bild fehlt" (image missing).
+- Photos and documents are not deleted right away when someone removes them: the daily job only deletes a file once neither the current tree nor any backup refers to it (and it is older than a week), so restored versions keep their images. If a file is missing anyway, the app shows initials or "Bild fehlt" (image missing).
 
 - Calendar apps cannot sign in, so the subscription is protected only by a secret token in the link (`trees.calendar_token`). Anyone with the link sees names and birthdays; "create new link" invalidates the old one. Members who see only their part of a tree get a link of their own instead (`memberships.calendar_token`): its feed holds just the people they see at the time it is fetched, and only they can renew it.
 
@@ -101,7 +101,7 @@ Code comments, test names and documentation are in English. User-facing texts li
 
 - Vercel project settings: **Root Directory** `app` (framework Next.js, build command from `package.json`, Node 24).
 - Environment variables in Vercel: `NEXT_PUBLIC_SUPABASE_URL` (or `SUPABASE_URL`) and `SUPABASE_SERVICE_ROLE_KEY`, plus `APP_URL` with the public address and the optional ones listed under [Development](#development). `TRUSTED_PROXIES` stays at its default of 1: Vercel itself puts the visitor IP into `X-Forwarded-For`.
-- Keep-alive and daily backup run in GitHub Actions (`.github/workflows/keep-alive.yml`) with the repository secrets `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+- Keep-alive and daily backup run in GitHub Actions (`.github/workflows/keep-alive.yml`) with the repository secrets `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Serverless functions cannot keep a timer, so on Vercel the app does not run the daily job itself; `scripts/daily-backup.mjs` does the same work (keep it in step with `app/src/lib/dailyJob.ts`).
 - The admin link of a fresh installation (see [Database](#database)) appears in the Vercel runtime logs (filter for `[setup]`).
 - Vercel limits a request body to about 4.5 MB, so importing a large ZIP with photos only works on an own server.
 
@@ -112,6 +112,8 @@ Through GitLab CI (`.gitlab-ci.yml`):
 1. Merge request or push to `main` → job `test` (typecheck, lint, formatting, tests) and job `audit` (`npm audit`, warning only).
 2. Push to `main` once `test` passes → BuildKit (rootless) builds `app/Dockerfile` and pushes the image to `registry.lptzocker.com/lptzocker/family-tree/family-tree:latest`.
 3. The `deploy` job then copies `docker-compose.yml` and `deploy_tools/deploy_prod.sh` to the server and restarts the container (`prod.env` lives in `~/family-tree/` there).
+
+CI/CD variables of the project: `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_PRIVATE_KEY` (base64) and `SSH_KNOWN_HOSTS`, the server's host keys. Without `SSH_KNOWN_HOSTS` the job fetches the keys on every run and trusts whichever server answers. To set it, run `ssh-keyscan -p <port> <host>` and compare the fingerprints (`ssh-keygen -lf <file>`) with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the server itself; then store the output as the variable (not masked, it is public).
 
 The image contains only the standalone Next server (`output: 'standalone'`), runs as user `node` and reports its state to Docker through `/api/health` (`docker ps` shows `healthy`).
 
@@ -157,11 +159,7 @@ same schema (CI runs it whenever something under `supabase/` changes).
 - nginx has to append the visitor IP to `X-Forwarded-For` (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, already part of `proxy_params`). The app only trusts the last entry; the visitor can forge the beginning.
 - With HTTP basic auth in front of the app, `location /api/kalender/` needs `auth_basic off;`. Calendar apps cannot sign in; the link is protected by its secret token.
 
-**Daily backup:** via cron on the server inside the app container, using `prod.env` and the running app's network, e.g. `crontab -e`:
-
-```
-0 3 * * * cd ~/family-tree && docker compose --env-file prod.env run --rm app node scripts/daily-backup.mjs >> ~/family-tree/backup.log 2>&1
-```
+**Daily job:** the app server runs it itself every night at 03:00 UTC (`app/src/lib/dailyJob.ts`), so no cron is needed. It adds a daily version of every changed tree, prunes old versions, empties the trash after 30 days and removes files nothing refers to any more. It only uses the Supabase API with the app's key and reports one line to the log (`docker logs family-tree-app | grep daily`). A cron line for `scripts/daily-backup.mjs` can go; the script stays for Vercel (see above).
 
 `app/scripts/keep-alive.mjs` is only needed for free Supabase cloud projects, which are paused after 7 days without activity. Self-hosted instances do not need it.
 
@@ -181,7 +179,7 @@ same schema (CI runs it whenever something under `supabase/` changes).
 | `app/src/themes/`              | Theme choice: list of themes, cookies, provider                       |
 | `app/src/pages/api/`           | Accounts, trees, uploads, calendar, administration                    |
 | `app/src/lib/`                 | Server side: database, accounts, sessions, mail, throttling           |
-| `app/scripts/`                 | Maintenance scripts (daily backup, keep-alive)                        |
+| `app/scripts/`                 | Maintenance scripts (keep-alive, daily backup on Vercel)              |
 | `supabase/`                    | `setup.sql` for new databases, `migrations/` for existing ones        |
 
 ## Roadmap

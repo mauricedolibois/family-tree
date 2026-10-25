@@ -4,7 +4,7 @@
 import clsx from 'clsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TransformComponent, TransformWrapper, type ReactZoomPanPinchContentRef } from 'react-zoom-pan-pinch'
-import { Maximize, Minus, Plus } from 'lucide-react'
+import { Focus, Minus, Plus } from 'lucide-react'
 import { lineageOf, lineageView, subTree } from '@/family/model'
 import { findConnection } from '@/family/kinship'
 import type { CardBox, TreeLayout } from '@/family/layout/types'
@@ -19,9 +19,11 @@ import { Minimap, type ViewState } from './Minimap'
 import { RelationCard } from '@/components/relation/RelationCard'
 import { BirthdaysCard } from '@/components/birthdays/BirthdaysCard'
 import { useI18n } from '@/i18n/I18nProvider'
+import { BUTTON_FACTOR, useWheelZoom, zoomBy } from './zoom'
 
 const MIN_SCALE = 0.05
 const MAX_SCALE = 2.2
+const LIMITS = { min: MIN_SCALE, max: MAX_SCALE }
 const READING_SCALE = 0.9
 /** Do not blow up small trees (e.g. a short path) */
 const MAX_FIT_SCALE = 1.1
@@ -39,6 +41,7 @@ export function TreeCanvas() {
   const box = useRef<HTMLDivElement | null>(null)
   const overlay = useRef<HTMLDivElement | null>(null)
   const pointerDown = useRef<{ x: number; y: number } | null>(null)
+  useWheelZoom(api, LIMITS)
   const didInitialView = useRef(false)
   const [scopeOpen, setScopeOpen] = useState(false)
   // Where the view is, for the minimap
@@ -274,9 +277,7 @@ export function TreeCanvas() {
         maxScale={MAX_SCALE}
         limitToBounds={false}
         doubleClick={{ disabled: true }}
-        // Smooth zoom multiplies the step by the wheel's deltaY (about 100 per notch):
-        // 0.001 is about 0.1 per notch, as with smoothStep in react-zoom-pan-pinch 3
-        wheel={{ step: 0.001 }}
+        wheel={{ disabled: true }}
         panning={{ velocityDisabled: false }}
         onTransform={(_, state) => trackView(state)}
       >
@@ -363,15 +364,19 @@ export function TreeCanvas() {
           />
         )}
         <div className="flex flex-col md:flex-row">
-          <ZoomButton label={t.tree.zoomIn} onClick={() => api.current?.zoomIn(0.35)}>
+          <ZoomButton label={t.tree.zoomIn} onClick={() => zoomBy(api, BUTTON_FACTOR, LIMITS, undefined, 200)}>
             <Plus className="h-5 w-5" />
           </ZoomButton>
           {/* In the row: minus, plus, whole tree */}
-          <ZoomButton label={t.tree.zoomOut} onClick={() => api.current?.zoomOut(0.35)} className="md:order-first">
+          <ZoomButton
+            label={t.tree.zoomOut}
+            onClick={() => zoomBy(api, 1 / BUTTON_FACTOR, LIMITS, undefined, 200)}
+            className="md:order-first"
+          >
             <Minus className="h-5 w-5" />
           </ZoomButton>
           <ZoomButton label={t.tree.fitAll} onClick={() => fitAll()}>
-            <Maximize className="h-[18px] w-[18px]" />
+            <Focus className="h-[18px] w-[18px]" />
           </ZoomButton>
         </div>
       </div>

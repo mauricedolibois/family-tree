@@ -70,6 +70,7 @@ type Invite = {
 type Overview = {
   me: string
   mail: boolean
+  exampleSecret: boolean
   /** Set when supabase/setup.sql has to be run */
   schema: { have: number; need: number } | null
   users: AdminUserView[]
@@ -122,6 +123,7 @@ export default function AdminPage({ nav, treeId }: Props) {
             <PageLoading />
           ) : (
             <>
+              {data.exampleSecret && <FormMessage>{t.admin.exampleSecret}</FormMessage>}
               {data.schema && <FormMessage>{t.setup.outdated(data.schema.have, data.schema.need)}</FormMessage>}
               {!data.mail && <FormMessage tone="info">{t.admin.noMail}</FormMessage>}
               {/* This tree's invitations are on its members tab; others only when there are some */}

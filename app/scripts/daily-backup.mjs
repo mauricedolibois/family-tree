@@ -9,7 +9,9 @@
  *   versions keep their images.
  * - Empties the trash: trees deleted more than 30 days ago go for good, with
  *   their backups and files.
- * Runs daily via cron inside the app container (see README, "Deployment").
+ * On Vercel, where the app cannot run app/src/lib/dailyJob.ts itself, GitHub
+ * Actions runs this script daily (.github/workflows/keep-alive.yml). It does the
+ * same work as that job; change both together.
  */
 import { createClient } from '@supabase/supabase-js'
 import { createHash } from 'crypto'

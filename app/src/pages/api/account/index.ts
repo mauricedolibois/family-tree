@@ -61,7 +61,8 @@ export default withUser('api/account', async (req, res, user) => {
     patch.email_verified_at = emailVerificationRequired() ? null : user.email_verified_at
   }
   if (wantsPassword) {
-    if (!validPassword(body.newPassword)) return res.status(400).json({ error: 'invalid password' })
+    if (!validPassword(body.newPassword, [user.name, user.email]))
+      return res.status(400).json({ error: 'invalid password' })
     patch.pass_hash = await hashPassword(body.newPassword)
   }
 

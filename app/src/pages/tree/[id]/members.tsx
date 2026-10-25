@@ -8,7 +8,18 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import type { GetServerSideProps } from 'next'
 import clsx from 'clsx'
-import { Eye, GitBranch, Plus, SlidersHorizontal, UserMinus, UserRound, X } from 'lucide-react'
+import {
+  Eye,
+  GitBranch,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserMinus,
+  UserRound,
+  Users,
+  X,
+} from 'lucide-react'
 import type { Role, TreeMember } from '@/lib/accounts'
 import { canManage, treeAccess } from '@/lib/auth'
 import { treeIdParam } from '@/lib/ids'
@@ -29,11 +40,19 @@ import {
   ValidityField,
 } from '@/components/manage/parts'
 import { BusyBar, PageLoading, Spinner } from '@/components/ui/Spinner'
-import { newScope, PersonSearch, ScopeEditor, scopeForRole, scopeReady } from '@/components/manage/ScopeEditor'
+import {
+  newScope,
+  ownFamilyScope,
+  PersonSearch,
+  ScopeEditor,
+  scopeActions,
+  scopeForRole,
+  scopeReady,
+} from '@/components/manage/ScopeEditor'
 import { lifeYears } from '@/family/format'
 import type { Tree } from '@/family/model'
-import { describeScope, startOf, withLine, type BloodLine, type TreeScope } from '@/family/scope'
-import { ScopeChanges } from '@/components/manage/ScopePreview'
+import { describeScope, seemsMarriedIn, startOf, withLine, type BloodLine, type TreeScope } from '@/family/scope'
+import { ScopeChanges, ScopePreview } from '@/components/manage/ScopePreview'
 import { useI18n } from '@/i18n/I18nProvider'
 import { INTL_TAG, type Locale } from '@/i18n/locales'
 import { localeFromRequest } from '@/i18n/server'
@@ -505,6 +524,38 @@ function MemberPerson({
   )
 }
 
+/**
+ * What an invitation gives, as the moderator would say it: each sets the role and
+ * the part of the tree. "custom" shows the role and the part editor.
+ */
+type Preset = 'view' | 'edit' | 'own' | 'line' | 'moderator' | 'custom'
+const PRESETS: Array<{ id: Preset; icon: typeof Eye }> = [
+  { id: 'view', icon: Eye },
+  { id: 'edit', icon: Pencil },
+  { id: 'own', icon: Users },
+  { id: 'line', icon: GitBranch },
+  { id: 'moderator', icon: ShieldCheck },
+  { id: 'custom', icon: SlidersHorizontal },
+]
+
+/** Role and part of a preset for this person; null for "custom", which keeps what was set */
+function presetAccess(preset: Preset, person: string | null): { role: Role; scope: TreeScope | null } | null {
+  switch (preset) {
+    case 'view':
+      return { role: 'viewer', scope: null }
+    case 'edit':
+      return { role: 'editor', scope: null }
+    case 'moderator':
+      return { role: 'moderator', scope: null }
+    case 'own':
+      return { role: 'editor', scope: person ? ownFamilyScope(person) : null }
+    case 'line':
+      return { role: 'viewer', scope: person ? newScope(person) : null }
+    case 'custom':
+      return null
+  }
+}
+
 function InviteForm({
   api,
   tree,
@@ -533,11 +584,30 @@ function InviteForm({
   // Who the invited person is; their blood line is where the part starts
   const [personId, setPersonId] = useState<string | null>(initialPerson)
   const [scope, setScope] = useState<TreeScope | null>(() => (initialPerson ? newScope(initialPerson) : null))
+  const [preset, setPreset] = useState<Preset | null>(null)
   const person = personId ? tree?.members[personId] : null
+  const marriedIn = !!(tree && personId && seemsMarriedIn(tree, personId))
+  const choose = (next: Preset, id = personId) => {
+    setPreset(next)
+    const access = presetAccess(next, id)
+    if (access) {
+      setRole(access.role)
+      setScope(access.scope)
+    } else if (next !== preset) {
+      // "custom" starts from the part a part-preset had, or from the person's line
+      setScope((current) => current ?? (id ? newScope(id) : null))
+    }
+  }
   const pickPerson = (id: string | null) => {
     setPersonId(id)
-    setScope(id ? newScope(id) : null)
+    if (preset && preset !== 'custom') choose(preset, id)
+    else setScope(id ? newScope(id) : null)
   }
+  // Tapping in the preview of a preset turns it into a custom part
+  const adjust = scopeActions(scope, (next) => {
+    setPreset('custom')
+    setScope(next)
+  })
   const [admin, setAdmin] = useState(false)
   const [days, setDays] = useState<number | null>(null)
   const [result, setResult] = useState<{ path: string; mailed: boolean } | null>(null)
@@ -561,6 +631,7 @@ function InviteForm({
     setResult({ path: String(data.path), mailed: !!data.mailed })
     setEmail('')
     setAdmin(false)
+    setPreset(null)
     pickPerson(null)
     onCreated()
   }
@@ -605,22 +676,63 @@ function InviteForm({
           />
           <span className="text-sm text-ink-faint">{mail ? t.admin.inviteEmailHintMail : t.admin.inviteEmailHint}</span>
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="field-label">{t.admin.role}</span>
-          <RoleSelect value={role} onChange={setRole} />
-        </label>
+        <fieldset className="flex min-w-0 flex-col gap-2 sm:col-span-2">
+          <legend className="field-label mb-1">{t.members.presets.title}</legend>
+          <div role="radiogroup" aria-label={t.members.presets.title} className="grid gap-2 sm:grid-cols-2">
+            {PRESETS.map(({ id, icon: Icon }) => {
+              const text = t.members.presets[id]
+              const on = preset === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => choose(id)}
+                  className={clsx(
+                    'flex flex-col items-start gap-1 rounded-control border p-3 text-left transition-colors',
+                    on
+                      ? 'border-primary bg-accent-soft/50 ring-1 ring-primary'
+                      : 'border-card-rule bg-card hover:border-accent',
+                  )}
+                >
+                  <span className="flex flex-wrap items-center gap-2 text-[15px] font-semibold text-ink">
+                    <Icon className="h-4 w-4 shrink-0 text-accent-deep" />
+                    {text.title}
+                    {id === 'own' && marriedIn && <Badge>{t.members.presets.recommended}</Badge>}
+                  </span>
+                  <span className="text-sm text-ink-muted">{text.text(person?.name ?? t.members.presets.someone)}</span>
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+        {preset === 'custom' && (
+          <>
+            <label className="flex flex-col gap-1 sm:col-span-2">
+              <span className="field-label">{t.admin.role}</span>
+              <RoleSelect value={role} onChange={setRole} />
+            </label>
+            <p className="text-sm text-ink-muted sm:col-span-2">{t.members.rolesHelp}</p>
+            {role !== 'moderator' && (
+              <div className="min-w-0 sm:col-span-2">
+                <ScopeEditor tree={tree} role={role} value={scope} onChange={setScope} />
+              </div>
+            )}
+          </>
+        )}
+        {(preset === 'own' || preset === 'line') && tree && scope && (
+          <div className="flex min-w-0 flex-col gap-2 sm:col-span-2">
+            <p className="text-sm text-ink-muted">{t.members.presets.adjust}</p>
+            <ScopePreview tree={tree} scope={scopeForRole(scope, role)!} actions={adjust} />
+          </div>
+        )}
         <ValidityField days={days} onChange={setDays} />
         {canGrantAdmin && (
           <label className="flex items-center gap-2 text-[15px] text-ink sm:col-span-2">
             <input type="checkbox" checked={admin} onChange={(e) => setAdmin(e.target.checked)} />
             {t.admin.makeAdmin}
           </label>
-        )}
-        <p className="text-sm text-ink-muted sm:col-span-2">{t.members.rolesHelp}</p>
-        {role !== 'moderator' && (
-          <div className="min-w-0 sm:col-span-2">
-            <ScopeEditor tree={tree} role={role} value={scope} onChange={setScope} />
-          </div>
         )}
         {error && (
           <div className="sm:col-span-2">
@@ -633,7 +745,7 @@ function InviteForm({
             variant="primary"
             icon={<Plus className="h-4 w-4" />}
             loading={sending}
-            disabled={!personId || (role !== 'moderator' && !scopeReady(scope))}
+            disabled={!personId || !preset || (role !== 'moderator' && !scopeReady(scope))}
           >
             {sending ? (mail && email.trim() ? t.admin.sending : t.auth.wait) : t.admin.createInvite}
           </Button>
