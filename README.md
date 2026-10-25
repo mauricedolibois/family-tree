@@ -55,7 +55,7 @@ It comes in two designs, classic (parchment) and modern, each light, dark or aut
 
 - Photos and documents are not deleted right away when someone removes them: the daily backup only deletes a file once neither the current tree nor any backup refers to it (and it is older than a week), so restored versions keep their images. If a file is missing anyway, the app shows initials or "Bild fehlt" (image missing).
 
-- Calendar apps cannot sign in, so the subscription is protected only by a secret token in the link (`families.calendar_token`). Anyone with the link sees names and birthdays; "create new link" invalidates the old one.
+- Calendar apps cannot sign in, so the subscription is protected only by a secret token in the link (`trees.calendar_token`). Anyone with the link sees names and birthdays; "create new link" invalidates the old one. Members who see only their part of a tree get a link of their own instead (`memberships.calendar_token`): its feed holds just the people they see at the time it is fetched, and only they can renew it.
 
 - Every endpoint and who may use it: [docs/security.md](docs/security.md).
 - The database (Supabase) is only accessed server side with the service role key; the public roles have no rights.

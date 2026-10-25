@@ -6,7 +6,7 @@ import { getSupaAdmin } from './supabaseServer'
 import { logError } from './log'
 
 /** Raise together with supabase/setup.sql when adding a migration */
-export const REQUIRED_SCHEMA = 8
+export const REQUIRED_SCHEMA = 9
 
 export type SchemaStatus =
   | { state: 'current'; have: number; need: number }

@@ -2,7 +2,8 @@
 //
 // Birthdays as a calendar subscription: for iPhone/Mac, Google, or as a link to copy.
 // Either the whole family or just one's own line; person and scope are link
-// parameters (see src/family/calendarLink.ts).
+// parameters (see src/family/calendarLink.ts). Members whose part hides the rest
+// get a link of their own that holds only their part, and may renew it.
 // Shown under "Upcoming birthdays" and at the end of the guided tour.
 
 import { useEffect, useMemo, useState } from 'react'
@@ -38,6 +39,8 @@ export function CalendarSubscribe({
   const { notify } = useToast()
   const { t, locale } = useI18n()
   const person = personId ? index.byId.get(personId) : undefined
+  // Only their part: "the whole family" is everything they see
+  const ownLink = !!scope?.hideRest
 
   const [whom, setWhom] = useState<Whom>(person ? 'line' : 'all')
   const [side, setSide] = useState<LineScope['side']>(lineScope.side)
@@ -101,7 +104,7 @@ export function CalendarSubscribe({
           onChange={setWhom}
           options={[
             { value: 'line', label: t.subscribe.myLine },
-            { value: 'all', label: t.subscribe.wholeFamily },
+            { value: 'all', label: ownLink ? t.subscribe.wholePart : t.subscribe.wholeFamily },
           ]}
         />
       )}
@@ -115,7 +118,7 @@ export function CalendarSubscribe({
         />
       )}
       <p className="text-[13px] leading-snug text-ink-muted">
-        {scopeText ? `${scopeText} – ` : t.subscribe.fromWholeFamily}
+        {scopeText ? `${scopeText} – ` : ownLink ? t.subscribe.fromWholePart : t.subscribe.fromWholeFamily}
         <span className="tabular-nums">{t.subscribe.count(count)}</span>.
       </p>
 
@@ -140,7 +143,8 @@ export function CalendarSubscribe({
 
       <p className="text-[13px] leading-snug text-ink-faint">
         {t.subscribe.privacy}
-        {allowRenew && canEdit && !scope && path && (
+        {/* The tree's link only by editors with the whole tree, one's own link always */}
+        {allowRenew && path && (ownLink || (canEdit && !scope)) && (
           <>
             {' '}
             <button
